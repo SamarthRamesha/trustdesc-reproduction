@@ -1,0 +1,20 @@
+Processing /Users/macbramesha/Documents/Codex/2026-11-08/files-mentioned-by-the-user-trustdesc/work/publication-audit/github-clone
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: trustdesc-phase1
+  Building wheel for trustdesc-phase1 (pyproject.toml): started
+  Building wheel for trustdesc-phase1 (pyproject.toml): finished with status 'done'
+  Created wheel for trustdesc-phase1: filename=trustdesc_phase1-0.1.0-py3-none-any.whl size=37133 sha256=71a8f8ee25b3a0f9bae57f3f3e4270e61cababd977c1ac8fd117d4dba0aaef00
+  Stored in directory: /private/var/folders/qk/138nf5bj3615xmbntz9ftgqr0000gn/T/pip-ephem-wheel-cache-czh9myqi/wheels/82/ee/4a/f406c0ef7f3656435b75d40a42087ae2372ff0a68a3c11a380
+Successfully built trustdesc-phase1
+Installing collected packages: trustdesc-phase1
+  Attempting uninstall: trustdesc-phase1
+    Found existing installation: trustdesc-phase1 0.1.0
+    Uninstalling trustdesc-phase1-0.1.0:
+      Successfully uninstalled trustdesc-phase1-0.1.0
+Successfully installed trustdesc-phase1-0.1.0
+
+No broken requirements found.
+WARNING: The directory '/Users/macbramesha/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+
+{"status": "saved", "output": "/Users/macbramesha/Documents/Codex/2026-11-08/files-mentioned-by-the-user-trustdesc/work/publication-audit/github-installed-demo", "original_paper_reproduced": false}

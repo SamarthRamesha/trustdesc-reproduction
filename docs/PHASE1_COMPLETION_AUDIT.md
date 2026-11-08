@@ -2,6 +2,8 @@
 
 Audit date: **8 November 2026**, Asia/Kolkata. Independently inspected actual source, tests, manifests, raw working directories, notebook, reports and Git history; did not rely on the earlier completion summary. **Can we honestly claim to have reproduced TRUSTDESC? No.** We can claim a tested bounded reimplementation with controlled synthetic evidence and one real-source static experiment. Original scientific conditions and model-backed outcomes remain unreproduced.
 
+Publication verified: authenticated GitHub reports a private repository on main, first uploaded 123-file tree matches local Git, original commits are accessible and a fresh GitHub clone passes 92 tests on both Python versions plus notebook/repository checks. [GITHUB_PUBLICATION](GITHUB_PUBLICATION.md) records the verified snapshot and subsequent final-head recheck procedure. Publication does not change the scientific conclusion.
+
 ## Inspection scope and preserved baseline
 
 Repository began this audit on clean `master`, without remotes, at `e3de3bcd0084a25fedc03c2429e8b2df3700d48c`. Three original commits: `5f23a49` research/reference evidence, `87c733b` implementation/89-test stage, and `e3de3bc` handover/91-test evidence. All remain ancestors of `main`; `master` remains at the original baseline. No history rewrite or source/evidence deletion was performed.

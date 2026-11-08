@@ -8,7 +8,7 @@ Read this document as a continuation record for an existing project. **Full scie
 - Research baseline: **TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation**, Hengkai Ye, Zhechang Zhang, Jinyuan Jia and Hong Hu, Pennsylvania State University.
 - Paper: **arXiv:2604.07536v1**, submitted 8 April 2026; 17 pages including references. This is the version inspected, not a claim of a peer-reviewed venue. [Versioned paper](https://arxiv.org/abs/2604.07536v1).
 - Paper SHA-256: `c0aed54402c07dc9420b908339fddfbed8eb40a2c316910489d0da28426c8cb4`. Supplied PDF is deliberately excluded; public paper URL and fingerprint suffice to obtain/check it independently.
-- Repository: **https://github.com/SamarthRamesha/trustdesc-reproduction**; intended/current publication visibility **private**, branch **main**. A private URL alone does not grant a new assistant access: authorize the repository in the relevant GitHub integration, or provide the verified portable project archive. Do not make it public as an access workaround.
+- Repository: **https://github.com/SamarthRamesha/trustdesc-reproduction**; authenticated GitHub verification confirms **private** visibility, default branch **main**. See [publication record](GITHUB_PUBLICATION.md) for remote tree/history and fresh-clone checks. A private URL alone does not grant a new assistant access: authorize the repository in the relevant GitHub integration, or provide the verified portable project archive. Do not make it public as an access workaround.
 - Initial preserved Phase 1 commit: `e3de3bcd0084a25fedc03c2429e8b2df3700d48c`; earlier history includes `5f23a49` and `87c733b`.
 - Audited implementation fix: `4dd21f46fd108b5483a837f44bd0411ca5ed6418` (bundled source fixture for installed CLI; history preserved).
 - **Latest commit**: the commit checked out from `main`, obtainable exactly with `git rev-parse HEAD` or the [live main commit history](https://github.com/SamarthRamesha/trustdesc-reproduction/commits/main). This document cannot embed its own containing commit hash; the immutable anchors above identify inspected implementation, while Git and archive manifests identify the actual latest documentation/publication snapshot. Do not treat an earlier anchor as the live head.
@@ -90,7 +90,7 @@ These tests establish mechanics and expected controlled behavior. They do not es
 
 Available tracked resources:
 
-- `data/manifests/paper_servers.json`: 12 paper-linked source metadata entries; counts sum52, exact selected tools/commits/license fields unknown. Not a dataset of 52 implementations.
+- `data/manifests/paper_servers.json`: 12 paper-linked source metadata entries; counts sum to 52, exact selected tools/commits/license fields unknown. Not a dataset of 52 implementations.
 - `paper_attacks.json`: seven printed attack links/outcomes, not our seven measured successes.
 - `paper_fingerprint.json`: one supplied PDF fingerprint; paper bytes external.
 - `acquired_sources.json`: one public arxiv server source archive, commit 572e301bb3198962c025d5ed5e14becb86868daa, SHA-256 933aaafd43e4e166caccbf5cc46fff0f52fdb3c733e58d03a5253b4ca4b12158, 490,822 bytes, Apache-2.0 checked. Raw/extracted bytes excluded.
@@ -115,7 +115,7 @@ Published values are **not measured here**: original TSR 84.1%(175/208), mean fu
 
 ## Environment, configuration and boundaries
 
-Primary user hardware: MacBook Air M3, 16 GB unified memory, 512 GB storage; observed macOS 26.6/arm64 and approximately 68 GiB free at original inspection. No GPU/modelweights installed for Phase1. Core Python >=3.11 uses standard library. Build/installation tools pinned setuptools 80.9.0/wheel 0.45.1; tests use unittest. Optional GPU direct pins: torch 2.9.0, transformers 4.57.1, huggingface-hub 0.36.0, safetensors 0.6.2; proposed environment, not a validated CUDA/transitive lockfile.
+Primary user hardware: MacBook Air M3, 16 GB unified memory, 512 GB storage; observed macOS 26.6/arm64 and approximately 68 GiB free at original inspection. No GPU model weights were installed for Phase 1. Core Python >=3.11 uses the standard library. Build/installation tools are pinned to setuptools 80.9.0/wheel 0.45.1; tests use unittest. Optional GPU direct pins: torch 2.9.0, transformers 4.57.1, huggingface-hub 0.36.0, safetensors 0.6.2; this is a proposed environment, not a validated CUDA/transitive lockfile.
 
 `configs/default.json`/`models.json` document defaults/paper display names; not automatically loaded by every CLI. `experiments.json` controls local repetition/config; `small_model.json` controls optional Qwen setup. Prompts are reconstructed inline constants in `descgen/prompts.py`, not original author prompts. Audit source/config hashes and explicit command-line arguments when comparing runs.
 

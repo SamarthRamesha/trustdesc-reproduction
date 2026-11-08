@@ -14,6 +14,7 @@ Existing evidence files are preserved in place. New publication checks are appen
 | [test_results.json](test_results.json) and [test_python311.txt](test_python311.txt) | Original 91-test validation, preserved |
 | [notebook_validation.txt](notebook_validation.txt) | Original 10-cell compilation / 5 portable cells, no Colab/GPU execution |
 | [publication audit](../docs/PHASE1_COMPLETION_AUDIT.md) | Independent rechecks, packaging defect/fix, latest validation and limits |
+| [GitHub publication verification](../docs/GITHUB_PUBLICATION.md) | Private visibility, exact remote blob-tree/ancestry and fresh GitHub clone checks |
 
 The initial `local_experiments.json` reports a dirty working tree at anchor `87c733b`. Audit recomputation against the preserved `e3de3bc` source reproduces its **source-content hash exactly**. Its time/allocation values remain measurements from that run, not numbers a fresh run should match bit-for-bit. The curated example is retained; repetitive raw runs are ignored and are not required to run the supported workflow.
 

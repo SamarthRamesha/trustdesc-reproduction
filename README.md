@@ -2,6 +2,8 @@
 
 **Start here:** [Central project handover](docs/PROJECT_HANDOVER.md), [completion audit](docs/PHASE1_COMPLETION_AUDIT.md), and [fresh setup](docs/FRESH_ENVIRONMENT_SETUP.md). This is a private research repository on `main`, with preserved original history. **92 tests currently pass** on Python 3.13.9 and 3.11.14; the preserved historical reports contain the original 91-test baseline, which was independently rechecked before one packaging regression test was added.
 
+[GitHub publication verification](docs/GITHUB_PUBLICATION.md) records authenticated visibility/head/tree checks and tests from a fresh GitHub clone. Scientific reproduction remains incomplete.
+
 A working, tested **bounded reimplementation**, with explicit reproduction gaps. It is not the authors' code or a quantitatively successful reproduction. See [Phase 1 report](reports/PHASE1_REPORT.md) and [component status](docs/REPRODUCTION_STATUS.md).
 
 The project supports **Hybrid Semantic-Behavioral Trust Verification for Third-Party AI Agent Tools**, concentrating on the TRUSTDESC research baseline. It does not implement the entire team's two-year system or a production trust gateway.

@@ -1,0 +1,69 @@
+{
+  "verified_remote_clone_commit": "1a27c96c65aa38d548b3092c4a679c75d6556047",
+  "original_history_preserved": true,
+  "checks": [
+    {
+      "label": "python313",
+      "actual_command": [
+        "python3",
+        "-I",
+        "-S",
+        "scripts/run_tests.py"
+      ],
+      "exit_code": 0,
+      "result": {
+        "timestamp_utc": "2026-11-08T09:25:07.841447+00:00",
+        "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+        "python": "3.13.9",
+        "tests_run": 92,
+        "failures": 0,
+        "errors": 0,
+        "skipped": [],
+        "passing": 92,
+        "success": true
+      }
+    },
+    {
+      "label": "python311",
+      "actual_command": [
+        "/opt/homebrew/bin/python3.11",
+        "-I",
+        "-S",
+        "scripts/run_tests.py"
+      ],
+      "exit_code": 0,
+      "result": {
+        "timestamp_utc": "2026-11-08T09:25:08.076941+00:00",
+        "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+        "python": "3.11.14",
+        "tests_run": 92,
+        "failures": 0,
+        "errors": 0,
+        "skipped": [],
+        "passing": 92,
+        "success": true
+      }
+    },
+    {
+      "label": "notebook",
+      "actual_command": [
+        "python3",
+        "-I",
+        "-S",
+        "scripts/validate_notebook.py",
+        "--execute-portable"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "repo_audit",
+      "actual_command": [
+        "python3",
+        "-I",
+        "-S",
+        "scripts/audit_repository.py"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

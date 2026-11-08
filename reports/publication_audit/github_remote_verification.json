@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/SamarthRamesha/trustdesc-reproduction",
+  "visibility": "private",
+  "private": true,
+  "default_branch": "main",
+  "verified_commit": "1a27c96c65aa38d548b3092c4a679c75d6556047",
+  "remote_tree_exactly_matches_local": true,
+  "tracked_files_verified": 123,
+  "verified_original_commits": [
+    "5f23a49fb52bbc2d260fddad1d808cc73b7f2aca",
+    "87c733b95b7005cc2690b4b22de8ef5a09f04209",
+    "e3de3bcd0084a25fedc03c2429e8b2df3700d48c"
+  ],
+  "tree_truncated": false,
+  "verification_scope": "Authenticated GitHub API identity/visibility/head/blob tree plus fresh GitHub clone tests; this snapshot precedes its own documentation commit."
+}
