@@ -1,5 +1,7 @@
 # Reproduction status
 
+Publication audit update: the original 91-test baseline was independently rechecked on Python 3.13.9 and 3.11.14. The current suite has 92 passing tests after a real installed-CLI fixture packaging fix. Earlier reports are preserved, not overwritten. See [completion audit](PHASE1_COMPLETION_AUDIT.md), [handover](PROJECT_HANDOVER.md) and [new validation evidence](../reports/publication_audit/updated_checks.json). Full scientific reproduction remains unestablished.
+
 This project is an engineering baseline with documented blockers. **Original-condition scientific reproduction is not achieved.** “Implemented” below means working code for the stated scope, not verified parity with author artifacts.
 
 | Component | Classification | Evidence | Gap |

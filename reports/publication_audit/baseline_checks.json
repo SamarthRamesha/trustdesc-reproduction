@@ -1,0 +1,52 @@
+[
+  {
+    "command": [
+      "python3",
+      "-I",
+      "-S",
+      "scripts/run_tests.py"
+    ],
+    "exit_code": 0,
+    "tests": {
+      "timestamp_utc": "2026-11-08T09:07:31.437720+00:00",
+      "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+      "python": "3.13.9",
+      "tests_run": 91,
+      "failures": 0,
+      "errors": 0,
+      "skipped": [],
+      "passing": 91,
+      "success": true
+    }
+  },
+  {
+    "command": [
+      "/opt/homebrew/bin/python3.11",
+      "-I",
+      "-S",
+      "scripts/run_tests.py"
+    ],
+    "exit_code": 0,
+    "tests": {
+      "timestamp_utc": "2026-11-08T09:07:31.678679+00:00",
+      "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+      "python": "3.11.14",
+      "tests_run": 91,
+      "failures": 0,
+      "errors": 0,
+      "skipped": [],
+      "passing": 91,
+      "success": true
+    }
+  },
+  {
+    "command": [
+      "python3",
+      "-I",
+      "-S",
+      "scripts/validate_notebook.py",
+      "--execute-portable"
+    ],
+    "exit_code": 0
+  }
+]

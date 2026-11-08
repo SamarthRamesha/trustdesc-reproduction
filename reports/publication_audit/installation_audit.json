@@ -1,0 +1,24 @@
+{
+  "baseline_commit": "e3de3bcd0084a25fedc03c2429e8b2df3700d48c",
+  "implementation_fix_commit": "4dd21f46fd108b5483a837f44bd0411ca5ed6418",
+  "fresh_venv_python": "3.13.9",
+  "build_dependencies": {
+    "setuptools": "80.9.0",
+    "wheel": "0.45.1"
+  },
+  "install_command": "AUDIT_PYTHON -m pip install --no-build-isolation --no-deps SOURCE_COPY",
+  "baseline_installed_demo": {
+    "command": "trustdesc demo --output FRESH_DIRECTORY (cwd outside checkout)",
+    "exit_code": 1,
+    "message": "ValueError: Demo requires the portable source repository, including tests/fixtures"
+  },
+  "fixed_installed_demo": {
+    "command": "trustdesc demo --output FRESH_DIRECTORY (cwd /private/tmp)",
+    "exit_code": 0,
+    "model_inference": false,
+    "observations": "Package data copied to temporary static-analysis source; all stage artifacts written."
+  },
+  "old_experiment_source_hash_recomputed_from_baseline": "fd3789bbbf66ca850271202c4ee925798a7c1bc1a851f1ce3a56f6b2b0876ba4",
+  "old_experiment_source_hash_matches": true,
+  "original_reports_modified": false
+}

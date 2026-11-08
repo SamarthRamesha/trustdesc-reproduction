@@ -1,0 +1,36 @@
+[
+  {
+    "actual_command": [
+      "python3",
+      "-I",
+      "-S",
+      "scripts/run_tests.py"
+    ],
+    "timestamp_utc": "2026-11-08T09:10:25.923259+00:00",
+    "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+    "python": "3.13.9",
+    "tests_run": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": [],
+    "passing": 92,
+    "success": true
+  },
+  {
+    "actual_command": [
+      "/opt/homebrew/bin/python3.11",
+      "-I",
+      "-S",
+      "scripts/run_tests.py"
+    ],
+    "timestamp_utc": "2026-11-08T09:10:26.153804+00:00",
+    "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
+    "python": "3.11.14",
+    "tests_run": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": [],
+    "passing": 92,
+    "success": true
+  }
+]

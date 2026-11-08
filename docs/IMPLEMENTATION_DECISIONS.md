@@ -1,5 +1,7 @@
 # Implementation decision log
 
+Publication audit decisions (8 November 2026): preserve all original commits and evidence; create `main` from the stable original head while retaining local `master`; use fresh copies for audit scripts that write fixed report names; fix only the verified wheel-installed CLI fixture defect with bundled inert text and a parity/independent-location regression; add installation, central handover and completion-audit documentation; keep private visibility and reserved-rights LICENSE rather than silently selecting an open-source grant. New validation is appended in `reports/publication_audit/`. Exact-name collision is checked before new-repository creation; no existing repository may be repurposed. GitHub/archives are verified against committed content, without secrets/raw artifacts/environments.
+
 All decisions below are local, reversible engineering choices within the requested Phase 1 scope. No account connection, paid inference, remote publication or third-party code execution was authorized/performed.
 
 | ID | Decision | Why / paper requirement | Alternatives considered | Deviation and consequence | Reproduce |

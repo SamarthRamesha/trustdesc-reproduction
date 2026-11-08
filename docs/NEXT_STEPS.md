@@ -1,0 +1,19 @@
+# Prioritized next steps
+
+**Scientific reproduction is not established.** Documentation/publication readiness and passing engineering tests do not change that status. Existing implementation and evidence should be preserved.
+
+| Priority | Action and exact starting point | Completion evidence | Dependency / approval |
+|---|---|---|---|
+| 1 | Recover an authenticated TRUSTDESC artifact. Start with EVIDENCE_LEDGER and arXiv v1 references; verify release ownership before trusting it | Original implementation/release URL + commit/license; exact prompts, 52-tool list/revisions, 208 tasks/labels, agent/judge configs | External author/artifact resources. Do not contact authors on user's behalf without explicit message authorization |
+| 2 | Reconcile original benchmark provenance. Inspect `paper_servers.json`, `paper_attacks.json`, `acquired_sources.json` and data schemas | Pinned licensed source/task manifests, checksums, explicit missingness and original/reconstructed labels | Missing external resources; no fabricated IDs or labels |
+| 3 | Extend static coverage where benchmark needs it. Start `PythonSlicer.entry`, `resolve`, `_graph`, `slice` and current 194 unresolved sites | Python/TypeScript registration/call cases with reviewed completeness and call-context behavior; regression tests; documented deviations | Can progress locally on reviewed source without execution; exact author parity depends on original resolver |
+| 4 | Validate genuine model-guided stages. Read `descgen/prompts.py`, model protocols and rewrite audit | Exact prompt/model/reasoning/decoding versions, actual raw inference, manual source-grounding checks and failure rates | Explicit approval before paid/API/source transmission. Optional public small-model Colab inference is a different setting |
+| 5 | Implement a real isolated MCP/LangChain Runner. Begin with SANDBOX.md and `Runner` protocol; leave `DisabledRunner` default | Disposable environment, isolation canaries, deadlines/cleanup/capped logs, source binding, no host secrets, reviewed trace provenance | Isolation installation/external access and third-party execution require user's approval; no plain subprocess shortcut |
+| 6 | Restore original DynVer refinement behavior | Actual task synthesis/agent/judge runs and evidence-bound argument correction/stopping criterion | Needs model access and safe backend; original stopping/prompt details unavailable |
+| 7 | Run original/full/lite benchmark with matched tasks and reviewed success | Complete task coverage, target-invocation AND objective-success annotations, TSR and common-success overhead, repetitions/uncertainty, original-config cost | Requires priorities 1–6; freeze datasets/prompts/model IDs; obtain spending approval first |
+| 8 | Reproduce degraded-tool, public-attack and adaptive-identifier evaluations | Exact mutations/tool pairs/tasks/denominators, observed attack outcomes and 15-iteration raw trajectory | Original artifacts and validated execution; published trigger-text inspection is not end-to-end ASR |
+| 9 | Evaluate capstone extensions after a measured baseline | Paired evidence for conditional-behavior tasks, confidence handling, explanations and hybrid policy | Team decision; no arbitrary score or unmeasured improvement claim |
+
+Independent work possible now: source resolver tests, reusable dataset validation, documentation review, backend design/canary planning and optional CPU experiments. Work that remains external/approval-dependent should stay visible rather than being replaced silently.
+
+The repository remains private. Making it public or granting an open-source license is a separate explicit decision; current LICENSE reserves rights. Public source URLs or current model aliases must not be treated as stable versions. Publish new measurements under new evidence directories with configuration/source hashes, preserving historical results.

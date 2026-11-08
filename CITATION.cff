@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "Cite this bounded reproduction study separately from the original TRUSTDESC paper. Full scientific reproduction is not established."
+type: software
+title: "TRUSTDESC Phase 1: bounded reimplementation and reproduction study"
+authors:
+  - name: "TRUSTDESC reproduction project contributors"
+version: 0.1.0
+date-released: 2026-11-08
+repository-code: "https://github.com/SamarthRamesha/trustdesc-reproduction"
+url: "https://github.com/SamarthRamesha/trustdesc-reproduction"
+license: LicenseRef-All-Rights-Reserved
+preferred-citation:
+  type: article
+  title: "TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation"
+  authors:
+    - family-names: Ye
+      given-names: Hengkai
+    - family-names: Zhang
+      given-names: Zhechang
+    - family-names: Jia
+      given-names: Jinyuan
+    - family-names: Hu
+      given-names: Hong
+  year: 2026
+  doi: 10.48550/arXiv.2604.07536
+  url: "https://arxiv.org/abs/2604.07536v1"

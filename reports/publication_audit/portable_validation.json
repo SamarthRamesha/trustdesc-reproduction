@@ -1,0 +1,21 @@
+{
+  "notebook_code_cells": 10,
+  "portable_cells_executed": 5,
+  "actual_colab_session_run": false,
+  "gpu_inference_run": false,
+  "synthetic_dataset_input_hash_matches_original": true,
+  "synthetic_dataset_output_hash_matches_original": true,
+  "prepared_stats": {
+    "records": 8,
+    "duplicates_removed": 0,
+    "servers": 2,
+    "tools": 2,
+    "origin_counts": {
+      "synthetic": 8
+    },
+    "missing_labels": 8,
+    "split_counts": {
+      "evaluation": 8
+    }
+  }
+}

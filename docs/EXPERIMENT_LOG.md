@@ -1,5 +1,11 @@
 # Experiment and debugging log
 
+## Publication audit continuation
+
+Original records below remain unchanged. A later independent audit exports the preserved `e3de3bc` source into a working copy and reruns 91 tests on Python 3.13.9 and 3.11.14, plus the five portable notebook cells; all pass. A fresh venv/wheel installation succeeds but exposes a checkout-only `trustdesc demo` fixture dependency. Fix `4dd21f4` bundles byte-identical inert fixture text with one regression; current 92 tests pass on both versions and the installed CLI demo works from outside the checkout. No scientific algorithm or original experiment result is replaced. Audit commands/logs are appended in `reports/publication_audit/`; [PHASE1_COMPLETION_AUDIT](PHASE1_COMPLETION_AUDIT.md) records all rechecks and limits.
+
+Historical timing provenance was checked: the recorded content hash exactly recomputes from the preserved `e3de3bc` source/config/fixture files, despite the earlier report's `87c733b` dirty Git anchor. New timing repeats occur only in copies; original measurements remain intact. GPU/paid/original-model/MCP experiments remain unexecuted.
+
 All work below occurred on 8 November 2026. Exact UTC timestamps for saved checks/runs are in their JSON records. Client timezone is Asia/Kolkata. No paid models, credentials, personal connections, downloaded server execution or new local model weights were used.
 
 | Check / experiment | Command / method | Actual outcome | Interpretation |
