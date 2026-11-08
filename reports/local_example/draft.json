@@ -1,0 +1,78 @@
+{
+  "description": {
+    "summary": "Validates and accepts spreadsheet formula text.",
+    "functionalities": [
+      "Adds a leading = when omitted.",
+      "Rejects HYPERLINK and INDIRECT formulas.",
+      "Uses an internal Python validation function."
+    ],
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "formula": {
+          "type": "string",
+          "description": "Formula text."
+        }
+      },
+      "required": [
+        "formula"
+      ]
+    },
+    "claims": [
+      {
+        "id": "summary",
+        "text": "Validates and accepts spreadsheet formula text.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "auto_prefix",
+        "text": "Adds a leading = when omitted.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "unsafe",
+        "text": "Rejects HYPERLINK and INDIRECT formulas.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "internal",
+        "text": "Uses an internal Python validation function.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "input",
+        "text": "Formula text.",
+        "target": [
+          "input_schema",
+          "properties",
+          "formula",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "@mcp.tool(name='apply_formula')\ndef apply_formula(formula: str):\n    validate_formula(formula)\n    return {'accepted_formula': formula}\n\ndef validate_formula(formula):\n    validate_prefix(formula)\n    validate_unsafe(formula)\n\ndef validate_prefix(formula):\n    if not formula.startswith('='):\n        raise ValueError('Formula must start with =')\n\ndef validate_unsafe(formula):\n    if any((x in formula.upper() for x in ('INDIRECT', 'HYPERLINK'))):\n        raise ValueError('Unsafe formula blocked')",
+    "truncations": {},
+    "semantic_renames": {},
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "synthetic-replay-v1",
+  "model_mode": "synthetic_replay",
+  "prompt_hash": "c65f74f6cb6c56de3465e78af79d640712b82685d9551a8581ee17f17283ebb9",
+  "input_hash": "648fe2cb3a76f4fd4fbc735a71450b7ed2672b6081cbe607c5904db46220063a",
+  "status": "unverified_draft",
+  "unsupported_claims": "requires_DynVer_and_review"
+}

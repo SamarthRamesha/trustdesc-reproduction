@@ -1,11 +1,11 @@
 {
-  "timestamp_utc": "2026-11-08T07:36:17.649863+00:00",
+  "timestamp_utc": "2026-11-08T07:46:23.503106+00:00",
   "command": "PYTHONPATH=src .venv/bin/python scripts/run_tests.py",
   "python": "3.13.9",
-  "tests_run": 89,
+  "tests_run": 91,
   "failures": 0,
   "errors": 0,
   "skipped": [],
-  "passing": 89,
+  "passing": 91,
   "success": true
 }

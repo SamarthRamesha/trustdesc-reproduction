@@ -1,0 +1,199 @@
+{
+  "full": {
+    "summary": "Validates and accepts spreadsheet formula text.",
+    "functionalities": [
+      "Rejects HYPERLINK and INDIRECT formulas."
+    ],
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "formula": {
+          "type": "string",
+          "description": "Formula text."
+        }
+      },
+      "required": [
+        "formula"
+      ]
+    },
+    "claims": [
+      {
+        "id": "summary",
+        "text": "Validates and accepts spreadsheet formula text.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "unsafe",
+        "text": "Rejects HYPERLINK and INDIRECT formulas.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "input",
+        "text": "Formula text.",
+        "target": [
+          "input_schema",
+          "properties",
+          "formula",
+          "description"
+        ]
+      }
+    ]
+  },
+  "lite": {
+    "summary": "Validates and accepts spreadsheet formula text.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "formula": {
+          "type": "string",
+          "description": "Formula text."
+        }
+      },
+      "required": [
+        "formula"
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "claim_id": "summary",
+      "verdict": "supported",
+      "reason": "Observed the specific tested behavior."
+    },
+    {
+      "claim_id": "auto_prefix",
+      "verdict": "refuted",
+      "reason": "Missing-prefix input raises an error."
+    },
+    {
+      "claim_id": "unsafe",
+      "verdict": "supported",
+      "reason": "Observed the specific tested behavior."
+    },
+    {
+      "claim_id": "internal",
+      "verdict": "not_runtime_verifiable",
+      "reason": "Internal organization is not a runtime functional guarantee."
+    },
+    {
+      "claim_id": "input",
+      "verdict": "supported",
+      "reason": "Observed the specific tested behavior."
+    }
+  ],
+  "traces": [
+    {
+      "claim_id": "summary",
+      "task": "Accept formula =SUM(A1:A5).",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "accepted_formula": "=SUM(A1:A5)"
+            }
+          }
+        ],
+        "answer": "Observed the fixture results.",
+        "seconds": 0.00013562501408159733
+      }
+    },
+    {
+      "claim_id": "auto_prefix",
+      "task": "Try formula SUM(A1:A5) without =.",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "answer": "Observed the fixture results.",
+        "seconds": 0.0001290829968638718
+      }
+    },
+    {
+      "claim_id": "unsafe",
+      "task": "Try both =INDIRECT(\"A1\") and =HYPERLINK(\"x\").",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=INDIRECT(\"A1\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          },
+          {
+            "index": 1,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=HYPERLINK(\"x\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Observed the fixture results.",
+        "seconds": 0.00021004097652621567
+      }
+    },
+    {
+      "claim_id": "input",
+      "task": "Pass formula =1+1 as text.",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=1+1"
+            },
+            "status": "ok",
+            "result": {
+              "accepted_formula": "=1+1"
+            }
+          }
+        ],
+        "answer": "Observed the fixture results.",
+        "seconds": 0.00012250000145286322
+      }
+    }
+  ],
+  "model": "synthetic-replay-v1",
+  "model_mode": "synthetic_replay",
+  "status": "synthetic_evidence_only",
+  "usable_summary": true,
+  "trust_decision": "not_assessed",
+  "limitations": [
+    "Claims only supported on observed cases, not universally proven.",
+    "Structural schema fields are not separately dynamically certified.",
+    "Inconclusive/nonverifiable claims are excluded from supported output.",
+    "A new isolated execution backend must authenticate its own traces."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "experiment": "lower-compute exploratory inference, not original reproduction",
+  "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "revision": "2e1fd39",
+  "revision_evidence": "Abbreviated commit visible in official HF commit history, checked 2026-11-08; adapter records full resolved config commit on load",
+  "license": "Apache-2.0 per official model card; weights not bundled",
+  "seed": 42,
+  "temperature": 0.2,
+  "max_input_tokens": 4096,
+  "max_new_tokens": 2048,
+  "precision": "float16",
+  "local_validation": "strict response parsing and download gate tested; real GPU inference not run",
+  "download_enabled_by_default": false
+}

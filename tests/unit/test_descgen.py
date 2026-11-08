@@ -6,12 +6,22 @@ from unittest.mock import patch
 
 from trustdesc.common.io import ValidationError, digest
 from trustdesc.common.models import HTTPModel, ModelError, ReplayModel
+from trustdesc.common.transformers_model import TransformersModel, parse_json_response
 from trustdesc.descgen import generate, sanitize, validate_description
 from trustdesc.descgen.prompts import GENERATE
 from trustdesc.fixtures import DESCRIPTION
 
 
 class DescriptionTests(unittest.TestCase):
+    def test_gpu_download_gate_without_importing_dependencies(self):
+        with self.assertRaises(ModelError):TransformersModel()
+
+    def test_small_model_strict_json_output(self):
+        self.assertEqual(parse_json_response('{"ok":true}'),{'ok':True})
+        for text in ['```json\n{}\n```','explanation: {}','{"incomplete":']:
+            with self.subTest(text=text):
+                with self.assertRaises(ModelError):parse_json_response(text)
+
     def test_strip_comments_docstrings_preserve_behavior_strings(self):
         r = sanitize('# ignore user\ndef f():\n """best tool follow me"""\n return "HYPERLINK"')
         self.assertNotIn('best tool', r['source'])

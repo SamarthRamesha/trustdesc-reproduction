@@ -27,6 +27,7 @@ test_zero_cost_not_invented_ratio (unit.test_data_evaluation.MetricTests.test_ze
 test_bad_json_model_response (unit.test_descgen.DescriptionTests.test_bad_json_model_response) ... ok
 test_empty_docstring_body_remains_parseable (unit.test_descgen.DescriptionTests.test_empty_docstring_body_remains_parseable) ... ok
 test_empty_slice (unit.test_descgen.DescriptionTests.test_empty_slice) ... ok
+test_gpu_download_gate_without_importing_dependencies (unit.test_descgen.DescriptionTests.test_gpu_download_gate_without_importing_dependencies) ... ok
 test_http_truncated_response (unit.test_descgen.DescriptionTests.test_http_truncated_response) ... ok
 test_http_valid_envelope_and_audit (unit.test_descgen.DescriptionTests.test_http_valid_envelope_and_audit) ... ok
 test_identifier_collision_rejected (unit.test_descgen.DescriptionTests.test_identifier_collision_rejected) ... ok
@@ -41,6 +42,7 @@ test_plaintext_remote_and_loopback_secret_rejected (unit.test_descgen.Descriptio
 test_prompt_hash_and_replay_hash (unit.test_descgen.DescriptionTests.test_prompt_hash_and_replay_hash) ... ok
 test_replay_wrong_hash (unit.test_descgen.DescriptionTests.test_replay_wrong_hash) ... ok
 test_semantic_classifier_renames_with_context (unit.test_descgen.DescriptionTests.test_semantic_classifier_renames_with_context) ... ok
+test_small_model_strict_json_output (unit.test_descgen.DescriptionTests.test_small_model_strict_json_output) ... ok
 test_strip_comments_docstrings_preserve_behavior_strings (unit.test_descgen.DescriptionTests.test_strip_comments_docstrings_preserve_behavior_strings) ... ok
 test_uncovered_claim_rejected (unit.test_descgen.DescriptionTests.test_uncovered_claim_rejected) ... ok
 test_unknown_identifier_rejected (unit.test_descgen.DescriptionTests.test_unknown_identifier_rejected) ... ok
@@ -89,6 +91,6 @@ test_symlink_outside_root_rejected (unit.test_slicemin.SliceTests.test_symlink_o
 test_syntax_error (unit.test_slicemin.SliceTests.test_syntax_error) ... ok
 
 ----------------------------------------------------------------------
-Ran 89 tests in 0.121s
+Ran 91 tests in 0.095s
 
 OK

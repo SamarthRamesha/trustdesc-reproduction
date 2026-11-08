@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "input_sha256": "0e3c872390d8eb12fcaac961dd32222db1447de6b68580c2e04d5f31bac22081",
+  "output_sha256": "9af71ea3684953bd4d3a9b88aac90d79cbd982ae68d08dbc960dd9945381f283",
+  "seed": 42,
+  "group_assignment": {
+    "synthetic-formula": "evaluation",
+    "synthetic-text": "evaluation"
+  },
+  "stats": {
+    "records": 8,
+    "duplicates_removed": 0,
+    "servers": 2,
+    "tools": 2,
+    "origin_counts": {
+      "synthetic": 8
+    },
+    "missing_labels": 8,
+    "split_counts": {
+      "evaluation": 8
+    }
+  },
+  "split_policy": "evaluation only; no invented paper training split",
+  "license_policy": "Retain per-record license/source. Non-synthetic acquisition requires separate license review."
+}

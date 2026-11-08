@@ -1,0 +1,5 @@
+{
+  "query": "https://api.github.com/search/repositories?q=trustdesc&per_page=20",
+  "total_count": 0,
+  "items": []
+}

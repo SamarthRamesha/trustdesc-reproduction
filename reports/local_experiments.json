@@ -1,0 +1,365 @@
+{
+  "timestamp_utc": "2026-11-08T07:46:23.873998+00:00",
+  "raw_run_directory": "experiments/runs/20261108T074623669902Z",
+  "experiment_type": "synthetic_engineering_only",
+  "config": {
+    "seed": 42,
+    "local_repetitions": 20,
+    "local_experiment": "synthetic pipeline engineering timing; replay + real fixture operations, no inference",
+    "original_target": {
+      "servers": 12,
+      "tools": 52,
+      "tasks": 208,
+      "generation_models": 4,
+      "conditions": [
+        "original",
+        "lite",
+        "full"
+      ],
+      "tasks_per_tool": 4
+    },
+    "original_benchmark_available": false,
+    "online_evaluation_enabled": false
+  },
+  "config_hash": "fcb75c22174bd17133695c8ea14718ce312e78fd669b641c0801f5305a72d985",
+  "source_content_hash": "fd3789bbbf66ca850271202c4ee925798a7c1bc1a851f1ce3a56f6b2b0876ba4",
+  "git_commit": "87c733b95b7005cc2690b4b22de8ef5a09f04209",
+  "working_tree_dirty_at_run": true,
+  "python": "3.13.9",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "seed": 42,
+  "measurement": "wall time incl. JSON persistence under tracemalloc; Python allocation peak, not process RSS/GPU memory",
+  "runs": [
+    {
+      "index": 0,
+      "seconds": 0.009629957989091054,
+      "peak_python_bytes": 202061,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 1,
+      "seconds": 0.00866616697749123,
+      "peak_python_bytes": 180514,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 2,
+      "seconds": 0.00868841601186432,
+      "peak_python_bytes": 140248,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 3,
+      "seconds": 0.008527541998773813,
+      "peak_python_bytes": 176897,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 4,
+      "seconds": 0.008529707993147895,
+      "peak_python_bytes": 172246,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 5,
+      "seconds": 0.008697542012669146,
+      "peak_python_bytes": 138786,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 6,
+      "seconds": 0.008492749999277294,
+      "peak_python_bytes": 175022,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 7,
+      "seconds": 0.008432792004896328,
+      "peak_python_bytes": 170470,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 8,
+      "seconds": 0.008576291002100334,
+      "peak_python_bytes": 137398,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 9,
+      "seconds": 0.008561708993511274,
+      "peak_python_bytes": 173161,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 10,
+      "seconds": 0.008481834025587887,
+      "peak_python_bytes": 170995,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 11,
+      "seconds": 0.008671249990584329,
+      "peak_python_bytes": 137515,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 12,
+      "seconds": 0.008869374985806644,
+      "peak_python_bytes": 172335,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 13,
+      "seconds": 0.008426249987678602,
+      "peak_python_bytes": 170852,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 14,
+      "seconds": 0.008524250006303191,
+      "peak_python_bytes": 137591,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 15,
+      "seconds": 0.008428333007032052,
+      "peak_python_bytes": 172178,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 16,
+      "seconds": 0.008520207979017869,
+      "peak_python_bytes": 169956,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 17,
+      "seconds": 0.008698667021235451,
+      "peak_python_bytes": 138021,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 18,
+      "seconds": 0.008344166009919718,
+      "peak_python_bytes": 172690,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    },
+    {
+      "index": 19,
+      "seconds": 0.008503084012772888,
+      "peak_python_bytes": 169549,
+      "decisions": {
+        "summary": "supported",
+        "auto_prefix": "refuted",
+        "unsafe": "supported",
+        "internal": "not_runtime_verifiable",
+        "input": "supported"
+      },
+      "model_inference": false,
+      "api_calls": 0,
+      "cost_usd_actual": 0.0,
+      "verified_trace_count": 4
+    }
+  ],
+  "summary": {
+    "repetitions": 20,
+    "median_seconds": 0.008528624995960854,
+    "min_seconds": 0.008344166009919718,
+    "max_seconds": 0.009629957989091054,
+    "max_peak_python_bytes": 202061,
+    "remote_calls": 0,
+    "paid_cost_usd": 0
+  },
+  "paper_metrics": null,
+  "comparison_to_paper": "Not comparable: replay responses, synthetic tasks/tools, no LangChain/MCP or LLM inference."
+}

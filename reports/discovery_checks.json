@@ -1,0 +1,82 @@
+{
+  "timestamp_utc": "2026-11-08T07:37:22.995995+00:00",
+  "online": false,
+  "checks": [
+    {
+      "url": "https://arxiv.org/abs/2604.07536v1",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://splash-ye.github.io/",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6/",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/haris-musa/excel-mcp-server",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/zcaceres/markdownify-mcp",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/designcomputer/mysql_mcp_server",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/blazickjp/arxiv-mcp-server",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/openags/paper-search-mcp",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/upstash/context7",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/Rudra-ravi/wikipedia-mcp",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/narumiruna/yfinance-mcp",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/GongRzhe/travel-planner-mcp-server",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/Cicatriiz/healthcare-mcp-public",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    },
+    {
+      "url": "https://github.com/sunriseapps/imagesorcery-mcp",
+      "status": "not_requested_offline",
+      "authenticity": "not_assessed"
+    }
+  ],
+  "prior_observation": "2026-11-08: interactive anonymous service reported repository expired; see evidence ledger."
+}

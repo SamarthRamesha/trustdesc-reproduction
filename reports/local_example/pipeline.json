@@ -1,0 +1,11 @@
+{
+  "tool": "apply_formula",
+  "status": "completed_with_reproduction_gaps",
+  "stages": [
+    "SliceMin",
+    "DescGen",
+    "DynVer"
+  ],
+  "errors": [],
+  "seconds": 0.008186082995962352
+}
