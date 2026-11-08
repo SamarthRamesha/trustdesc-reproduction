@@ -4,6 +4,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+from importlib.resources import files
+from tempfile import TemporaryDirectory
 
 from .common.io import dump, load
 from .common.models import HTTPModel, ReplayModel
@@ -76,11 +78,14 @@ def main(argv=None):
             try:dump(args.output,verify(draft.get('description',draft),model,DisabledRunner()))
             finally:dump(str(args.output)+'.audit.json',model.audit)
         elif args.command == 'demo':
-            fixture = Path(__file__).resolve().parents[2]/'tests/fixtures'
-            if not fixture.is_dir():
-                raise ValueError('Demo requires the portable source repository, including tests/fixtures')
-            model=ReplayModel(replay())
-            run_pipeline(fixture,'apply_formula',model,ControlledAgent(model),args.output)
+            # Package data, never an imported/executed tool module. This also
+            # works when the CLI is installed independently of a source checkout.
+            source = files('trustdesc').joinpath('resources/synthetic_server.py.txt').read_text()
+            with TemporaryDirectory(prefix='trustdesc-fixture-') as tmp:
+                fixture = Path(tmp)
+                (fixture/'server.py').write_text(source)
+                model=ReplayModel(replay())
+                run_pipeline(fixture,'apply_formula',model,ControlledAgent(model),args.output)
         elif args.command == 'prepare':
             prepare(args.input,args.output,seed=args.seed,split_groups=args.group_split)
         elif args.command == 'evaluate':

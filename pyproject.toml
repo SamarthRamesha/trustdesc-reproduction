@@ -8,9 +8,13 @@ version = "0.1.0"
 description = "Evidence-tracked, bounded reimplementation of TRUSTDESC"
 requires-python = ">=3.11"
 dependencies = []
+readme = "README.md"
 
 [project.scripts]
 trustdesc = "trustdesc.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+trustdesc = ["resources/*.txt"]
