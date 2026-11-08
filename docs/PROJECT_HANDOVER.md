@@ -109,7 +109,7 @@ Measured local evidence:
 | Prepared synthetic data | 8 records, 8 null labels, two groups, zero deduplications | Synthetic mechanics only |
 | Audited test/installation | 91 original rechecked, 92 current passing on both versions; installed demo fixed | Software validation, not scientific reproduction |
 
-Original timing report names Git87c733b/dirtytree; its recorded source-content hash **exactly matches recomputation from e3de3bc**, so the source state is recoverable. Timing/paths/timestamps are not expected byte-for-byte reproducible. All original evidence remains in place. [reports/README](../reports/README.md) indexes it; `reports/publication_audit/` stores independent rechecks.
+Original timing report names Git 87c733b / dirty tree; its recorded source-content hash **exactly matches recomputation from e3de3bc**, so the source state is recoverable. Timing/paths/timestamps are not expected byte-for-byte reproducible. All original evidence remains in place. [reports/README](../reports/README.md) indexes it; `reports/publication_audit/` stores independent rechecks.
 
 Published values are **not measured here**: original TSR 84.1%(175/208), mean full 87.7%(182.5/208), mean lite 86.3%(179.5/208), Gemini generation $0.013/25.7 s per tool, lite runtime +4.0% cost/+0.2% latency, full +0.3% cost/−1.7% latency, degraded means 41.6/18.8/14.5%, adaptive range 44.7–67.4% over 15 iterations. The advertised 4.3% is relative (~3.6 percentage points), not a point gain. `reports/published_results.csv` transcribes 201 numeric entries; measured/difference fields are blank. Exact Figure 7 trajectory unavailable, not fabricated. Paper narrative/table inconsistencies are documented, not silently resolved.
 
@@ -123,22 +123,22 @@ No validated hostile-code boundary exists. Ordinary trusted project subprocesses
 
 ## Current blockers and manual requirements
 
-1. **Artifact recovery:** suggested anonymous repository service reports expiry; its linkage to the supplied PDF is unverified. Public searches/namequery found no authenticated alternate. Check EVIDENCE_LEDGER before new discovery; do not repeat failed endpoints indefinitely or treat unrelated citations as original code.
+1. **Artifact recovery:** suggested anonymous repository service reports expiry; its linkage to the supplied PDF is unverified. Public searches/name query found no authenticated alternate. Check EVIDENCE_LEDGER before new discovery; do not repeat failed endpoints indefinitely or treat unrelated citations as original code.
 2. **Benchmark:** task/tool/commit/label details missing. No additional local setup can supply these missing records. Reconstructed datasets must remain labeled reconstructed.
 3. **Model access:** original four configurations never run; no paid API approval/key provided. Optional small Qwen GPU path also unrun and is not equivalent to original model hardware.
-4. **Isolation/MCP:** real isolated Runner and original LangChain/MCP integration not implemented/validated; source execution requires user approval and a real boundary, not an ordinarysubprocess.
+4. **Isolation/MCP:** real isolated Runner and original LangChain/MCP integration not implemented/validated; source execution requires user approval and a real boundary, not an ordinary subprocess.
 5. **Fidelity:** TypeScript, dispatch fallback, full resolver, semantic rewrite validation, iterative DynVer correction and schema certification incomplete.
-6. **Colab:** student must manually select runtime, upload checksum-verified project archive, opt into optional downloads, handle restart/CUDA compatibility, review actualresults and export checkpoints. No account/Drive connection by the assistant.
+6. **Colab:** student must manually select runtime, upload checksum-verified project archive, opt into optional downloads, handle restart/CUDA compatibility, review actual results and export checkpoints. No account/Drive connection by the assistant.
 7. **Publication rights/access:** private repository only, LICENSE reserves rights. Public visibility/open-source licensing, additional third-party access, spending/source transmission or outbound author messages need explicit authorization.
 
 ## Exact next actions in priority order
 
 1. Read README, this handover, completion audit, relevant source and preserved evidence. Check `git status`, current main HEAD, remotes and recent commits; do not restart implementation.
-2. Recover/authenticate original release and exact benchmark/prompts/model settings; preserve URL/commit/license/failureledger. Do not contact anyone without explicit message authorization.
+2. Recover/authenticate original release and exact benchmark/prompts/model settings; preserve URL/commit/license/failure ledger. Do not contact anyone without explicit message authorization.
 3. Build pinned source/task manifests and validate counts/unknown labels/licenses. Keep raw/restricted data outside Git and archives; never silently replace the original benchmark.
 4. Address parser/registration/resolution gaps needed by actual benchmark, starting from existing functions and unresolved sites. Use reviewed static cases without executing external code.
 5. Design/install/probe an isolated MCP Runner after appropriate user authorization: no host secrets, constrained egress, deadlines/cleanup/resource/log caps, source hash binding and authenticated traces. Keep default disabled until validated.
-6. Obtain explicit model cost/data transmission approval before paid calls. Freeze exact prompt/model IDs/reasoning/settings; run real classifier/generation/task/judge stages, preserving raw outputs and failures. OptionalQwen remains an alternative setting.
+6. Obtain explicit model cost/data transmission approval before paid calls. Freeze exact prompt/model IDs/reasoning/settings; run real classifier/generation/task/judge stages, preserving raw outputs and failures. Optional Qwen remains an alternative setting.
 7. Execute matched original/full/lite tasks, manually review target invocation AND objective success, then compute TSR/common-success overhead with repetitions/uncertainty. Keep every original-condition cell blank until measured.
 8. Reproduce degraded-tool, attack and adaptive experiments from genuine artifacts; only then evaluate capstone extensions, conditional behavior, explanations and hybrid policy against a measured baseline. No untested improvement claims.
 

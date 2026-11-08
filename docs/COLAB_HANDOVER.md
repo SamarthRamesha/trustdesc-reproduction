@@ -1,5 +1,7 @@
 # Independent Colab handover
 
+Publication audit update: obtain source from the private GitHub repository and follow [FRESH_ENVIRONMENT_SETUP](FRESH_ENVIRONMENT_SETUP.md), or use the newly generated audited archive and **its own** checksum. The original ZIP remains a historical snapshot. The notebook's upload cell accepts one ZIP and validates its supplied checksum/manifest; the internal extraction root is unchanged. Original 91-test evidence is preserved; current source has 92 tests after the installed-CLI fixture fix. CPU notebook cells were independently rerun in source copies; actual Colab/GPU/upload/export remain unrun. New experiment runs should use a separate clone/copy so fixed report filenames do not overwrite historical evidence.
+
 The notebook is `notebooks/colab/phase1_handover.ipynb`. Use the delivered ZIP and its `.sha256` companion. No Codex connection, Google Drive mount, account integration or private PDF upload is needed. The student opens Colab themselves. Nothing has been uploaded by this implementation session.
 
 ## Choose the workload

@@ -1,5 +1,7 @@
 # Dataset analysis and preparation
 
+Audit continuation: original dataset/source evidence below is preserved. Fresh-copy preparation reproduces the original synthetic input/output hashes exactly; all eight labels remain null. Installed CLI fixture source is now bundled as inert package data, byte-identical to the original synthetic `tests/fixtures/server.py`; this is not another real-world dataset. See the [completion audit](PHASE1_COMPLETION_AUDIT.md) and [data availability guide](../data/README.md).
+
 ## What the original paper provides
 
 The evaluation is an author-constructed task benchmark, not a supervised training dataset. Table 1 gives 12 server source links and counts totaling 52 tools; §5.1 describes 208 tasks (two from original and two from generated descriptions per tool). Exact selected tool IDs, commits, task strings, labels, source snapshots and raw traces were not obtained. There is no original train/validation/test split to reconstruct. See `paper_servers.json` and `paper_attacks.json` for source traceability and `EVIDENCE_LEDGER.md` for availability.

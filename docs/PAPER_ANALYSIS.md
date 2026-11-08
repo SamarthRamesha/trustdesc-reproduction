@@ -1,5 +1,7 @@
 # TRUSTDESC paper analysis
 
+Publication audit note: paper fingerprint/page count and the implementation's correspondence to §§4–5 were independently rechecked before private publication. The scientific interpretation below remains the baseline; [PHASE1_COMPLETION_AUDIT](PHASE1_COMPLETION_AUDIT.md) maps current source functions to every identified deviation. Passing tests or publication does not establish faithful reproduction.
+
 Primary source: Ye, Zhang, Jia and Hu, **TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation**, arXiv:2604.07536v1, 8 April 2026. [Versioned record](https://arxiv.org/abs/2604.07536v1). All page numbers below refer to the supplied PDF's printed pages. Read all 17 pages, including four reference pages; visually checked Figures 5–7 and Tables 1–7. PDF SHA-256: `c0aed54402c07dc9420b908339fddfbed8eb40a2c316910489d0da28426c8cb4`. PDF metadata and page count, rather than the inaccurate initial `file` page estimate, identify this version. Local extraction is a reading aid, not a replacement scientific source.
 
 ## Problem and scope (§§1–3, pp. 1–6)

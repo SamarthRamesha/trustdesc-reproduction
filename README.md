@@ -81,7 +81,7 @@ Use [Colab handover](docs/COLAB_HANDOVER.md) with `notebooks/colab/phase1_handov
 
 The user-suggested anonymous artifact reports expiry; connection to this PDF remains unverified. Exact original prompts, 52 tool IDs/commits, 208 task texts, labels/logs and dated model identifiers were not obtained. The original source pool is **not** the original benchmark dataset. Original conditions require artifact recovery, licensed pinned source acquisition, a validated isolated runtime, and separately authorized model access. See [evidence ledger](docs/EVIDENCE_LEDGER.md) for discovery attempts and [limitations](docs/LIMITATIONS.md) for what the current software cannot establish.
 
-Git is local only; nothing was pushed or published. The portable ZIP excludes the virtual environment, `.git`, raw external data, private PDF and secrets. Run `scripts/package_project.py` to regenerate it after committing changes.
+The original Phase 1 snapshot was local only. This audit extends it into [the private GitHub repository](https://github.com/SamarthRamesha/trustdesc-reproduction), preserving all earlier commits. The portable ZIP excludes the virtual environment, `.git`, raw external data, private PDF and secrets. Create a **new, separately named** audited ZIP with `scripts/package_project.py --output ../trustdesc-audited-phase1.zip` after committing changes; retain the original archive as historical evidence.
 
 ## Repository map and continuation
 
