@@ -1,0 +1,11 @@
+{
+  "status":"External input contract, not a fabricated dataset",
+  "origin":"author_released (requires human-authenticated provenance) or reconstructed",
+  "provenance":"Required author/release URL and acquisition verification evidence",
+  "sources":"List of {ref, path relative to bundle.json, url, revision, license}; code parsed as data only",
+  "tools":"List of {id, name, source_ref, entry (module:function override or null), language, original_description:{summary,functionalities,input_schema}, origin}; backend forcibly disabled for supplied code",
+  "tasks":"List of {id, tool_id, task, origin, provenance}; original candidate must have 52 tools and 208 tasks, no invented rows",
+  "reviews":"Original labels cannot automatically label new traces; import only explicit human CSV labels bound to current result_id/evidence_hash",
+  "execution":"Automatic static/generation/planning possible with configured models. Arbitrary MCP execution is blocked until a separately validated isolated Runner exists.",
+  "models":"Select exact provider IDs in the notebook's single configuration cell; configs/colab_models.json preserves all four paper display names, temperature .2 and provider-default reasoning"
+}

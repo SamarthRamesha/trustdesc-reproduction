@@ -30,10 +30,13 @@ class ControlledAgent:
     This exercises real fixture functions, but is NOT a sandbox and cannot load
     arbitrary tools. It replaces the paper's LangChain/MCP agent for safe tests.
     """
-    def __init__(self, model, *, max_steps=6):
+    def __init__(self, model, *, max_steps=6, tool_descriptions=None):
         if type(max_steps) is not int or not 1 <= max_steps <= 20:
             raise ValidationError('max_steps must be 1..20')
         self.model, self.max_steps = model, max_steps
+        if tool_descriptions is not None and (not isinstance(tool_descriptions, dict) or not set(tool_descriptions).issubset(SCHEMAS)):
+            raise ValidationError('Descriptions may only name the fixed fixture tools')
+        self.tool_descriptions = tool_descriptions
 
     def run(self, task):
         nonempty(task, 'task')
@@ -41,8 +44,11 @@ class ControlledAgent:
         start = time.perf_counter()
         try:
             for step in range(self.max_steps):
+                tools = SCHEMAS if self.tool_descriptions is None else {
+                    name: {'input_schema': SCHEMAS[name], 'description': desc}
+                    for name, desc in self.tool_descriptions.items()}
                 action = self.model.complete('agent', AGENT,
-                                             {'task': task, 'tools': SCHEMAS, 'observations': events, 'step': step})
+                                             {'task': task, 'tools': tools, 'observations': events, 'step': step})
                 if action.get('action') == 'finish':
                     require_fields(action, {'action', 'answer'}, 'finish action')
                     nonempty(action['answer'], 'answer')

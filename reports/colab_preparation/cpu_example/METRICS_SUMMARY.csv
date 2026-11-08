@@ -1,0 +1,4 @@
+model,variant,tasks_total,eligible_controlled_tasks,executed,reviewed,condition_complete_for_reviewed_scope,TSR_percent,mean_latency_seconds,mean_cost_usd,mean_input_tokens,mean_output_tokens,scope,model_mode
+replay,full,8,8,8,0,False,,0.002518525998311816,0.0,,,"Controlled fixture subset only; synthetic/reconstructed, never original 208",synthetic_replay
+replay,lite,8,8,8,0,False,,0.0023199478746391833,0.0,,,"Controlled fixture subset only; synthetic/reconstructed, never original 208",synthetic_replay
+replay,original,8,8,8,0,False,,0.0022738282423233613,0.0,,,"Controlled fixture subset only; synthetic/reconstructed, never original 208",synthetic_replay

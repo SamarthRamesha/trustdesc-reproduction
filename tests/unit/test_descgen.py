@@ -13,6 +13,16 @@ from trustdesc.fixtures import DESCRIPTION
 
 
 class DescriptionTests(unittest.TestCase):
+    def test_http_malformed_response_is_saved_without_credential(self):
+        secret='synthetic-credential-for-transport-test'
+        m=HTTPModel('https://example.com/v1','test',api_key=secret,allow_remote=True,allow_paid=True)
+        env={'choices':[{'finish_reason':'stop','message':{'content':'invalid JSON '+secret}}]}
+        with patch.object(m._opener,'open',return_value=io.BytesIO(json.dumps(env).encode())):
+            with self.assertRaises(ModelError):m.complete('test','system',{})
+        self.assertEqual(m.audit[0]['status'],'failed')
+        self.assertIn('raw_content',m.audit[0])
+        self.assertNotIn(secret,json.dumps(m.audit))
+
     def test_gpu_download_gate_without_importing_dependencies(self):
         with self.assertRaises(ModelError):TransformersModel()
 

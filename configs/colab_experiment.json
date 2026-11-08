@@ -1,0 +1,13 @@
+{
+  "schema_version":1,
+  "profile":"A",
+  "selected_model_ids":["replay"],
+  "seed":42,
+  "agent_max_steps":6,
+  "generate_reconstructed_tasks":false,
+  "original_resources_bundle":null,
+  "original_candidate_policy":"Activate only supplied provenance-bearing bundle with 52 tools/208 tasks; still no external execution until isolated Runner exists",
+  "acquire_public_source":true,
+  "runtime_model_substitution":"never automatic",
+  "paid_models_enabled":false
+}

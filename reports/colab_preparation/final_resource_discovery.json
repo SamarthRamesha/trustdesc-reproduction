@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-08",
+  "attempt_policy": "one bounded final sweep; no further retries",
+  "checks": [
+    {
+      "check": "github_search",
+      "url": "https://api.github.com/search/repositories?q=trustdesc+in:name,description&per_page=20",
+      "http_status": 200,
+      "data": {
+        "total_count": 0,
+        "repositories": []
+      }
+    },
+    {
+      "check": "author_group",
+      "url": "https://api.github.com/orgs/PSU-Security-Universe/repos?per_page=100",
+      "http_status": 200,
+      "data": {
+        "repository_names": [
+          "sqlright-artifact",
+          "sqlright",
+          "viper",
+          "data-only-attacks",
+          "viper-artifact",
+          "badass",
+          "countdown",
+          "sack"
+        ]
+      }
+    },
+    {
+      "check": "anonymous_artifact",
+      "url": "https://anonymous.4open.science/api/repo/ae-trustdesc-13A6",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 401: Unauthorized"
+    }
+  ],
+  "web_checks": [
+    "Author homepage: matching paper, no original artifact release observed",
+    "Public exact-title/artifact searches returned citations, no authenticated benchmark release"
+  ],
+  "conclusion": "No authenticated original code/task/prompt release recovered. Own SamarthRamesha repository is a reimplementation, not author release."
+}

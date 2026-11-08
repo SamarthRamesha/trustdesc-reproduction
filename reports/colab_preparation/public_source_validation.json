@@ -1,0 +1,25 @@
+{
+  "source_preparation": "passed",
+  "third_party_execution": false,
+  "tool_count": 3,
+  "synthetic_tasks": 8,
+  "public_original_description_extracted": true,
+  "python_files": 31,
+  "reachable_functions": 23,
+  "unresolved_calls": 194,
+  "source_provenance": {
+    "repository": "blazickjp/arxiv-mcp-server",
+    "paper_connection": "Table 1 p.9 hyperlink; this is a tool source, not the TRUSTDESC implementation",
+    "commit": "572e301bb3198962c025d5ed5e14becb86868daa",
+    "url": "https://codeload.github.com/blazickjp/arxiv-mcp-server/zip/572e301bb3198962c025d5ed5e14becb86868daa",
+    "archive_sha256": "933aaafd43e4e166caccbf5cc46fff0f52fdb3c733e58d03a5253b4ca4b12158",
+    "archive_bytes": 490822,
+    "license": "Apache-2.0",
+    "license_evidence": "Public GitHub repository API metadata plus inspected LICENSE in pinned archive",
+    "acquired_on": "2026-11-08",
+    "execution": "none; text/AST inspection only",
+    "redistributed_in_portable_archive": false,
+    "paper_revision_match": "unknown"
+  },
+  "CPU_notebook_network_download": "not exercised; existing checksum-pinned local archive used"
+}

@@ -1,0 +1,3 @@
+model,tool_id,origin,backend,static_status,descgen_status,dynver_status,reachable_functions,unresolved_calls
+replay,apply_formula,synthetic,controlled_fixture,completed,completed,completed,4,5
+replay,normalize_name,synthetic,controlled_fixture,completed,completed,completed,1,2

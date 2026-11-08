@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "id": "replay",
+      "provider": "replay",
+      "model_id": "synthetic-replay-v1",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_calls": 200,
+      "debloat": false,
+      "classification": "software validation only; no inference"
+    },
+    {
+      "id": "qwen-small",
+      "provider": "transformers",
+      "model_id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+      "seed": 42,
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_input_tokens": 4096,
+      "max_new_tokens": 2048,
+      "minimum_gpu_bytes": 8589934592,
+      "max_calls": 200,
+      "debloat": false,
+      "classification": "alternative model, not original paper",
+      "minimum_ram_bytes": 8589934592
+    },
+    {
+      "id": "qwen-large",
+      "provider": "transformers",
+      "model_id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+      "seed": 42,
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_input_tokens": 4096,
+      "max_new_tokens": 2048,
+      "minimum_gpu_bytes": 25769803776,
+      "max_calls": 200,
+      "debloat": false,
+      "classification": "alternative high-memory option; real inference unvalidated locally",
+      "minimum_ram_bytes": 21474836480
+    },
+    {
+      "id": "paper-claude",
+      "paper_name": "Claude-4.5-Sonnet",
+      "provider": "http",
+      "model_id": null,
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "credential_name": "TRUSTDESC_API_KEY",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_new_tokens": 4096,
+      "max_calls": 200,
+      "price_per_million": {
+        "input": null,
+        "output": null
+      },
+      "classification": "paper model name; exact provider snapshot not supplied by paper"
+    },
+    {
+      "id": "paper-gemini",
+      "paper_name": "Gemini-3-Flash",
+      "provider": "http",
+      "model_id": null,
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "credential_name": "TRUSTDESC_API_KEY",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_new_tokens": 4096,
+      "max_calls": 200,
+      "price_per_million": {
+        "input": null,
+        "output": null
+      },
+      "classification": "paper generation/execution display name; original ReAct/MCP runtime unavailable"
+    },
+    {
+      "id": "paper-gpt",
+      "paper_name": "GPT-5.2",
+      "provider": "http",
+      "model_id": null,
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "credential_name": "TRUSTDESC_API_KEY",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_new_tokens": 4096,
+      "max_calls": 200,
+      "price_per_million": {
+        "input": null,
+        "output": null
+      },
+      "classification": "paper model name; provider ID must be explicitly verified"
+    },
+    {
+      "id": "paper-oss",
+      "paper_name": "gpt-oss-120b",
+      "provider": "http",
+      "model_id": null,
+      "endpoint": null,
+      "credential_name": "TRUSTDESC_API_KEY",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_new_tokens": 4096,
+      "max_calls": 200,
+      "price_per_million": {
+        "input": null,
+        "output": null
+      },
+      "paper_hardware": "4 RTX PRO 6000 Blackwell GPUs; no claim of single-Colab equivalence",
+      "classification": "explicit original setting; needs separately configured authenticated HTTPS endpoint; unavailable by default"
+    }
+  ],
+  "profile_policy": {
+    "A": "CPU core/replay/static; no credentials",
+    "B": "CUDA GPU with at least 8 GiB free: optional small Qwen",
+    "C": "40 GB-class GPU with >=32 GiB free recommended; 7B opt-in needs >=24 GiB GPU and >=20 GiB host RAM; estimates, not measured guarantees",
+    "D": "explicit configured paper display names; no automatic paid calls or hardware equivalence"
+  },
+  "model_revision_evidence": "Public official HF model metadata API, checked 2026-11-08; no weights downloaded during preparation"
+}

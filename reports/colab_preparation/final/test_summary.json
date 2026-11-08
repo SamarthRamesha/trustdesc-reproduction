@@ -1,0 +1,17 @@
+{
+  "tests": 119,
+  "passed": 119,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "python_versions": [
+    "3.13.9",
+    "3.11.14"
+  ],
+  "commands": [
+    "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v",
+    "PYTHONPATH=src /opt/homebrew/bin/python3.11 -m unittest discover -s tests -v",
+    "python3 scripts/validate_full_colab.py --execute-cpu --output reports/colab_preparation/final/notebook_cpu_validation.json"
+  ],
+  "coverage": "Core regression, 24 condition task records, explicit review metric rules, checkpoint/resume, stale rejection, partial failure, cache recovery, credential redaction, whitelist export/restore; not actual GPU/paid/Colab GUI verification"
+}

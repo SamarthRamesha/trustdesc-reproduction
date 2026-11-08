@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import os
 
 from .io import canonical, digest, ValidationError
 from .models import ModelError
@@ -27,18 +28,21 @@ class TransformersModel:
     mode = 'experimental_small_model_inference'
 
     def __init__(self, *, allow_download=False, revision='2e1fd39', seed=42,
-                 max_input_tokens=4096, max_new_tokens=2048):
+                 max_input_tokens=4096, max_new_tokens=2048,
+                 model_id='Qwen/Qwen2.5-Coder-1.5B-Instruct', temperature=0.2):
         if not allow_download:
             raise ModelError('Public model download requires explicit opt-in')
         if not re.fullmatch(r'[0-9a-f]{7,40}', revision):
             raise ModelError('A fixed model commit revision is required')
+        os.environ['HF_HUB_DISABLE_TELEMETRY']='1'
         import torch
         import transformers
         from transformers import AutoModelForCausalLM, AutoTokenizer
         if not torch.cuda.is_available():
             raise ModelError('Optional experiment requires a CUDA GPU; run the CPU fixture track instead')
         self.torch = torch
-        self.model_id = 'Qwen/Qwen2.5-Coder-1.5B-Instruct'
+        self.model_id = model_id
+        self.temperature = temperature
         self.revision, self.seed = revision, seed
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, revision=revision,
                                                         trust_remote_code=False, token=False)
@@ -49,6 +53,7 @@ class TransformersModel:
         self.max_input_tokens, self.max_new_tokens = max_input_tokens, max_new_tokens
         self.audit = []
         self.runtime = {'torch': torch.__version__, 'transformers': transformers.__version__,
+                        'torch_cuda_version': torch.version.cuda,
                         'GPU': torch.cuda.get_device_name(0), 'revision_requested': revision,
                         'resolved_commit': getattr(self.model.config, '_commit_hash', None),
                         'precision': 'float16', 'attention': 'eager'}
@@ -64,7 +69,7 @@ class TransformersModel:
         self.torch.cuda.synchronize()
         start = time.perf_counter()
         with self.torch.inference_mode():
-            output = self.model.generate(**inputs, do_sample=True, temperature=0.2,
+            output = self.model.generate(**inputs, do_sample=True, temperature=self.temperature,
                          max_new_tokens=self.max_new_tokens, pad_token_id=self.tokenizer.eos_token_id)
         self.torch.cuda.synchronize()
         tokens = output[0][n:]

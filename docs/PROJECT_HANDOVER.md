@@ -1,5 +1,15 @@
 # Central research and engineering handover
 
+## Final MacBook preparation: Part 2 entry point
+
+Open [TRUSTDESC_FULL_REPRODUCTION.ipynb](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb) in Colab and follow sections 1–16. The final project package/checksum, [operator guide](COLAB_EXPERIMENT_GUIDE.md) and updated [handover](COLAB_HANDOVER.md) are complete; do not initiate another MacBook preparation cycle. Next actions are personal Colab execution and export of TRUSTDESC_COLAB_RESULTS.zip/.sha256 for Part 3.
+
+New orchestration is under `src/trustdesc/experiments/`: `runtime.inspect_runtime`, `setup.prepare_inputs`, `Workflow.static/descriptions/verification/reconstruct_tasks/benchmark`, `ModelPool`/`LoggedModel`, `Store.job`, `review.submit_review/review_widget/import_reviews`, `report.analyze` and `export.export_results/restore_results`. These call existing SliceMin/DescGen/DynVer/evaluation functions, not a substitute pipeline. `ControlledAgent` now optionally receives actual condition descriptions while retaining its fixed executable allowlist. The existing Transformers adapter accepts explicit alternate model IDs/limits, with original defaults preserved; failed HTTP raw responses are audited with credential redaction.
+
+The available default is two authored fixtures/eight synthetic tasks × original/lite/full =24 task records/model, real controlled calls, replay semantic stages, explicit human review, immutable attempts/checksums/config-data-source-code-model-runtime binding, failure continuation, measured reports/plots and whitelisted result export. Optional real-model tasks remain alternatives/reconstructed; original resources have an activation contract and external execution stays disabled. The current full suite passes 119 tests on Python 3.13.9 and 3.11.14, with 19 notebook cells compiled and 18 CPU cells executed locally. All original research evidence and prior Git history remain intact. The older 91/92-test validations below describe earlier snapshots; new validation evidence is under `reports/colab_preparation/`.
+
+One final bounded artifact check recovered no authenticated original release. Public HF model metadata provided full fixed Qwen revisions, not author artifacts; no weights/GPU inference/paid model/actual Colab GUI execution occurred locally. Current scientific conclusion remains incomplete reproduction. Do not treat static/public/reconstructed data as the exact original 52/208 benchmark.
+
 Read this document as a continuation record for an existing project. **Full scientific reproduction of TRUSTDESC has not been established.** Working software, passing tests and complete documentation refer to the bounded scope described here.
 
 ## Project identity and version

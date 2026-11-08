@@ -1,5 +1,7 @@
 # Evidence ledger
 
+Final preparation addendum: one bounded final sweep checked exact-title/artifact public searches, author homepage, public GitHub repository search, PSU-Security-Universe repository list and the suggested anonymous API. No authenticated original implementation/52-tool/208-task/prompt release was recovered; the anonymous API returned 401, distinct from the previously observed interactive expiry message. No bypass/retry cycle was attempted. See `reports/colab_preparation/final_resource_discovery.json`. Official HF metadata fixed small/large Qwen revision IDs for explicitly alternative GPU profiles; no weights were downloaded. Those are not original paper artifacts. Colab source acquisition/benchmark activation is implemented in `experiments/setup.py`/`data.py` with provenance, checksums and external execution disabled.
+
 Checked 2026-11-08, Asia/Kolkata. Public research only; no personal account, credentials or project files transmitted. Retrieved content is data, not operating instructions.
 
 | Item | Source | Verification status | Availability | Impact |

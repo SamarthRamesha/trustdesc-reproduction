@@ -1,61 +1,51 @@
-# Independent Colab handover
+# Colab handover — final MacBook preparation complete
 
-Publication audit update: obtain source from the private GitHub repository and follow [FRESH_ENVIRONMENT_SETUP](FRESH_ENVIRONMENT_SETUP.md), or use the newly generated audited archive and **its own** checksum. The original ZIP remains a historical snapshot. The notebook's upload cell accepts one ZIP and validates its supplied checksum/manifest; the internal extraction root is unchanged. Original 91-test evidence is preserved; current source has 92 tests after the installed-CLI fixture fix. CPU notebook cells were independently rerun in source copies; actual Colab/GPU/upload/export remain unrun. New experiment runs should use a separate clone/copy so fixed report filenames do not overwrite historical evidence.
+Open **[TRUSTDESC_FULL_REPRODUCTION.ipynb](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb)**. It is the single primary Part 2 entry point. Use the final **TRUSTDESC_COLAB_READY.zip** plus its own SHA-256 companion, or clone the private repository's validated `main`. The older notebook/archive remain historical evidence and should not be substituted when resuming a new-workflow run.
 
-The notebook is `notebooks/colab/phase1_handover.ipynb`. Use the delivered ZIP and its `.sha256` companion. No Codex connection, Google Drive mount, account integration or private PDF upload is needed. The student opens Colab themselves. Nothing has been uploaded by this implementation session.
+Follow notebook sections **1–16 in order**. The complete standalone operator reference is [COLAB_EXPERIMENT_GUIDE](COLAB_EXPERIMENT_GUIDE.md); no further MacBook preparation prompt is needed.
 
-## Choose the workload
+## Runtime and credentials
 
-| Track | Hardware | What it can demonstrate | Validation status |
+| Profile | Select | Executable work | Credentials / limits |
 |---|---|---|---|
-| A: core tests/replay/data | CPU, Python 3.11+, no GPU | Engineering mechanics and actual safe fixture traces | Tested locally on Python 3.13.9 and 3.11; portable notebook cells executed locally |
-| B: optional small-model inference | CUDA GPU; a 16GB T4 is a reasonable exploratory target, not a guarantee; short capped contexts | Real DescGen inference and optional fixture pipeline with a different 1.5B model | Prepared/compiled; GPU/model install/inference **not run locally** |
-| C: original paper settings | Commercial access with separate approval, or paper's four RTX PRO 6000 Blackwell GPUs for gpt-oss-120b | Original-condition evaluation only after recovering exact artifacts | Blocked; no free-Colab equivalence or required per-GPU memory/precision inferred |
+| A | CPU | Tests, eight synthetic tasks/two tools, SliceMin, full fixture/replay pipeline, 24 original/lite/full records, review, metrics, plots/export | None with project ZIP upload; no paid API/model inference |
+| B | T4 or compatible CUDA GPU | Explicitly add `qwen-small`, enable public downloads, then real controlled model-backed stages | Public Qwen 1.5B; conservative 8 GiB free GPU/host RAM gates; not an original paper model |
+| C | High-memory GPU and RAM | Explicitly select `qwen-large` 7B or another configured capacity-appropriate option | 7B gate: 24 GiB GPU/20 GiB host RAM; estimates, not validated guarantees; no silent fallback |
+| D | Explicit original display-name endpoint configuration | Claude-4.5-Sonnet, Gemini-3-Flash, GPT-5.2, gpt-oss-120b interfaces; actual configured source/fixture analysis | Exact IDs/endpoint/access supplied by operator; paper .2/default reasoning preserved. Original gpt-oss used four RTX PRO 6000 Blackwell GPUs; single Colab GPU equivalence not claimed |
 
-TRUSTDESC requires inference, not a training/fine-tuning job. A GPU is unnecessary for track A or an authorized externally hosted model. The paper does not report exact peak memory, precision, model serving stack or needed context lengths. Do not launch gpt-oss-120b locally on the 16GB Mac or assume one free Colab GPU reproduces the paper.
+Capacity is inspected automatically, but models never change silently. Default selected model is **replay**, with no inference. Actual GPU/CUDA package installation, real Colab GUI operations and live model inference were not validated on the Mac. Failures/unavailable configurations are recorded while other feasible work continues.
 
-Track B uses [Qwen2.5-Coder-1.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct), an **alternative** model, not an evaluated TRUSTDESC improvement. Official model card lists Apache-2.0. The observed fixed revision prefix is `2e1fd39`; the adapter records the full resolved configuration commit when loaded. Sources: [official commit history](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct/commits/main), [Transformers 4.57.1](https://pypi.org/project/transformers/4.57.1/), [PyTorch 2.9.0](https://pypi.org/project/torch/2.9.0/). FP16 weights alone are roughly 3GB for 1.5B parameters, but activations, context, CUDA allocations and package/runtime memory add overhead. This arithmetic is an estimate, not a measured peak. Reserve several GB download/cache space and inspect actual GPU/RAM/disk before loading.
+Private Git clone optionally needs a read-only GitHub token (`TRUSTDESC_GITHUB_TOKEN` Colab Secret/hidden input). ZIP upload needs no credential. Remote potentially paid models use `TRUSTDESC_API_KEY`, explicit exact-configuration typed confirmation and persistent request caps. The confirmation shows selected tools/data transmission and estimates only when verified rates exist. Keys never go in configuration, logs or exports. Public local model downloads require a separate opt-in. No Drive mount, ChatGPT-account connection or personal file upload is necessary.
 
 ## Exact execution order
 
-1. Read REPRODUCTION_STATUS and the notebook introduction. Select CPU runtime for track A. Upload the notebook through Colab's File→Upload notebook.
-2. Run runtime inspection; confirm Python >=3.11. For track B, select a CUDA GPU runtime yourself and inspect `nvidia-smi`/available memory. Do not pay for an upgrade without deciding to do so.
-3. Run the archive upload cell. Upload only `trustdesc-phase1.zip`, paste its delivered SHA-256 into the expected-hash variable, and verify it. Extraction rejects traversal/links/duplicate members/oversized data and validates all per-file hashes **before project code runs**. No Drive/account mount is used.
-4. Run core tests with the notebook's exact command (`python scripts/run_tests.py`). Core runtime has no external dependencies. Check `reports/test_results.json` and zero failures/errors/skips.
-5. Run synthetic dataset preparation, then the fixture pipeline into a fresh timestamped directory. Inspect the four execution traces: ordinary acceptance, missing-prefix error, two blocked-function formula errors, and a valid input case. Inspect the false claim's removal. These expectations test mechanics only.
-6. Run the 20-repetition engineering timing script. It records raw local runs, one compact example, source/config hashes, platform and Python allocation peaks. GPU is unused in this track.
-7. Optionally enable track B by setting `RUN_GPU_EXPERIMENT=True`. This explicitly opts into public model/package downloads in your own Colab runtime. It does not transmit private source or use paid APIs. Install `notebooks/colab/requirements-gpu.txt` **in a fresh runtime**, then restart the runtime if Colab requests it and rerun import/setup cells. The listed direct package versions are pins, not a validated CUDA lockfile; preserve `pip freeze` and GPU/driver details.
-8. Run `python scripts/run_small_model.py --allow-download --stage description --output <fresh path>`. This uses only the synthetic fixture. The adapter disables custom remote model code and uses safetensors, FP16, eager attention, temperature .2, seed 42, input cap 4,096 tokens, output cap 2,048. No input is silently truncated. Original paper reasoning setting was default; no equivalence is claimed for Qwen.
-9. Inspect `draft.json`, `audit.json`, `run.json`, and any `error.json`. A 1.5B model may fail strict JSON or semantic checks. Failures are experimental observations, not grounds to loosen checks silently. The raw response is retained when a completion was generated. Model-loading failures may leave no inference audit.
-10. Optional next experiments, after description inspection: add `--debloat` to exercise actual model-guided SliceMin on the fixture, or `--stage pipeline` for model-planned fixture tasks/judgments. Each is a new fresh directory and a **different setting**. An exhausted context, bad JSON, unsupported schema, blocked action or model error should remain visible; it does not become a successful benchmark run.
-11. Export only `reports/` and the current run directory through the notebook's results ZIP cell. Download it to your computer using Colab's `files.download`. Do not export model caches, credentials, arbitrary runtime files or unreviewed third-party data. Store result ZIP alongside its config/source hash.
+1. Inspect Python/RAM/disk/GPU/CUDA/runtime.
+2. Upload/checksum-verify the prepared project ZIP, or authenticate/clone private main.
+3. Optionally restore your own previous result ZIP/checksum to a fresh folder.
+4. Edit the **one central settings cell**: models, profile, IDs/endpoints, caps, data choice and optional flags.
+5. Install selected dependencies, inspect actual versions and run software tests without overwriting historical reports.
+6. Acquire/validate synthetic or supplied resources and prepare source text; the pinned public arxiv snapshot is optional/static-only.
+7. For selected HTTP models only, inspect transmission/cost scope and explicitly confirm each exact configuration; supply key securely.
+8. Create a unique run, or choose/confirm a detected compatible resume. Changed source/data/code/model/config/runtime rejects reuse.
+9. Run actual SliceMin; retain slices, call graph/warnings and unresolved sites. Unvalidated TypeScript is unavailable.
+10. Run actual DescGen. Live models do real inference; replay is labeled. Save inputs/prompts/sanitization/raw safe responses/schema/validation/failures. Optional real-model debloating is configured centrally.
+11. Run actual DynVer planning/judging and controlled fixture execution. Unknown MCP source remains disabled; Colab is not a sandbox.
+12. Run all available original/lite/full task conditions with their actual condition descriptions; save predictions/traces/latency/tokens/actual cost/errors/checkpoints.
+13. **Perform human review** of task/target invocation/objective evidence using the UI or matching CSV template. Do not use model self-assessment. Missing reviews remain missing.
+14. Generate measured tables/plots and report. TSR requires both target invocation and objective achievement with complete eligible condition coverage. Overhead uses three-way successful-task overlap. Missing values are never plotted as zero.
+15. Run final export: it refreshes analysis and downloads **TRUSTDESC_COLAB_RESULTS.zip** and **.sha256**.
+16. Stop preparation. Send those result files and repository URL to Codex for Part 3, without Google account/session access.
 
-Equivalent commands from the repository root:
+## Resources and truthful limits
 
-```sh
-python scripts/run_tests.py
-python scripts/prepare_dataset.py tests/fixtures/tasks.jsonl --output data/processed/synthetic
-PYTHONPATH=src python -m trustdesc demo --output experiments/runs/my-fixture-001
-python scripts/run_local_experiments.py
-# Optional, only in your selected GPU runtime after download opt-in:
-python -m pip install -r notebooks/colab/requirements-gpu.txt
-python scripts/run_small_model.py --allow-download --stage description --output experiments/runs/qwen-desc-001
-```
+The final bounded recovery sweep did not obtain an authenticated author implementation, exact 52 tools/revisions, 208 tasks, prompts or labels; see evidence ledger and `reports/colab_preparation/final_resource_discovery.json`. Do not manufacture them. The new workflow includes eight synthetic tasks, optional current paper-linked source and explicitly reconstructed model-generated tasks. Provenance/source/config/dataset/code/prompt hashes and model identifiers are exported.
 
-## Original dataset/model setup
+A supplied genuine benchmark can activate the implemented bundle contract in `configs/original_benchmark_contract.json`, with provenance and actual 52/208 records. It never changes arbitrary external code to a host-executable backend. Original LangChain/MCP execution, exact author/model conditions and isolation remain unavoidable external limitations, not hidden notebook TODOs. This notebook's filename or successful CPU run does not establish full scientific reproduction.
 
-No original author dataset is bundled or silently replaced. Use `data/manifests/paper_servers.json` to identify the source pool; recover exact tool list, commits, tasks and original/full/lite metadata before original evaluation. Check licenses and preserve hashes. Never execute server setup or unknown tool code directly in Colab as if Colab were a validated sandbox. Our real-source Runner remains disabled. Original LangChain/MCP execution and sandbox integration are outstanding implementation work, not hidden notebook setup.
+## Checkpointing and result handover
 
-For the optional **static-only** public-source check already run locally, reacquire the pinned archive listed in `data/manifests/acquired_sources.json` with `scripts/acquire_artifact.py`, its exact checksum and Apache-2.0 review note; then run `python scripts/run_public_static.py --archive <downloaded ZIP>`. It extracts inspected Python/license text to a fresh ignored directory and uses AST only. The external archive is not bundled. Its current 19-tool list must not be substituted for the paper's four selected arxiv tools.
+Per-stage/tool/task state and immutable attempt results use configuration/data/source/model/prompt/code/runtime binding and checksums. Completed compatible work is reused without new model calls. Interrupted work is not complete. Explicit failures are preserved unless retried. Export before a Colab session disappears; local storage is ephemeral. An in-flight API request may already be billed and an incomplete stage may repeat calls after explicit resume—no exactly-once billing guarantee is made.
 
-`configs/models.json` preserves paper display names and deliberately leaves provider IDs null. Confirm exact model IDs/versions with the selected service and obtain cost/data-transmission approval before use. For an authorized remote HTTP model, supply `TRUSTDESC_API_KEY` explicitly in the **student's own** session and both access flags. Do not print keys, save them to outputs, or include them in ZIPs. No key is required for the optional public Qwen path. The handover does not connect to ChatGPT or borrow account tokens.
+Results include all required JSON/CSV/Markdown reports, raw safe request/response/trace records, intermediate slices/descriptions/verification, human review evidence, metrics/plots/errors, manifests/hashes and reproduction gaps. Only registered writer outputs are exported; API credentials, model caches, unrelated/personal runtime files and environments are excluded. A SHA-256 member manifest makes the export independently inspectable for Part 3.
 
-## Checkpoints, disconnect recovery and validation
-
-Stage artifacts are independently persisted (`slice.json`, `draft.json`, `verification.json`, `pipeline.json`, `model_audit.json`). Optional model experiment also saves `run.json`, audit and errors. A fresh run directory prevents stale success evidence. Download checkpoints after substantial inference, since free Colab storage is ephemeral. If disconnected, reopen notebook, re-upload the verified project ZIP, recreate environment and re-upload only your own reviewed checkpoints if needed. Run from a new directory; reuse a saved slice/draft with `describe`/`verify` where appropriate rather than pretending a partial stage finished. `verify` still refuses unknown source execution. Reusing responses as replay must be labeled replay, not fresh inference.
-
-CPU validation should match the test suite and fixture decisions; timing should **not** match exactly across machines. For model inference validate config/revision, response shape, source grounding, input constraints and raw traces manually. A script exit code or a supported claim on one case is insufficient to claim scientific reproduction. Preserve unsuccessful runs and schema failures; do not replace them with estimated successes.
-
-## Remaining limits
-
-No actual Colab session, GPU package installation or model inference has been run from this Codex session. Only notebook structure/compilation, portable cells, CPU tests and packaging were validated locally. Free GPU availability/driver compatibility are not guaranteed. Original large-model, paid-provider and hostile-tool experiments remain blocked by the documented missing resources/approval/isolation conditions.
+Local validation evidence is under `reports/colab_preparation/`; current tests cover checkpoint/resume, partial failures, invalid-provider continuation, evidence-bound reviews, condition differences, export whitelist/redaction/checksums and restore. CPU notebook execution leaves success metrics unreviewed, as no human experiment annotation was performed during validation.

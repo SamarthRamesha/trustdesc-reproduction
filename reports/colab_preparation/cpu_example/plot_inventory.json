@@ -1,0 +1,28 @@
+[
+  {
+    "plot": "task_success",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "latency",
+    "status": "measured",
+    "path": "plots/latency.png"
+  },
+  {
+    "plot": "cost",
+    "status": "measured",
+    "path": "plots/cost.png"
+  },
+  {
+    "plot": "per_tool",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "model_comparison",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "failures",
+    "status": "no_recorded_failures"
+  }
+]

@@ -1,5 +1,11 @@
 # Experiment and debugging log
 
+## Final Colab preparation validation
+
+The primary `TRUSTDESC_FULL_REPRODUCTION.ipynb` orchestrates the actual repository modules through `src/trustdesc/experiments/`. Local CPU validation runs in disposable copies, preserving all prior reports. It compiles every Python cell and executes the noninteractive CPU path with no credentials, GPU inference, paid API or arbitrary external source execution. It produces 24 task records for two tools/three conditions, real fixture traces, null/unreviewed TSR, measured latency/replay billing plots, reports and checksum export. Human-review inputs used by unit tests are scripted validation assertions, not scientific human-reviewed outcomes. Checkpoint/resume, partial failure, data/config/source mismatch rejection, provider failure continuation, safe export/restore and label constraints are tested. Raw validation/CPU example files are in `reports/colab_preparation/`; original evidence below is unchanged.
+
+Preflight caught and corrected a notebook dictionary bracket error before execution. A complete CPU run then passed. Subsequent review made actual data acquisition precede paid transmission confirmation, added host-RAM gates, exported model registry/authorization metadata, and retained safe failed HTTP responses. No parser enhancement, artifact-recovery cycle or original-result substitution occurred. GPU/actual Colab/paid inference remain explicitly unvalidated locally.
+
 ## Publication audit continuation
 
 Original records below remain unchanged. A later independent audit exports the preserved `e3de3bc` source into a working copy and reruns 91 tests on Python 3.13.9 and 3.11.14, plus the five portable notebook cells; all pass. A fresh venv/wheel installation succeeds but exposes a checkout-only `trustdesc demo` fixture dependency. Fix `4dd21f4` bundles byte-identical inert fixture text with one regression; current 92 tests pass on both versions and the installed CLI demo works from outside the checkout. No scientific algorithm or original experiment result is replaced. Audit commands/logs are appended in `reports/publication_audit/`; [PHASE1_COMPLETION_AUDIT](PHASE1_COMPLETION_AUDIT.md) records all rechecks and limits.

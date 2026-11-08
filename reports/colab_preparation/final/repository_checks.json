@@ -1,0 +1,45 @@
+{
+  "checked_files": 185,
+  "historical_blobs_checked": 151,
+  "current_secret_or_content_findings": [],
+  "historical_secret_findings": [],
+  "secret_scan_scope": "tracked/new intended files and all reachable blob objects, high-signal patterns; manual review also required",
+  "broken_local_document_links": [],
+  "python_syntax_errors": [],
+  "json_notebook_files_parsed": 49,
+  "ignore_probes": {
+    ".env": true,
+    ".env.local": true,
+    ".env.example": false,
+    ".venv-audit/bin/python": true,
+    "data/raw/sample.zip": true,
+    "data/interim/source.py": true,
+    "experiments/runs/run.json": true,
+    ".ipynb_checkpoints/file": true,
+    ".cache/file": true,
+    "result.zip": true
+  },
+  "largest_files": [
+    {
+      "path": "reports/figures/local_engineering.png",
+      "bytes": 106353
+    },
+    {
+      "path": "reports/colab_preparation/cpu_example/EXPERIMENT_RESULTS.json",
+      "bytes": 48883
+    },
+    {
+      "path": "reports/colab_preparation/final/cpu_example/EXPERIMENT_RESULTS.json",
+      "bytes": 48880
+    },
+    {
+      "path": "reports/colab_preparation/final/cpu_example/plots/latency.png",
+      "bytes": 40841
+    },
+    {
+      "path": "notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb",
+      "bytes": 38495
+    }
+  ],
+  "passed": true
+}

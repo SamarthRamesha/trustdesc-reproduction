@@ -1,0 +1,263 @@
+{
+  "python": "3.13.9 (v3.13.9:8183fa5e3f7, Oct 14 2025, 10:27:13) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "RAM_bytes": {},
+  "disk_free_bytes": 73629831168,
+  "runtime_type": "local validation"
+}
+No NVIDIA GPU / CUDA driver detected
+{
+  "python": "3.13.9",
+  "python_supported": true,
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "ram_total_bytes": 17179869184,
+  "ram_available_bytes": null,
+  "disk_free_bytes": 73629532160,
+  "gpus": [],
+  "cuda_driver_supported_version": null,
+  "packages": {
+    "torch": "2.12.0",
+    "transformers": "5.9.0",
+    "matplotlib": "3.10.8",
+    "huggingface-hub": "1.17.0",
+    "safetensors": "0.7.0"
+  },
+  "runtime_type": "local_validation",
+  "recommended_profile": "A",
+  "note": "Recommendation selects capacity profile only, never a scientific model automatically."
+}
+Recommended capacity profile: A — no model has been changed or executed.
+No checkpoint archive requested.
+{
+  "profile": "A",
+  "models": [
+    {
+      "id": "replay",
+      "provider": "replay",
+      "model_id": "synthetic-replay-v1",
+      "temperature": 0.2,
+      "reasoning": "provider_default",
+      "max_calls": 200,
+      "debloat": false,
+      "classification": "software validation only; no inference"
+    }
+  ],
+  "agent_max_steps": 6,
+  "generate_reconstructed_tasks": false
+}
+Model choice is explicit. No paid model is authorized by selecting a name alone.
+{
+  "dependency_status": [],
+  "runtime": {
+    "python": "3.13.9",
+    "python_supported": true,
+    "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "ram_total_bytes": 17179869184,
+    "ram_available_bytes": null,
+    "disk_free_bytes": 73629523968,
+    "gpus": [],
+    "cuda_driver_supported_version": null,
+    "packages": {
+      "torch": "2.12.0",
+      "transformers": "5.9.0",
+      "matplotlib": "3.10.8",
+      "huggingface-hub": "1.17.0",
+      "safetensors": "0.7.0"
+    },
+    "runtime_type": "local_validation",
+    "recommended_profile": "A",
+    "note": "Recommendation selects capacity profile only, never a scientific model automatically."
+  }
+}
+t_slicemin.SliceTests.test_cycle_terminates) ... ok
+test_decorator_name_override (unit.test_slicemin.SliceTests.test_decorator_name_override) ... ok
+test_dispatch_requires_reviewed_override (unit.test_slicemin.SliceTests.test_dispatch_requires_reviewed_override) ... ok
+test_explicit_registration (unit.test_slicemin.SliceTests.test_explicit_registration) ... ok
+test_external_and_dynamic_calls_recorded (unit.test_slicemin.SliceTests.test_external_and_dynamic_calls_recorded) ... ok
+test_llm_added_top_level_execution_rejected (unit.test_slicemin.SliceTests.test_llm_added_top_level_execution_rejected) ... ok
+test_llm_context_rewrite_and_graph_reconnect (unit.test_slicemin.SliceTests.test_llm_context_rewrite_and_graph_reconnect) ... ok
+test_llm_malformed_rewrite_rejected (unit.test_slicemin.SliceTests.test_llm_malformed_rewrite_rejected) ... ok
+test_llm_signature_change_rejected (unit.test_slicemin.SliceTests.test_llm_signature_change_rejected) ... ok
+test_missing_root (unit.test_slicemin.SliceTests.test_missing_root) ... ok
+test_missing_source_and_typescript (unit.test_slicemin.SliceTests.test_missing_source_and_typescript) ... ok
+test_module_import (unit.test_slicemin.SliceTests.test_module_import) ... ok
+test_nested_helper_reachability_excludes_unused (unit.test_slicemin.SliceTests.test_nested_helper_reachability_excludes_unused) ... ok
+test_no_import_side_effect (unit.test_slicemin.SliceTests.test_no_import_side_effect) ... ok
+test_relative_import (unit.test_slicemin.SliceTests.test_relative_import) ... ok
+test_resource_limit (unit.test_slicemin.SliceTests.test_resource_limit) ... ok
+test_symbol_redefinition_rejected (unit.test_slicemin.SliceTests.test_symbol_redefinition_rejected) ... ok
+test_symlink_outside_root_rejected (unit.test_slicemin.SliceTests.test_symlink_outside_root_rejected) ... ok
+test_syntax_error (unit.test_slicemin.SliceTests.test_syntax_error) ... ok
+
+----------------------------------------------------------------------
+Ran 119 tests in 3.404s
+
+OK
+
+{
+  "origin": "synthetic",
+  "tools": 2,
+  "tasks": 8,
+  "acquisition": {
+    "status": "synthetic_inputs_ready",
+    "public_source": "not_requested",
+    "original_artifact": "not_recovered"
+  }
+}
+{'approved_configuration_count': 0, 'credentials_printed': False}
+{'run': '/var/folders/qk/138nf5bj3615xmbntz9ftgqr0000gn/T/trustdesc-full-colab-validation-k58whhdq/validation-run', 'fingerprint': 'ef1881ceb23c217feed1e7f19007882c39ffa6a824daa31f61ef98088112f9a2', 'resumed': False, 'external_execution': 'disabled'}
+{'apply_formula': {'status': 'completed', 'reachable_functions': 4, 'unresolved_calls': 5}, 'normalize_name': {'status': 'completed', 'reachable_functions': 1, 'unresolved_calls': 2}}
+Slices, call sites, source hashes and warnings are checkpointed. Unvalidated TypeScript is unavailable, not silently approximated.
+{'replay': {'apply_formula': 'completed', 'normalize_name': 'completed'}}
+{'replay': {'apply_formula': {'status': 'completed', 'backend': 'controlled_fixture', 'usable_summary': True}, 'normalize_name': {'status': 'completed', 'backend': 'controlled_fixture', 'usable_summary': True}}}
+{'task_records': 24, 'statuses': {'completed': 24}, 'objective_labels': 'unreviewed until your explicit review', 'run': '/var/folders/qk/138nf5bj3615xmbntz9ftgqr0000gn/T/trustdesc-full-colab-validation-k58whhdq/validation-run'}
+Local validation: interactive human review not executed; success metrics must remain null.
+No review CSV requested. Widget reviews are already persisted.
+{
+  "dataset": {
+    "initial_tasks": 8,
+    "effective_tasks": 8,
+    "tools": 2,
+    "origin_counts": {
+      "synthetic": 8
+    }
+  },
+  "conditions": [
+    {
+      "model": "replay",
+      "variant": "full",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.003406671752600232,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    },
+    {
+      "model": "replay",
+      "variant": "lite",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.003045526125788456,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    },
+    {
+      "model": "replay",
+      "variant": "original",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.003130812376184622,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    }
+  ],
+  "overheads": [],
+  "failure_breakdown": {}
+}
+# Colab experiment report
+
+Run: validation-run; fingerprint: ef1881ceb23c217feed1e7f19007882c39ffa6a824daa31f61ef98088112f9a2
+
+**Not a complete scientific TRUSTDESC reproduction.** Conditions use the declared fixture/reconstructed/original-candidate provenance. Original paper values are not measurements here.
+
+## Dataset and execution coverage
+
+{
+  "initial_tasks": 8,
+  "effective_tasks": 8,
+  "tools": 2,
+  "origin_counts": {
+    "synthetic": 8
+  }
+}
+
+## Original / lite / full conditions
+
+| Model | Condition | Total | Executed | Reviewed | TSR (%) | Mean latency (s) | Mean actual API cost (USD) |
+|---|---|---:|---:|---:|---|---|---|
+| replay | full | 8 | 8 | 0 | Not available / incomplete | 0.00340667 | 0 |
+| replay | lite | 8 | 8 | 0 | Not available / incomplete | 0.00304553 | 0 |
+| replay | original | 8 | 8 | 0 | Not available / incomplete | 0.00313081 | 0 |
+
+TSR requires target invocation AND objective success, with complete human-reviewed eligible task coverage. Unreviewed predictions remain separate. Overheads use the three-way success intersection; unknown costs and zero baselines do not produce invented ratios. Replay has zero API billing but no model inference.
+
+## Failures
+
+{}
+
+## Reproduction gaps
+
+- Exact original implementation/52 selections/208 tasks/prompts/labels/model versions not recovered.
+- No validated isolated external MCP/LangChain runtime; external execution blocked.
+- Python subset only; no validated TypeScript or complete dynamic resolution.
+- Replay measures software mechanics, not LLM efficacy. Alternative models are not paper models.
+- TSR withheld until all eligible condition tasks have explicit human review; no model self-assessment used.
+- Paper values are reference only; no numeric published-versus-measured difference is meaningful for fixtures.
+- Actual Colab/GPU/model inference not validated by local notebook compilation.
+
+## Plots
+
+- {'plot': 'task_success', 'status': 'no_valid_measurements'}
+- {'plot': 'latency', 'status': 'measured', 'path': 'plots/latency.png'}
+- {'plot': 'cost', 'status': 'measured', 'path': 'plots/cost.png'}
+- {'plot': 'per_tool', 'status': 'no_valid_measurements'}
+- {'plot': 'model_comparison', 'status': 'no_valid_measurements'}
+- {'plot': 'failures', 'status': 'no_recorded_failures'}
+
+[
+  {
+    "plot": "task_success",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "latency",
+    "status": "measured",
+    "path": "plots/latency.png"
+  },
+  {
+    "plot": "cost",
+    "status": "measured",
+    "path": "plots/cost.png"
+  },
+  {
+    "plot": "per_tool",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "model_comparison",
+    "status": "no_valid_measurements"
+  },
+  {
+    "plot": "failures",
+    "status": "no_recorded_failures"
+  }
+]
+{
+  "archive": "/var/folders/qk/138nf5bj3615xmbntz9ftgqr0000gn/T/trustdesc-full-colab-validation-k58whhdq/TRUSTDESC_COLAB_RESULTS.zip",
+  "checksum_file": "/var/folders/qk/138nf5bj3615xmbntz9ftgqr0000gn/T/trustdesc-full-colab-validation-k58whhdq/TRUSTDESC_COLAB_RESULTS.zip.sha256",
+  "sha256": "dba91530ede0d16e76daf2bde2758dd5ef716bb0b1fd442489604d91f11437b0",
+  "files": 200,
+  "bytes": 330317
+}

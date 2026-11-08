@@ -1,6 +1,10 @@
 # TRUSTDESC reproduction — capstone Phase 1
 
-**Start here:** [Central project handover](docs/PROJECT_HANDOVER.md), [completion audit](docs/PHASE1_COMPLETION_AUDIT.md), and [fresh setup](docs/FRESH_ENVIRONMENT_SETUP.md). This is a private research repository on `main`, with preserved original history. **92 tests currently pass** on Python 3.13.9 and 3.11.14; the preserved historical reports contain the original 91-test baseline, which was independently rechecked before one packaging regression test was added.
+**Part 2 starts here: [TRUSTDESC_FULL_REPRODUCTION.ipynb](notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb).** Open it in Google Colab, upload the final **TRUSTDESC_COLAB_READY.zip** and its checksum (or clone private main), and execute sections **1–16**. Start with CPU/no credentials, or explicitly select T4 + `qwen-small` for an alternative-model experiment. See [Colab handover](docs/COLAB_HANDOVER.md) and the [complete operator guide](docs/COLAB_EXPERIMENT_GUIDE.md). The final MacBook preparation task ends here; no further preparation prompt is needed.
+
+The notebook orchestrates the existing modules across two controlled tools/eight synthetic tasks and all three original/lite/full conditions, with optional pinned public-source analysis and real-model stages, human review, resumable checkpoints, measured reports/plots and complete result export. Default replay produces 24 task records and withholds TSR until explicit human review. Paid models require secure keys and configuration-specific confirmation. Unknown MCP source never executes on the Colab host. Filename/CPU success does **not** establish full scientific reproduction.
+
+**Start here:** [Central project handover](docs/PROJECT_HANDOVER.md), [completion audit](docs/PHASE1_COMPLETION_AUDIT.md), and [fresh setup](docs/FRESH_ENVIRONMENT_SETUP.md). This is a private research repository on `main`, with preserved original history. **119 tests currently pass** on Python 3.13.9 and 3.11.14. Historical Phase 1/publication reports preserve the independently verified 91/92-test snapshots; final Colab preparation evidence is in `reports/colab_preparation/final/`.
 
 [GitHub publication verification](docs/GITHUB_PUBLICATION.md) records authenticated visibility/head/tree checks and tests from a fresh GitHub clone. Scientific reproduction remains incomplete.
 
@@ -77,7 +81,7 @@ Supply a replay file or an explicit HTTP endpoint/model. Remote calls additional
 
 Start with [review preparation](docs/REVIEW_PREPARATION.md), then [paper analysis](docs/PAPER_ANALYSIS.md), [methodology](docs/METHODOLOGY.md), [architecture](docs/ARCHITECTURE.md), [data analysis](docs/DATASET_ANALYSIS.md) and [decisions](docs/IMPLEMENTATION_DECISIONS.md). [Tests](reports/test_results.json), [local timing evidence](reports/local_experiments.json), [published reference values](reports/published_results.csv) and [comparison status](reports/COMPARISON.md) preserve the distinction between engineering checks and scientific results.
 
-Use [Colab handover](docs/COLAB_HANDOVER.md) with `notebooks/colab/phase1_handover.ipynb`. CPU replay works without GPU. Optional Qwen 1.5B inference is a different, unrun experimental setting; the paper's gpt-oss-120b was served on four RTX PRO 6000 Blackwell GPUs. No free-T4 equivalence is claimed.
+Use [Colab handover](docs/COLAB_HANDOVER.md) with the new primary `notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb`. The older `phase1_handover.ipynb` remains historical. CPU replay works without GPU. Optional Qwen inference is an alternative, locally unrun GPU setting; the paper's gpt-oss-120b used four RTX PRO 6000 Blackwell GPUs. No free-T4 equivalence is claimed.
 
 ## Main blockers
 

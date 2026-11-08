@@ -106,28 +106,46 @@ class HTTPModel:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         start = time.perf_counter()
+        audit = {"stage":stage,"request":request,"request_hash":digest(request),"model":self.model_id,
+                 "mode":self.mode,"status":"started","cost_usd":None}
+        self.audit.append(audit)
+        def safe_text(text):
+            return text.replace(self.api_key,'[REDACTED]') if self.api_key else text
+        def safe_value(value):
+            if isinstance(value,str):return safe_text(value)
+            if isinstance(value,list):return [safe_value(v) for v in value]
+            if isinstance(value,dict):return {safe_text(k) if isinstance(k,str) else k:safe_value(v) for k,v in value.items()}
+            return value
+        audit['request']=safe_value(request)
         try:
             req = urllib.request.Request(self.endpoint, data=canonical(request).encode(), headers=headers, method="POST")
             with self._opener.open(req, timeout=self.timeout) as response:
                 raw = response.read(2_000_001)
             if len(raw) > 2_000_000:
                 raise ModelError("Model response exceeds size limit")
+            audit['raw_http_body'] = safe_text(raw.decode('utf-8',errors='replace'))
             envelope = json.loads(raw)
+            audit.update(usage=envelope.get('usage'),resolved_model=envelope.get('model'))
             choice = envelope["choices"][0]
             if choice.get("finish_reason") not in {"stop", None}:
                 raise ModelError("Incomplete model response")
             content = choice["message"]["content"]
+            audit['raw_content'] = safe_text(content)
+            audit.pop('raw_http_body',None)
             result = json.loads(content)
             if not isinstance(result, dict):
                 raise ValidationError("Model must return a JSON object")
         except (TimeoutError, socket.timeout) as exc:
+            audit.update(status='failed',error_type=type(exc).__name__)
             raise ModelError("Model timeout; no retry performed") from exc
         except (urllib.error.URLError, KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+            audit.update(status='failed',error_type=type(exc).__name__)
             # Error bodies/credentials are deliberately not echoed.
             raise ModelError(f"Invalid or failed model response ({type(exc).__name__})") from exc
-        self.audit.append({"stage": stage, "request": request, "request_hash": digest(request),
-                           "response": result, "raw_content": content, "model": self.model_id,
-                           "resolved_model": envelope.get("model"), "mode": self.mode,
-                           "seconds": time.perf_counter() - start,
-                           "usage": envelope.get("usage"), "cost_usd": None})
+        except Exception as exc:
+            audit.update(status='failed',error_type=type(exc).__name__)
+            raise
+        finally:
+            audit['seconds']=time.perf_counter()-start
+        audit.update(response=safe_value(result),status='completed')
         return result

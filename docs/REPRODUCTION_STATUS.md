@@ -1,5 +1,7 @@
 # Reproduction status
 
+Final Colab preparation adds a complete executable **available-workflow** notebook: [TRUSTDESC_FULL_REPRODUCTION](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb), with [operator guide](COLAB_EXPERIMENT_GUIDE.md). It supports multiple tools/conditions/models, real core stages, explicit resources/profiles, condition-specific agent metadata, failure continuation, human review, safe checkpoint/resume and complete export. CPU fixture workflow runs now; live GPU/paid models depend on operator resources/access and were not run locally. Exact original benchmark/runtime/model reproduction remains blocked and is never inferred from notebook execution. Final validation: 119 tests pass on Python 3.13.9 and 3.11.14; all 19 notebook code cells compile and 18 noninteractive CPU cells execute. No further MacBook preparation step is requested.
+
 Publication audit update: the original 91-test baseline was independently rechecked on Python 3.13.9 and 3.11.14. The current suite has 92 passing tests after a real installed-CLI fixture packaging fix. Earlier reports are preserved, not overwritten. See [completion audit](PHASE1_COMPLETION_AUDIT.md), [handover](PROJECT_HANDOVER.md) and [new validation evidence](../reports/publication_audit/updated_checks.json). Full scientific reproduction remains unestablished.
 
 This project is an engineering baseline with documented blockers. **Original-condition scientific reproduction is not achieved.** “Implemented” below means working code for the stated scope, not verified parity with author artifacts.

@@ -1,0 +1,1360 @@
+{
+  "schema_version": 1,
+  "run_id": "validation-run",
+  "fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+  "generated_at": "2026-11-08T11:51:40.353210+00:00",
+  "origin": "synthetic",
+  "full_scientific_reproduction": false,
+  "conditions": [
+    {
+      "model": "replay",
+      "variant": "full",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.002518525998311816,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    },
+    {
+      "model": "replay",
+      "variant": "lite",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.0023199478746391833,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    },
+    {
+      "model": "replay",
+      "variant": "original",
+      "tasks_total": 8,
+      "eligible_controlled_tasks": 8,
+      "executed": 8,
+      "reviewed": 0,
+      "condition_complete_for_reviewed_scope": false,
+      "TSR_percent": null,
+      "mean_latency_seconds": 0.0022738282423233613,
+      "mean_cost_usd": 0.0,
+      "mean_input_tokens": null,
+      "mean_output_tokens": null,
+      "scope": "Controlled fixture subset only; synthetic/reconstructed, never original 208",
+      "model_mode": "synthetic_replay"
+    }
+  ],
+  "overheads": [],
+  "per_tool": [
+    {
+      "model": "replay",
+      "variant": "full",
+      "tool_id": "apply_formula",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    },
+    {
+      "model": "replay",
+      "variant": "full",
+      "tool_id": "normalize_name",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    },
+    {
+      "model": "replay",
+      "variant": "lite",
+      "tool_id": "apply_formula",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    },
+    {
+      "model": "replay",
+      "variant": "lite",
+      "tool_id": "normalize_name",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    },
+    {
+      "model": "replay",
+      "variant": "original",
+      "tool_id": "apply_formula",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    },
+    {
+      "model": "replay",
+      "variant": "original",
+      "tool_id": "normalize_name",
+      "TSR_percent": null,
+      "reviewed": 0,
+      "tasks": 4
+    }
+  ],
+  "failure_breakdown": {},
+  "reviewed_results": 0,
+  "predictions": [
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "accepted_formula": "=SUM(A1:A5)"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002583708002930507
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0025865419884212315,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "70774d6839b84dd187b273d95c76b1b5d242d849557bfc36daabfc80ec9a20fd",
+        "16449aac031b3bd6799a4b23b0aab7f0dd990a16b75a3841c992ebe7a8548624"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.908043+00:00",
+      "result_id": "01e826c168e06dfd753b8688a440c3a923fae2fbe961e4a648ccbe0619bc6bfe",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "original",
+      "task": "Accept formula =SUM(A1:A5).",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "5025292eb7a5b8438693a00c11479e6242de061de34b10690e597fcb9e063fb8",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0022033340064808726
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.00220604200148955,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "eb9813a8123e2ee11cfd5baec7256473009ac3cc73c2a6b8f8b91c968dc3abcf",
+        "2054e44546c4ccd15f7e0c30df97ea6f40293eedb26a91550f437d434e258289"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.912771+00:00",
+      "result_id": "9a7ec734bfee8f544f6c51cae0eaf823b2554efa66b6fbe42c585b267393610f",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "original",
+      "task": "Try formula SUM(A1:A5) without a leading equals sign.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "2770f493a2a8767a16c9187ea4ce96f51bd8ad58cce4cce2e045a57192176925",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=INDIRECT(\"A1\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0021412910136859864
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.00214320799568668,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "085c93aeff4f7786536ea90ab0b39f4a4cbdc25c93c88a8d676237cebf09d523",
+        "8f6b152e68c141350ef9a6c63f934860d8fb3fa7d1d66a30bebd9481d09c76a9"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.917168+00:00",
+      "result_id": "23dd43cef48821d0c975d86bce345c7479e39b320c2bb95a61c76c9978f3a760",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "original",
+      "task": "Try formula =INDIRECT(\"A1\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "9ea75a830f9f763796f4a5ff58d34bcbf7a9515adf2065e671340906164bf313",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=HYPERLINK(\"x\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0021606250084005296
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0021623329957947135,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "32360d2caa20d2dfd7f8442dabd469b679c9a4f7810a46f35fe23d9b61fb79c7",
+        "4899dfa6190ef5e059a12a7366efda926fb4188b5f4c3ea634911590a006f57d"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.921588+00:00",
+      "result_id": "e6f3f32912cd457a055ac28bd55fda44eb5a20d517ef7b22a4dda337182b4ea2",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "original",
+      "task": "Try formula =HYPERLINK(\"x\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "a361ded29b1800b57550e9b08b58b3b7bb4406c78d5068466ee260d1b5f94af9",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": " Alice "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "alice"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0021800829854328185
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.00218191699241288,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "1c8f4241b6652c6e0780fc05f77c6795a7560e452f1b54a2349f37db8893fa64",
+        "6ef9c96ffee5328e1c0091150305bb742a507b3c92e5770dcd05aaa36177f815"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.926024+00:00",
+      "result_id": "7912dbf8775371219fe1c2184d1b2e58455d9a5125281c8b1d44f08769e9a234",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "original",
+      "task": "Normalize the text \" Alice \".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "ee535b8911bb1a1719b9737c4e2cfdf3bede100b22eedd2553f1eda2858de822",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": ""
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0021809999889228493
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002182625001296401,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "1939707ad8ef716932ce3529a12afbb9f76b533a5e4fc09bcf3a6a17c91e6456",
+        "2436245c504cbffe820ee3c6c4f659071d627aa7d3ee21d99c069d7256078faf"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.930516+00:00",
+      "result_id": "3704e788aeb8986b68d54bc2a38cf7016e8197bee2b10b8c2b05f82e2cbbdc1c",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "original",
+      "task": "Normalize an empty string.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "8e63c19066397f806e26b746ac86c5b79e6f434f0225077c5fb74e73fa2dc00b",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "   "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0022240000253077596
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002225499978521839,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "db04c1dc5d7e5bc102b63614a21fd3e6132f32b98197e066452e054ebe1e0808",
+        "b7dce7a4437a12d87e51a7314863d15cb6bea90610cd3ee14171456b3b31b5ef"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.935089+00:00",
+      "result_id": "48f2b6a3128bf9f7141ab7278b857f528e37a03c2dd69bf248d60389c04d9145",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "original",
+      "task": "Normalize text containing only spaces.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "c4911e08d82add63f89744e9c6fd539d05bd1e7a04c33a2e449036ee37d17aff",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "BOB"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "bob"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002500917005818337
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002502458984963596,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "0317809e649ff5304327c02f5f3ef002f27de0147334a774c1bea640573330e8",
+        "b15a0e89b80083ded9bd44998aca68170e00674c4b467c4de8e0db96211d6455"
+      ],
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.940116+00:00",
+      "result_id": "5c6673ada50ffcc4352ee014b08b16f4828f3aea5acc58e5ecea6b664f7fc031",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "original",
+      "task": "Normalize \"BOB\".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "7c474e645cd46e017fd0aff7200bb535d364f6d53368aa678a9c423f31fc43f1",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "accepted_formula": "=SUM(A1:A5)"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.00225220900028944
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0022537499899044633,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "97c36cbf9b1fec708e289139c68df0774fabae1e236077a2a04425612986668a",
+        "342ee30a479076aaeb439996275e243c4364f7c4df878449ec4a5b5e24d25c77"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.945018+00:00",
+      "result_id": "923555630914932fd2709de01d5908f8005ee39d7dd569d3d0fb8661d0d14bd9",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Accept formula =SUM(A1:A5).",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "90a0b89d05f4091fc3a4eb16df08c94311ae9304b3b1ff99fca5eeeae8d5d3da",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002256041974760592
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0022576249903067946,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "13cdcbdbb8a1b272ce3857a0bddc38e0ae2245c92e4776fd580b4ba96d068a75",
+        "a45709040cd81c5af1e206c3e71bce81184f61e24bf1847057279a9813a7c151"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.949658+00:00",
+      "result_id": "267045ea63bb3e98984719de2e3b7c9e9723cfdddbffbbfb05aa92e951b06053",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Try formula SUM(A1:A5) without a leading equals sign.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "73576242ff4990ce36c7bdb42186aac3315a1b6146539967b46eb3b9952badad",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=INDIRECT(\"A1\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002143791993148625
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0021453330118674785,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "76ef0de97b08d43e838422300626dfb1c498011d0a4cff8d1f5ab5d513de9441",
+        "f3c94b10fb3ab2ea04c108f010ac01c0ec4031fc841212deab340eb5283571e2"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.954155+00:00",
+      "result_id": "1f7f1a178f8db3733dab47ae22a4f7316afa9f7652d0e90f2dc4874b18f85193",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Try formula =INDIRECT(\"A1\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "c1057fcd0d6f83fd4fa2b4d365e6d22c25bca5fee302060b785cfa5978a410b7",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=HYPERLINK(\"x\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002142459008609876
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002143999998224899,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "44547f6defd7a713e193a96f8780dd2484b4bf34578a42e86456aa2f3976deae",
+        "ad8d01012da81f66674b075aa9b233ae753d9ccf073b1698859345ac3ef1abf1"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.958617+00:00",
+      "result_id": "7391eb4f2ea571652beda0bf1ccf4e5db03a503edc7530a4ad404e0c489165f4",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Try formula =HYPERLINK(\"x\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "5ab73a1453dd2000f47ebe071f0498f139f97850d5ed9feab2d8a6abe6586694",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": " Alice "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "alice"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002239457971882075
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002241459005745128,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "8e40a9f269c81dbe5493facc5dbe9fb329285407aa2da97788a26a36ffd70c4d",
+        "e89591b2df9b6d75a39bb88b5e86e04925047f98d2f400020a1cb7cdaa426f48"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.963193+00:00",
+      "result_id": "a9c6e93d5c0df176802639831f8cff0750fc86cadbe87c9b61b9ddd3a40ef7db",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Normalize the text \" Alice \".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "b703b8a2074b7fdedffcbd73a0ca031efac4268a2dd6f7d1c25e1e459ca2a081",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": ""
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002510582999093458
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0025123750092461705,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "1a3781db4ef15a3549699438c9b9f03330e3f2837a84c8be09e2c94a5574ce32",
+        "0dfb41781958429ab8f7f84233b95bda4782c5670c9fae95e134d96be6915faa"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.968198+00:00",
+      "result_id": "362fe06877425c18ffc5b1a613752040c3b7ed77d459514110242343c6b81779",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Normalize an empty string.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "b0aeecc661f4477bb9bdc6b05b82306481c11fb3618595586814930e75f15009",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "   "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0027562079776544124
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0027577079890761524,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "ac0aba2bbbc85d4cff1c93e5a762fbad6c4f075b5b9e9ce8d46bc111f99dbb20",
+        "af667b05aaffb711d839e22b1d408768c8c1d8070047827c212aa80fc9033c86"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.973611+00:00",
+      "result_id": "1ecee0068522a6da2dec2c8a6a80ea2b8973b7e537e444901202d4b5d63b4a64",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Normalize text containing only spaces.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "4451f453550aa8e0ea0c3a5551acf4574235e5b2dbc00f6d72ed462aafe85f3c",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "BOB"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "bob"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002245541982119903
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.00224733300274238,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "2fa7eef855506a1bd973b24cd90d97269ec8735a1dee179b7a81c657f72006f9",
+        "0ab1686e6428b4cf78810d4dc4de8c921ca3cb85a7f74201b0353d631ca2b74c"
+      ],
+      "condition_descriptions_hash": "435cced8809be1bc445eb2252da6731daa9af1ef379d4b93996235bb9eb3d8e0",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.978423+00:00",
+      "result_id": "20eb9851e5faef4a993825eb6962e57f2e48a9e564580df7619ee335ebf6dfc6",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "lite",
+      "task": "Normalize \"BOB\".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "f57910fc44db0fcbb42b72316ecdb918a13b4ada17d0f97985591b8a3186140c",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "accepted_formula": "=SUM(A1:A5)"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002391749992966652
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0023934580094646662,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "f8f66e6d67809249a6aa04f3c1d5ce10c03904e24022f8c5603a93fc1cb36a1c",
+        "48cecfe727cfcb3b3428d0ec7f2cec56d02209ec31875609622d19d91aaf783d"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.983291+00:00",
+      "result_id": "ab89745210b90a76b768d346e3c92f6f36a94d384899cbfbc6c98af150915c30",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "full",
+      "task": "Accept formula =SUM(A1:A5).",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "a4777b0a6bb9568e24c16de32cf298be4caac649275172bc411275a6e99450b1",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002401041012490168
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002402666985290125,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "479ec3c781fbd6522f548ca17aac4edb997b65daeae12b875a472b7ffd45e9c0",
+        "b7bf502252632783787019b9cbf1783f2b148ae2401df6f79b68d674ac390435"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.988137+00:00",
+      "result_id": "3110ce293a91b646f32408dce549c1b80ac068465ddaf74875251034f95ec363",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "full",
+      "task": "Try formula SUM(A1:A5) without a leading equals sign.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "2f26fbf77b52c1688672a87c8ab8479ff7c8bdd28781e65e49c373febd3c114c",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=INDIRECT(\"A1\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002473833999829367
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002475959016010165,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "d33626554cc4ba3c3396543a2a8dd82c987b56e92a9eadd46b5ef22286778b74",
+        "5e7d0212db368128a8219d4da9296340deeffa5ac4f4cf4e005961d9855ef387"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.993143+00:00",
+      "result_id": "ff178b792a1e36ce9e95fd4ff8252dc1e3ff49c4cd2665a81b98b55ca59624de",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "full",
+      "task": "Try formula =INDIRECT(\"A1\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "3815c9fcea86119d6ea57c3d86b9e09da07b5aa16f5bf42b3cdadd82b8263c2f",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "=HYPERLINK(\"x\")"
+            },
+            "status": "tool_error",
+            "error": "Unsafe formula blocked"
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002444250014377758
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002445874997647479,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "e0ea626572b5c8e194266d4c66a469c93fc41c1740428106dcd8686dff0b2782",
+        "e4a00f619e0cfa34441173f4b0c10bd4f6cf0475ec267fb9c58e43b4f4abfb61"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:39.998083+00:00",
+      "result_id": "0683567b793b689a81930db50b32df29be49bea9112adfc319ec00184ecc41d4",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "tool_name": "apply_formula",
+      "model": "replay",
+      "variant": "full",
+      "task": "Try formula =HYPERLINK(\"x\").",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "d33021ed8cf0e8a4b0d54eaa5470790e395e09c45833f1ce00a6ce63fe775613",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": " Alice "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "alice"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.002490042010322213
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002491708000889048,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "dcfbe154273c830ed22a3200073831519d5e8b91b4971709a6bfc190459743f9",
+        "e277a9d26af8196d8fdbf3c1373eebe22c9e7c66fe276ed2a9631d2e3f084962"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:40.003193+00:00",
+      "result_id": "586ed3cf9c55da0d7165c36d870494817a1e6ffebe73049984cd65cfc6ab4315",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "full",
+      "task": "Normalize the text \" Alice \".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "ac663f4e57539c99be886ce03046ae19271f44fcb7a0cad92c455d7fc802c6d0",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": ""
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0024809999740682542
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.002482624986441806,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "8aade4d579e6fa5318bf88b8e80a576649de0d17b9b9c5b7478817ffadfb74b3",
+        "01705276882e52ee84ad5a28c7fbd3ed140d63a21638957c2a5884a1c4477fd0"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:40.008358+00:00",
+      "result_id": "63686b0a854dfaa4a774edb93a5de7d1a3d7068fc02257fa9e4804338240dd72",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "full",
+      "task": "Normalize an empty string.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "1fac8cc945204ca0ffd9984e0e82906e5fd8fedf77d5f0cb26acf43928c31fd8",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "   "
+            },
+            "status": "ok",
+            "result": {
+              "normalized": ""
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0030043330043554306
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0030062499863561243,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "75a6142d755bc813604846ddda2b8543e9d238095c00697c7fd8ed8ec9811385",
+        "bc0e5094beea4abc19165eea1a315bbba73f54299855efc8759ea0e97320ef6c"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:40.014216+00:00",
+      "result_id": "96d85567fa6f9546fc2fbfc27f88e48681d932d27922b229fe0493fb888551ac",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "full",
+      "task": "Normalize text containing only spaces.",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "0060898fa3cccd250537fb850944e87759206bf7d353156a7f0500ca0b02ca4f",
+      "human_review": null,
+      "target_invoked": null
+    },
+    {
+      "status": "completed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "BOB"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "bob"
+            }
+          }
+        ],
+        "answer": "Recorded the controlled fixture observation; human objective review required.",
+        "seconds": 0.0024468750052619725
+      },
+      "observed_target_invoked": true,
+      "latency_seconds": 0.0024496660043951124,
+      "input_tokens": null,
+      "output_tokens": null,
+      "cost_usd": 0.0,
+      "tool_calls": 1,
+      "call_record_ids": [
+        "65039023405bbd63c26b21a4a91b5436f5d169a50729a754b2c79377a6f799c9",
+        "3377ce40585615c79db0a571f84333128064dc934fd2f97fe90b14b740877f1a"
+      ],
+      "condition_descriptions_hash": "32cb4555e8f516e24eb13fc13e2ba1c7c801335e66e40bb8411021fbaad48ad3",
+      "model_mode": "synthetic_replay",
+      "objective_achieved": null,
+      "reviewed": false,
+      "recorded_at": "2026-11-08T11:51:40.019299+00:00",
+      "result_id": "e4d1d1e86602a684921c1f3256488af481486d6260eb15e5858d74f69379e7be",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "tool_name": "normalize_name",
+      "model": "replay",
+      "variant": "full",
+      "task": "Normalize \"BOB\".",
+      "dataset_origin": "synthetic",
+      "backend": "controlled_fixture",
+      "run_id": "validation-run",
+      "run_fingerprint": "6621e1fbb6d2c9908948fa614464cfd85a13c68d662ed250cb651f12fb8adf28",
+      "evidence_hash": "d22949f6184e2429ad72910abcc49c696e03dd6606a9569c31b76e08b54fd8aa",
+      "human_review": null,
+      "target_invoked": null
+    }
+  ],
+  "tool_coverage": [
+    {
+      "model": "replay",
+      "tool_id": "apply_formula",
+      "origin": "synthetic",
+      "backend": "controlled_fixture",
+      "static_status": "completed",
+      "descgen_status": "completed",
+      "dynver_status": "completed",
+      "reachable_functions": 4,
+      "unresolved_calls": 5
+    },
+    {
+      "model": "replay",
+      "tool_id": "normalize_name",
+      "origin": "synthetic",
+      "backend": "controlled_fixture",
+      "static_status": "completed",
+      "descgen_status": "completed",
+      "dynver_status": "completed",
+      "reachable_functions": 1,
+      "unresolved_calls": 2
+    }
+  ],
+  "reproduction_gaps": [
+    "Exact original implementation/52 selections/208 tasks/prompts/labels/model versions not recovered.",
+    "No validated isolated external MCP/LangChain runtime; external execution blocked.",
+    "Python subset only; no validated TypeScript or complete dynamic resolution.",
+    "Replay measures software mechanics, not LLM efficacy. Alternative models are not paper models.",
+    "TSR withheld until all eligible condition tasks have explicit human review; no model self-assessment used.",
+    "Paper values are reference only; no numeric published-versus-measured difference is meaningful for fixtures.",
+    "Actual Colab/GPU/model inference not validated by local notebook compilation."
+  ],
+  "dataset_inventory": {
+    "initial_tasks": 8,
+    "effective_tasks": 8,
+    "tools": 2,
+    "origin_counts": {
+      "synthetic": 8
+    }
+  }
+}

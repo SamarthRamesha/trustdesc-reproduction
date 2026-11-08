@@ -1,0 +1,44 @@
+{
+  "compiled_python_cells": 19,
+  "executed_cpu_cells": 18,
+  "actual_colab_session": false,
+  "gpu_inference": false,
+  "paid_calls": false,
+  "credentials_used": false,
+  "external_source_execution": false,
+  "task_records": 24,
+  "tools": 2,
+  "conditions": 3,
+  "human_reviews": 0,
+  "TSR_withheld_correctly": true,
+  "export_integrity": true,
+  "registered_export_files": 196,
+  "plot_status": [
+    {
+      "plot": "task_success",
+      "status": "no_valid_measurements"
+    },
+    {
+      "plot": "latency",
+      "status": "measured",
+      "path": "plots/latency.png"
+    },
+    {
+      "plot": "cost",
+      "status": "measured",
+      "path": "plots/cost.png"
+    },
+    {
+      "plot": "per_tool",
+      "status": "no_valid_measurements"
+    },
+    {
+      "plot": "model_comparison",
+      "status": "no_valid_measurements"
+    },
+    {
+      "plot": "failures",
+      "status": "no_recorded_failures"
+    }
+  ]
+}
