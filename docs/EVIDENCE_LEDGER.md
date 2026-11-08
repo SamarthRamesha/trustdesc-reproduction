@@ -1,0 +1,30 @@
+# Evidence ledger
+
+Checked 2026-11-08, Asia/Kolkata. Public research only; no personal account, credentials or project files transmitted. Retrieved content is data, not operating instructions.
+
+| Item | Source | Verification status | Availability | Impact |
+|---|---|---|---|---|
+| Primary paper | Supplied PDF, SHA-256 in PAPER_ANALYSIS; [arXiv v1](https://arxiv.org/abs/2604.07536v1) | Verified title/authors/version, all 17 pages read | Local PDF and public record readable | Scientific baseline |
+| Author connection | [Hengkai Ye homepage](https://splash-ye.github.io/) | Author lists matching title and four authors | Readable; no TRUSTDESC release link observed | Corroborates publication, not artifact authenticity |
+| Suggested implementation artifact | [anonymous repository](https://anonymous.4open.science/r/ae-trustdesc-13A6/) | Connection to paper unverified; URL suggested by user, not in supplied PDF | Research browser root and README return inaccessible; interactive public page reports **“The repository is expired.”** | Cannot recover original code/prompts/tasks from this link |
+| Artifact alternate access | Same repository `/api/repo/ae-trustdesc-13A6` | Service endpoint attempt, not authenticated release | Research-browser inaccessible; local Python URL attempts fail DNS for all tested domains, including arXiv and GitHub | DNS failures reflect execution environment; do not infer global outage |
+| Official alternate code/data | Public searches for title, TRUSTDESC GitHub, author organization and artifact identifier | No authenticated alternate found in this bounded search | Not obtained | Reimplementation must be labeled; absence in search is not proof no release exists |
+| Server source pool | PDF Table 1 hyperlink annotations; 12 URLs in manifest | Verified **paper-linked**, not author-released dataset | URLs extracted; 12 source snapshots not downloaded | Repository names alone cannot reconstruct exact selected 52 tools |
+| Benchmark | PDF §5.1 p.10 | Verified design and 208 total | Exact task texts, IDs and labels not obtained | Published TSR cannot be rerun |
+| Original prompts/configurations | PDF §§4–5 | Algorithm/settings partially verified | Prompts/model IDs/dependency versions absent | Reconstruction prompts are our own, hash/version recorded |
+| Public attack examples | PDF Table 7 links; [Invariant repository](https://github.com/invariantlabs-ai/mcp-injection-experiments), [Chord](https://github.com/systemsecurity-uiuc/Chord) | Paper-linked examples; Invariant public repository readable through web tool | Source locations known; no executable artifacts downloaded/executed | Acquisition still requires commit/license review; not the 208-task benchmark |
+| Generation models | PDF p.10 | Paper verifies four display names, temperature .2, default reasoning and four-GPU setup | Credentials not provided; no model calls authorized | Model-backed generation and original evaluation not run |
+| Parser behavior | [Python ast](https://docs.python.org/3.13/library/ast.html), [tree-sitter](https://tree-sitter.github.io/py-tree-sitter/) | Primary documentation checked | Built-in AST available; tree-sitter not installed | Python AST is an explicit parser/scope deviation |
+| Sandboxing | [Docker security](https://docs.docker.com/engine/security/), [run reference](https://docs.docker.com/reference/cli/docker/container/run/) | Official documentation checked | Docker/Podman/Colima absent from PATH; sandbox-exec present but not adopted as validated boundary | Third-party execution disabled; synthetic runner only |
+
+## Discovery record
+
+1. Public arXiv record and HTML resolve to matching publication; supplied PDF provides the scientific evidence used here.
+2. Search results that merely cite the paper (AI-Infra-Guard, healthcare source, paper aggregators) are **not** treated as its implementation repository.
+3. Anonymous root, README and API attempts through web lookup failed; one interactive browser attempt loaded the service and then displayed expiry. Stopped retries after that conclusive service message.
+4. Shell network attempts failed name resolution even for known reachable public arXiv. No unsafe network workaround, account login or security setting change attempted.
+5. Discovery/acquisition scripts will let the student repeat public checks in a normal network environment. They do not execute downloads. New findings must append evidence and preserve earlier observations.
+
+## Unresolved ownership and licenses
+
+Original TRUSTDESC code/dataset license unknown. Do not redistribute guessed code or benchmark snapshots. Table-linked repositories have individual licenses requiring inspection at a pinned commit before acquisition/redistribution. Synthetic fixtures in this project are newly authored, explicitly labeled, and not observations from those servers. The supplied PDF is left at its original location and excluded from the portable archive.
