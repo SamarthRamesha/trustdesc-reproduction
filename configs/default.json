@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "python_min": "3.11",
+  "seed": 42,
+  "slice": {"language": "python", "max_files": 500, "max_bytes": 5000000, "max_debloat_passes": 3},
+  "generation": {"temperature": 0.2, "reasoning_effort": "provider_default", "identifier_limit": 20},
+  "agent": {"max_steps": 6, "backend": "disabled_for_untrusted_source"},
+  "model_access": {"remote_authorized": false, "paid_authorized": false},
+  "note": "Reference defaults match code defaults; CLI overrides are explicit. No implicit API or sandbox enablement."
+}

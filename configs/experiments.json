@@ -1,0 +1,9 @@
+{
+  "seed": 42,
+  "local_repetitions": 20,
+  "local_experiment": "synthetic pipeline engineering timing; replay + real fixture operations, no inference",
+  "original_target": {"servers": 12, "tools": 52, "tasks": 208, "generation_models": 4,
+                      "conditions": ["original", "lite", "full"], "tasks_per_tool": 4},
+  "original_benchmark_available": false,
+  "online_evaluation_enabled": false
+}

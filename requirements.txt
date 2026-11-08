@@ -1,0 +1,3 @@
+# Runtime has no third-party dependencies. Python >=3.11; validated on 3.13.9.
+# Build-only pin, if installing a wheel/editable package: setuptools==80.9.0
+# No LLM, GPU, server or notebook packages are implicitly installed.

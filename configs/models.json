@@ -1,0 +1,15 @@
+{
+  "source": "Paper p.10; display names are not resolved provider IDs",
+  "temperature": 0.2,
+  "reasoning_effort": "default (unspecified by paper)",
+  "generation": [
+    {"paper_name": "Claude-4.5-Sonnet", "provider": "OpenRouter", "endpoint_model_id": null},
+    {"paper_name": "Gemini-3-Flash", "provider": "OpenRouter", "endpoint_model_id": null},
+    {"paper_name": "GPT-5.2", "provider": "OpenRouter", "endpoint_model_id": null},
+    {"paper_name": "gpt-oss-120b", "provider": "local", "endpoint_model_id": null,
+     "paper_hardware": "4 NVIDIA RTX PRO 6000 Blackwell GPUs; precision/serving stack unspecified"}
+  ],
+  "evaluation_agent": {"paper_name": "Gemini-3-Flash", "framework": "LangChain prebuilt ReAct", "endpoint_model_id": null},
+  "local_fixture": {"model_id": "synthetic-replay-v1", "inference": false, "api_calls": 0},
+  "remote_and_paid_use_authorized": false
+}
