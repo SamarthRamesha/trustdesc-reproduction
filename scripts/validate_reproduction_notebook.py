@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile every cell, optionally execute all cells with explicit software fixtures.
+"""Validate the preserved historical automatic Colab notebook with software fixtures.
 
 Fixture injection is test-only. It never claims a Colab/T4/model experiment.
 """
@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
-    nb=json.loads((ROOT/'TRUSTDESC_REPRODUCTION.ipynb').read_text())
+    nb=json.loads((ROOT/'notebooks/colab/TRUSTDESC_AUTOMATIC_COLAB.ipynb').read_text())
     ids=[c['id'] for c in nb['cells']]
     assert len(ids)==len(set(ids))
     codes=[c for c in nb['cells'] if c['cell_type']=='code']

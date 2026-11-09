@@ -94,12 +94,15 @@ def validate_evidence(response, description, spans):
 
 
 def grounded_generate(slice_result, model):
+    from .context import implementation_context
+    context=implementation_context(slice_result)
     signature = interface(slice_result)
     template = {k: copy.deepcopy(signature[k]) for k in ['type','properties','required']}
     sanitized = sanitize(slice_result['source'], IdentifierGuard(model))
     generated = model.complete('description', GENERATE_COMPACT,
                    {'tool': slice_result['tool'], 'entry': slice_result['entry'], 'code': sanitized['source'],
-                    'input_schema_template': template})
+                    'input_schema_template': template,
+                    'implementation_context':{k:context[k] for k in ['records','dependencies']}})
     if not isinstance(generated, dict) or set(generated) - {'summary','functionalities','input_schema','claims'}:
         raise ValidationError('Unexpected generated description fields')
     description = {k: copy.deepcopy(generated[k]) for k in ['summary','functionalities','input_schema']}
@@ -116,6 +119,7 @@ def grounded_generate(slice_result, model):
                     {'claims': draft['description']['claims'], 'functions': slice_result['evidence_spans']})
     evidence = validate_evidence(attributed, draft['description'], slice_result['evidence_spans'])
     draft.update(source_evidence=evidence, implementation_interface=signature,
+                 implementation_context=context,
                  semantic_consistency='signature_and_exact_source_quotes_checked; entailment_model_assessed')
     return draft
 

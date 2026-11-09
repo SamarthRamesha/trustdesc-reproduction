@@ -1,3 +1,5 @@
+> Historical status document. The current Apple Silicon execution path is the root TRUSTDESC_REPRODUCTION.ipynb. Consult PROJECT_STATE.md and FINAL_PROJECT_COMPLETION_REPORT.md for current evidence and outstanding work. The historical record below is preserved.
+
 # Next actions: operate Colab, then export for Part 3
 
 **The final MacBook preparation task is complete. Do not start another preparation cycle or ask for another development prompt.** The primary executable entry point is [TRUSTDESC_FULL_REPRODUCTION.ipynb](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb). Follow [COLAB_HANDOVER](COLAB_HANDOVER.md) and the [operator guide](COLAB_EXPERIMENT_GUIDE.md).

@@ -149,6 +149,7 @@ class ResearchSlicer(PythonSlicer):
         # Original full class/context can contain unreachable methods; narrow it
         # while preserving nested lexical context and module dependencies.
         chunks = []
+        context_selection = []
         reachable = set(result['functions'])
         for mod, tree in self.modules.items():
             if not any(self.functions[k].module == mod for k in reachable):
@@ -166,13 +167,35 @@ class ResearchSlicer(PythonSlicer):
                         body.append(node)
                 else:
                     body.append(n)
-            # Referenced constants/imports are conservative context. Top-level
-            # expressions are excluded (source is never executed in either case).
-            body = [n for n in body if not isinstance(n, ast.Expr)]
+            # Retain imports and globals actually referenced by selected code.
+            # Unrelated __main__ transport startup and tool metadata must not
+            # turn a function description into a description of its server.
+            definitions=[n for n in body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef))]
+            imports=[n for n in body if isinstance(n,(ast.Import,ast.ImportFrom))]
+            context=[n for n in body if n not in definitions and n not in imports and not isinstance(n,ast.Expr)]
+            needed={n.id for definition in definitions for n in ast.walk(definition) if isinstance(n,ast.Name) and isinstance(n.ctx,ast.Load)}
+            kept=[]
+            changed=True
+            while changed:
+                changed=False
+                for statement in context:
+                    if statement in kept:continue
+                    bound={n.id for n in ast.walk(statement) if isinstance(n,ast.Name) and isinstance(n.ctx,ast.Store)}
+                    if bound & needed:
+                        kept.append(statement)
+                        needed.update(n.id for n in ast.walk(statement) if isinstance(n,ast.Name) and isinstance(n.ctx,ast.Load))
+                        changed=True
+            omitted=[{'kind':type(n).__name__,'line':n.lineno,'reason':'unreferenced_module_initialization_not_tool_call_path'} for n in context if n not in kept]
+            context_selection.append({'module':mod,'referenced_names':sorted(needed),'omitted':omitted,
+                                      'scope':'reasoning context only; module-initialization equivalence is not certified'})
+            selected={id(n) for n in definitions+imports+kept}
+            body=[n for n in body if id(n) in selected]
             chunks.append(f'# module: {mod}\n' + ast.unparse(ast.Module(body=body, type_ignores=[])))
         if not result['revisions']:
             result['source'] = '\n\n'.join(chunks)
         result['transformation_validation'] = 'no_executable_transformation' if not result['revisions'] else 'NOT_PROVEN_reasoning_only'
+        result['context_selection']=context_selection
+        result['warnings'].append('Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence')
         return result
 
 

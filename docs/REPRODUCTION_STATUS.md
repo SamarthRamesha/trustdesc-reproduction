@@ -1,3 +1,5 @@
+> Historical status document. The current Apple Silicon execution path is the root TRUSTDESC_REPRODUCTION.ipynb. Consult PROJECT_STATE.md and FINAL_PROJECT_COMPLETION_REPORT.md for current evidence and outstanding work. The historical record below is preserved.
+
 # Reproduction status
 
 Final Colab preparation adds a complete executable **available-workflow** notebook: [TRUSTDESC_FULL_REPRODUCTION](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb), with [operator guide](COLAB_EXPERIMENT_GUIDE.md). It supports multiple tools/conditions/models, real core stages, explicit resources/profiles, condition-specific agent metadata, failure continuation, human review, safe checkpoint/resume and complete export. CPU fixture workflow runs now; live GPU/paid models depend on operator resources/access and were not run locally. Exact original benchmark/runtime/model reproduction remains blocked and is never inferred from notebook execution. Final validation: 119 tests pass on Python 3.13.9 and 3.11.14; all 19 notebook code cells compile and 18 noninteractive CPU cells execute. No further MacBook preparation step is requested.

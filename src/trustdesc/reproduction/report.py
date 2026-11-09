@@ -14,7 +14,7 @@ from trustdesc.experiments.export import export_results
 from trustdesc.experiments.storage import Store, now
 
 REPORTS = ['PHASE2_COMPLETION_REPORT.md', 'PHASE3_HANDOVER.md', 'METHODOLOGY.md', 'DATASET_PROVENANCE.md',
-           'EXPERIMENT_RESULTS.md', 'LIMITATIONS_AND_REPRODUCIBILITY.md', 'REPRODUCTION_INSTRUCTIONS.md']
+           'EXPERIMENT_RESULTS.md', 'LIMITATIONS_AND_REPRODUCIBILITY.md', 'REPRODUCTION_INSTRUCTIONS.md', 'FINAL_PROJECT_COMPLETION_REPORT.md']
 
 
 def wilson(successes, total):
@@ -142,7 +142,7 @@ def analyze(workflow, acquisition, model_manifest, isolation, setup_failures=())
     blockers = ['Original 52-tool/208-task release, labels, traces and exact prompts not recovered.',
                 'Original generation models and fixed Gemini-3-Flash task agent replaced by explicitly named free local model.',
                 'Python AST subset; TypeScript, unrestricted dynamic dispatch and proof of slicing equivalence unavailable.',
-                'External MCP execution not available in default Colab without an approved local container image and successful probes.',
+                'Full external MCP transport is gated by a validated immutable-image backend; the separate macOS boundary supports offline Python source observations only.',
                 'Finite authored fixture observations and automated oracles do not establish original human-reviewed TSR.',
                 'Q3 degraded-tool competition, Q4 seven original attacks and Q5 adaptive naming experiments lack authenticated experimental artifacts.']
     results = {'schema_version':1,'created_at':now(),'scope':'independent_partial_reproduction',
@@ -230,9 +230,9 @@ Start with PHASE2_COMPLETION_REPORT.md and validation_report.json. The experimen
 
 ## Resume and extend
 
-Rerun the unchanged notebook in the same runtime to reuse successful hash-bound checkpoints and retry failed stages. New source/model/runtime settings create a separate run. Reconnects preserve files only while the Colab VM survives; download the ZIP before discarding it. Restore with trustdesc.experiments.export.restore_results(archive, expected_sha256, destination) to inspect the run evidence.
+Rerun the unchanged notebook in the same runtime to reuse successful hash-bound checkpoints and retry failed stages. New source/model/runtime settings create a separate run. Local checkpoints persist under the notebook workspace. Optional Colab disk is ephemeral; download its ZIP before discarding the VM. Restore with trustdesc.experiments.export.restore_results(archive, expected_sha256, destination) to inspect the run evidence.
 
-Recover and authenticate original tool/task/prompt/label/trace artifacts before original-benchmark evaluation. Verify rights and license before redistribution. Supply a reviewed immutable container image/source attestation on a Linux Docker host, validate probes and actual integration, then enable the external adapter. No unknown server may execute on the Mac or ordinary Colab host. Keep the task agent fixed while comparing generator models. Perform original human trace review separately from the fixture oracle. Record exact mutations/tasks for Q3–Q5 before computing attack or selection rates.
+Recover and authenticate original tool/task/prompt/label/trace artifacts before original-benchmark evaluation. Verify rights and license before redistribution. Supply a reviewed immutable container image/source attestation on a Linux Docker host, validate probes and actual integration, then enable the external adapter. Unknown source must never execute outside a validated isolation boundary. Keep the task agent fixed while comparing generator models. Perform original human trace review separately from the fixture oracle. Record exact mutations/tasks for Q3–Q5 before computing attack or selection rates.
 ''')
     store.text('METHODOLOGY.md','''# Methodology
 
@@ -275,17 +275,37 @@ Fixed immutable source/model revisions, resource SHA-256, seeds, per-request pro
 
 The threat model assumes accessible source and no overtly malicious runtime implementation. Finite tests do not certify safety, absence of malicious code, or universal semantic equivalence. Containers share the host kernel and are not a VM. Current container integration and T4 inference require validation on their actual infrastructure. Ordinary fixture execution is never described as an untrusted-code sandbox.
 ''')
-    store.text('REPRODUCTION_INSTRUCTIONS.md','''# Run the notebook
+    store.text('REPRODUCTION_INSTRUCTIONS.md','''# Run the local notebook
 
-1. Open TRUSTDESC_REPRODUCTION.ipynb from the GitHub repository in Google Colab.
-2. Choose Runtime → Change runtime type → Python 3 → T4 GPU, then Save.
-3. Choose Runtime → Run all. No uploads, API keys, configuration edits or review spreadsheet are required.
-4. Read the final status and download phase3_handover.zip and its SHA-256 sidecar. Individual reports have direct notebook links.
+1. Open TRUSTDESC_REPRODUCTION.ipynb in local Jupyter on the Mac and choose Run All.
+2. The notebook verifies its embedded source, creates a local Python environment, installs the pinned Apple dependency lock, and tests Python startup before loading a model.
+3. Read the qualification and stage statuses. The same free quantized task agent is held fixed across Original / lite / full. Invalid model responses remain recorded failures.
+4. Download phase3_handover.zip and its SHA-256 sidecar from the final cell. Read FINAL_PROJECT_COMPLETION_REPORT.md before interpreting the results.
 
-On CPU the notebook selects a smaller free local model with an explicit substitution record. It may take substantially longer; model or resource failures remain explicit and independent stages still run. Inspect diagnostics instead of interpreting a ZIP as scientific completion. Rerun cells after transient errors; successful source/model/configuration-bound checkpoints are reused. Failed checkpoints are retried. New configuration/source/runtime identity writes a fresh run directory. Colab disk is ephemeral; a new VM starts from automatic downloads and cannot recover an undownloaded previous run.
+No source uploads, API keys, configuration edits or manual human labels are required for the authored-fixture workflow. Rerun unchanged cells to reuse successful hash-bound checkpoints; changed code/model/runtime/source/configuration uses a new run identity. Local files persist until removed by the operator. Optional Colab entry points are retained under notebooks/colab; its disk is ephemeral.
 
-Network access is needed for the pinned project snapshot, public model weights, packages and datasets. The notebook installs dependencies automatically. A bootstrap failure explains the exact unavailable resource; it cannot safely execute scientific code it has not verified. No external MCP server is run without the configured container boundary. Original benchmark results remain unavailable until their authentic artifacts are recovered.
+Apple Silicon uses the qualified MLX model subject to memory constraints. MPS and CPU adapters are available with explicit device/substitution records. Original benchmark claims remain unavailable without authenticated tools/tasks/prompts/labels/traces. External execution requires a validated boundary; default fixture execution is not an untrusted-code sandbox.
 ''')
+    lines=['# Final project completion report', '',
+           'Status: working independent pipeline; original scientific reproduction INCOMPLETE.', '',
+           f'Run identity: `{workflow.root.name}`. Fingerprint: `{workflow.fingerprint}`.', '',
+           f'Model status: {models.get("status")}; inference mode: {models.get("mode")}.', '',
+           '## Actual execution', '',
+           '| Condition | Observed / expected | Authored objectives achieved | Fixture rate |',
+           '|---|---|---|---|']
+    for row in results['conditions']:
+        if row['tool']=='ALL':
+            lines.append(f"| {row['variant']} | {row['observed_tasks']}/{row['expected_tasks']} | {row['completed_fixture_objectives']} | {row['fixture_oracle_success_rate_percent']} |")
+    test_file=store.root/'software_test_status.json'
+    test_status=store.read('software_test_status.json') if test_file.exists() else {'status':'not_executed_by_this_session'}
+    lines += ['', 'These are authored exact-trace objectives, not original paper TSR. Failed and missing attempts remain explicit. Repeated software-validation runs are not pooled as independent research samples.', '',
+              '## Validation and evidence', '', json.dumps(test_status,indent=2), '',
+              'Read source_hashes.json, model_manifest.json, prompt_manifest.json, acquisition_report.json, raw calls, checkpoints and execution_traces.jsonl. The exporter checks required artifacts and member hashes. A package is a handover, not evidence of scientific completion.', '',
+              '## Implementation and remaining work', '',
+              'Python SliceMin, real model DescGen, source attribution, iterative DynVer, fixed-agent fixture evaluation, checkpoints and portable report export are implemented within their documented scope. Model substitutions, approximate static resolution and finite model-judged observations limit the claims.', '', blockers, '',
+              'Git publication and wider project handover status are recorded by the delivery agent separately; this notebook does not push repositories or claim publication. Supplementary public-example observations, when run, are separate from the authored benchmark.']
+    store.text('FINAL_PROJECT_COMPLETION_REPORT.md','\n'.join(lines)+'\n')
+
 
 
 def validate_and_package(workflow, destination):

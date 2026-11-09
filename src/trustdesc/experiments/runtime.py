@@ -12,7 +12,7 @@ from pathlib import Path
 
 def inspect_runtime():
     packages={}
-    for name in ['torch','transformers','matplotlib','huggingface-hub','safetensors']:
+    for name in ['torch','transformers','matplotlib','huggingface-hub','safetensors','mlx','mlx-lm','psutil']:
         try:packages[name]=version(name)
         except PackageNotFoundError:packages[name]=None
     total = available = None
@@ -23,6 +23,20 @@ def inspect_runtime():
     else:
         try: total = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         except (ValueError, OSError): pass
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        total, available = memory.total, memory.available
+    except (ImportError, OSError):
+        pass
+    apple = platform.system() == 'Darwin' and platform.machine() == 'arm64'
+    mps = False
+    if apple and packages['torch']:
+        try:
+            import torch
+            mps = torch.backends.mps.is_available()
+        except (ImportError, RuntimeError):
+            pass
     gpu = []
     cuda = None
     if shutil.which('nvidia-smi'):
@@ -38,5 +52,6 @@ def inspect_runtime():
     return {'python':platform.python_version(),'python_supported':sys.version_info >= (3,11),
             'platform':platform.platform(),'machine':platform.machine(),'ram_total_bytes':total,
             'ram_available_bytes':available,'disk_free_bytes':shutil.disk_usage('.').free,'gpus':gpu,
+            'apple_silicon':apple,'mlx_installed':bool(apple and packages['mlx-lm']), 'mps_available':mps,
             'cuda_driver_supported_version':cuda,'packages':packages,'runtime_type':'colab' if 'COLAB_RELEASE_TAG' in os.environ or Path('/content').is_dir() else 'local_validation',
             'recommended_profile':recommended,'note':'Recommendation selects capacity profile only, never a scientific model automatically.'}

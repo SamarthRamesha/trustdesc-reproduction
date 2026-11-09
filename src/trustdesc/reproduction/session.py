@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import traceback
 from trustdesc.common.io import digest
 from trustdesc.experiments.runtime import inspect_runtime
 from trustdesc.experiments.data import source_hashes
@@ -24,10 +25,20 @@ def select_config(project, runtime):
     spec=json.loads((Path(project)/'configs/reproduction.json').read_text())
     gpus=runtime.get('gpus',[])
     gpu_ok=bool(gpus) and gpus[0]['free_bytes']>=spec['models_by_hardware']['cuda']['minimum_gpu_free_bytes']
+    available=runtime.get('ram_available_bytes') or runtime.get('ram_total_bytes')
     hardware='cuda' if gpu_ok else 'cpu'
-    cfg={**spec['models_by_hardware'][hardware],**spec['model_settings']}
-    cfg['device'] = hardware
-    cfg['substitution']='Single-T4 feasible independent local model; not paper models' if gpu_ok else 'No compatible CUDA GPU: smaller CPU model; slower and different experimental condition'
+    if runtime.get('apple_silicon'):
+        if runtime.get('mlx_installed'):
+            # Insufficient memory blocks the qualified model instead of silently
+            # changing the experiment to another model.
+            hardware='mlx'
+        elif runtime.get('mps_available'):
+            hardware='mps'
+    cfg={**spec['model_settings'],**spec['models_by_hardware'][hardware]}
+    cfg['device'] = 'metal' if hardware.startswith('mlx') else hardware
+    cfg['substitution']=('Apple Silicon quantized local model; independent substitute, not paper models' if hardware.startswith('mlx') else
+                         'Apple MPS local model; independent substitute, not paper models' if hardware=='mps' else
+                         'Single-T4 independent local model; not paper models' if gpu_ok else 'CPU fallback; independent smaller model, not paper models')
     config={k:spec[k] for k in ['schema_version','seed','agent_max_steps','refinement_rounds','paid_models_enabled','external_execution_enabled','evaluation']}
     config.update(models=[cfg],task_agent=copy.deepcopy(cfg),hardware_selection=hardware)
     available=runtime.get('ram_available_bytes') or runtime.get('ram_total_bytes')
@@ -70,14 +81,17 @@ class Session:
                                         resume=(self.run_root/'EXPERIMENT_MANIFEST.json').exists(),retry_failed=True,pool=empty_pool)
         self.store.write('input_acquisition.json',self.input_report)
         self.store.write('hardware_model_selection.json',{'selected':self.config,'constraints':self.constraints,
-                    'notes':'Estimated weight sizes only; T4 capacity and context limits are estimates, not a measured completion-time guarantee.'})
+                    'notes':'Capacity thresholds are estimates. Qualification, native allocation and worker RSS records determine measured feasibility; no completion-time guarantee.'})
         self._record_source()
 
     def _record_source(self):
         selected=[]
-        for prefix in ['src','configs','tests','data/manifests']:
+        for prefix in ['src','configs','tests','data/manifests','data/public_example','scripts','docs']:
             selected.extend(p for p in (self.project/prefix).rglob('*') if p.is_file() and p.suffix in {'.py','.json','.jsonl','.txt'})
+        public_license=self.project/'data/public_example/LICENSE'
+        if public_license.exists():selected.append(public_license)
         selected += [self.project/p for p in ['pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md']]
+        selected += [p for p in [self.project/'requirements-apple.txt',self.project/'requirements-apple-lock.txt',self.project/'TRUSTDESC_REPRODUCTION.ipynb'] if p.exists()]
         runner = self.project/'scripts/run_automatic_reproduction.py'
         if runner.exists():selected.append(runner)
         portable = self.project/'PORTABLE_MANIFEST.json'
@@ -96,7 +110,7 @@ class Session:
     def initialize_model(self):
         if self.supplied_model is not None:
             model=self.supplied_model
-            real = model.mode == 'real_local_transformers_inference'
+            real = model.mode in {'real_local_transformers_inference','real_local_mlx_inference'}
             self.model_manifest.update(status='injected_real_model_validation' if real else 'injected_software_validation_model',mode=model.mode,
                                        note='Explicit validation injection; never used by default notebook')
             if real:
@@ -107,13 +121,20 @@ class Session:
                 if self.constraints:raise RuntimeError('; '.join(self.constraints))
                 if self.model_error:raise RuntimeError(self.model_error)
                 if not self.network:raise RuntimeError('Offline software validation: inference not attempted')
-                from .model import LocalModel,RepairModel
-                model=RepairModel(LocalModel(self.config['models'][0],self.workspace/'cache/models'))
+                from .model import RepairModel
+                from .backends import ManagedModel, qualify
+                native=ManagedModel(self.config['models'][0],self.workspace/'cache/models')
+                qualification=qualify(native)
+                self.store.write('model_qualification.json',qualification)
+                if not qualification['passed']:
+                    native.close()
+                    raise RuntimeError('Real model qualification failed; inspect model_qualification.json')
+                model=RepairModel(native)
                 self.model_manifest.update(status='loaded_real_local_model',runtime=model.model.runtime,
                                            mode=model.mode,substitutions=[self.config['models'][0]['substitution']])
             except Exception as exc:
                 self.model_error=f'{type(exc).__name__}: {exc}'
-                self.model_manifest.update(status='unavailable',error=self.model_error,semantic_replay_substitution=False)
+                self.model_manifest.update(status='unavailable',error=self.model_error,traceback=traceback.format_exc(),semantic_replay_substitution=False)
                 self.failures.append({'status':'unavailable','component':'model','reason':self.model_error})
         self.workflow.pool=SingleModelPool(model,self.store,self.model_error)
         self.store.write('model_manifest.json',self.model_manifest)
@@ -128,10 +149,18 @@ class Session:
         return self.export
 
     def run_all(self):
-        self.acquire()
-        self.initialize_model()
-        self.workflow.static()
-        self.workflow.descriptions()
-        self.workflow.verification()
-        self.workflow.benchmark()
-        return self.finish()
+        try:
+            self.acquire()
+            self.initialize_model()
+            self.workflow.static()
+            self.workflow.descriptions()
+            self.workflow.verification()
+            self.workflow.benchmark()
+            return self.finish()
+        finally:
+            self.close()
+
+    def close(self):
+        model=self.workflow.pool.model
+        if model is not None and hasattr(model,'close'):
+            model.close()

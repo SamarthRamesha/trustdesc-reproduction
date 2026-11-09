@@ -1,57 +1,56 @@
 # TRUSTDESC reproduction
 
-[**Open the automatic notebook in Google Colab**](https://colab.research.google.com/github/SamarthRamesha/trustdesc-reproduction/blob/main/TRUSTDESC_REPRODUCTION.ipynb) · [View the notebook](TRUSTDESC_REPRODUCTION.ipynb)
+Open [TRUSTDESC_REPRODUCTION.ipynb](TRUSTDESC_REPRODUCTION.ipynb) in local Jupyter on Apple Silicon and choose **Run All**. The notebook embeds and verifies its source, creates a local Python environment, installs pinned dependencies, tests Python startup, qualifies a real free quantized model, runs the pipeline, and exports `phase3_handover.zip` with evidence and checksums. Python 3.11 is recommended. No manual source uploads, API keys or cell edits are required. First use needs internet access for public packages, weights and references.
 
-TRUSTDESC generates tool descriptions from implementation evidence to reduce tool poisoning. This repository independently implements the SliceMin → DescGen → DynVer pipeline from [Ye et al., arXiv:2604.07536v1](https://arxiv.org/abs/2604.07536v1). The primary deliverable is the root **TRUSTDESC_REPRODUCTION.ipynb**.
+This is an independent implementation of [Ye et al., TRUSTDESC](https://arxiv.org/abs/2604.07536v1). **The original scientific reproduction remains incomplete:** authenticated original 52-tool/208-task identities, snapshots, task texts, prompts, labels and traces have not been recovered. Authored fixtures and public example observations are labeled separately and never presented as the paper's benchmark or TSR.
 
-## Run it
+## Local execution
 
-1. Open the Colab link above.
-2. Select **Runtime → Change runtime type → Python 3 → T4 GPU → Save**.
-3. Select **Runtime → Run all**.
-4. Read the completion report and download **phase3_handover.zip**, its SHA-256 sidecar, and the individual reports linked in the final cell.
+The primary path uses **MLX on Apple Silicon**, a pinned 4-bit Qwen3-4B-Instruct-2507 model, and one supervised model process. Current memory checks guard model selection, load and generation. Each model must pass arithmetic inference, structured-output and exact-action tests before research stages start. The task-agent model, revision and settings stay fixed across Original / lite / full.
 
-No manual uploads, API keys, configuration edits, terminal commands or review spreadsheets are required. The notebook acquires and validates a fixed project snapshot, installs pinned dependencies, checks hardware, downloads free local model weights and public resources, and writes checkpoints and evidence automatically. Internet access is required. If no compatible GPU is present, it uses a smaller CPU model and records the substitution; CPU execution can be substantially slower. Model/resource failures are diagnosed and independent stages continue without fabricated observations.
+The PyTorch adapter also supports MPS and CPU. Those adapters preserve explicit device selection and report unavailable hardware; they do not silently claim GPU execution. These are model substitutions relative to the paper. No paid inference is configured. Local API charges are zero; electricity and compute cost are not measured.
 
-## What actually runs
+If working from a checkout, an optional terminal route is:
 
-| Stage | Implementation | Important limit |
+```sh
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-apple.txt
+.venv/bin/python scripts/run_local_reproduction.py --workspace trustdesc_local
+```
+
+Optional Colab entry points are preserved under [notebooks/colab](notebooks/colab). The historical automatic Colab notebook remains pinned to its historical validated source; the root notebook is now the self-contained local deliverable.
+
+## Pipeline and evidence limits
+
+| Stage | Available implementation | Limit |
 |---|---|---|
-| SliceMin | Import-free Python AST reachability; decorator/explicit/dispatcher registrations; supported cross-file imports, aliases, nested functions and self/cls methods; source spans/hashes | Independent Python subset, not author tree-sitter code; dynamic calls remain unresolved; semantic debloat proposals are preserved but not accepted without equivalence evidence |
-| DescGen | Actual pinned local model; comment/docstring removal; 20-character identifier normalization; contextual filtering; description generation; mechanical exact-prose claim records; checked source references and interface | Reconstructed prompts; model attribution and simple signature checks are not proofs of entailment |
-| DynVer | Generated verification tasks, real authored-tool execution, separate model judging, supported/refuted/inconclusive decisions, bounded correction and retesting | Default observations are two authored pure fixtures; not external server execution or universal safety certification |
-| Evaluation | Same eight authored tasks and **fixed task agent** for original/lite/full; exact trace oracles, per-tool/aggregate metrics, failure analysis and common-success overhead | Fixture oracle success is separate from original human-reviewed paper TSR |
-| External MCP backend | Immutable local Docker image, offline stdio JSON-RPC, initialize/list/call, resource/time/output limits, probes and cleanup | Explicitly gated; no pulls, host mounts or credentials; normal Colab lacks Docker; actual container integration remains unvalidated |
+| SliceMin | Import-free Python AST registration detection, cross-file reachability, aliases, nested calls, named self/cls methods, dispatcher patterns, source spans and hashes | Restricted Python resolver; TypeScript/reflection are not fully implemented. LLM rewrites are retained as unproven proposals. |
+| DescGen | Real model generation, comment/docstring removal, 20-character normalization, contextual identifier filtering, source attribution, argument-schema checks, return/exception/mutation/side-effect syntax records | Static indications and source attribution do not prove entailment or absence of side effects. |
+| DynVer | Generated tasks, bounded agent actions, actual tool observations, model judging, supported/refuted/inconclusive filtering, bounded corrections and retesting | Finite tests establish observed behavior only. Missing execution remains inconclusive. |
+| Matched evaluation | Eight authored tasks over two pure authored tools; identical task agent across Original / lite / full; exact trace oracles | Authored fixture success is separate from original human-reviewed paper TSR. |
+| External observations | macOS Seatbelt boundary with Python startup, private-read/write, network and process-denial probes; supplementary pinned public example function-body study | Offline Python source execution, not a full MCP transport. The Linux immutable-image MCP adapter stays separately gated. |
 
-On a compatible T4 the free generation/task model is **Qwen2.5-Coder-1.5B-Instruct** at an immutable commit. CPU uses **Qwen2.5-Coder-0.5B-Instruct**, also pinned. These are independent model substitutions, not the paper's four generation models or fixed Gemini-3-Flash task agent. No paid endpoint is configured. Local API charges are zero; compute cost is unknown. Raw prompts, responses, tokens, timings, model asset hashes and environment versions are retained.
+The public SDK example study, when executed, removes only the registration decorator from a pinned function and executes its unchanged signature/body under Seatbelt. Its manifest records that transformation, source Git blob, revision, license and scope. It is neither the complete external MCP server nor a paper-selected tool. No arbitrary downloaded setup script is executed on the host.
 
-**Lite** removes the functionality list from the refined full description. It does not skip SliceMin or DynVer. Unsupported/inconclusive prose is removed; structural schema fields receive limited static checks and are not universally behavior-certified.
+## Startup and failure recovery
 
-## Scientific status
+[Python startup investigation](docs/PYTHON_STARTUP_INVESTIGATION.md) records the diagnosed pre-main dyld/libignition abort. The project's original Seatbelt policy denied `file-read-data /`. The narrow fix grants the root directory itself with `(literal "/")`, without recursive filesystem access. Both native Terminal and Codex passed their model-free startup checks and isolation canaries. Homebrew, SIP and system dyld caches were not changed.
 
-**Phase 2 scientific reproduction remains incomplete.** The original 52 tool identities/revisions, 208 task texts, prompts, reviewed labels, execution traces and exact experimental snapshots have not been recovered/authenticated. A fresh acquisition ledger checks the suggested anonymous artifact, author group and public datasets. MCPTox, MCPSecBench and MCPCorpus are identified as external resources. A pinned arxiv-mcp-server snapshot is analyzed statically. Neither those resources nor our authored fixtures are relabeled as the paper's benchmark.
+Worker launch is blocked after a failed startup check. Generation has wall deadlines, RSS monitoring, explicit unload/termination and bounded protocol retries. Full tracebacks and raw model outputs are retained. An invalid or unavailable model never becomes scripted semantic replay. Failed checkpoints and historical runs are preserved.
 
-Published paper values remain reference-only in reports/published_results.csv; local results never substitute for them. Original human-reviewed TSR, adaptive attack success and tool-modification rates remain null without necessary observations. The original Q3–Q5 experiments are explicitly outside the measured fixture run. Model-generation failures, unavailable descriptions and missing observations stay visible; model failure never silently switches to scripted semantic replay.
-
-The notebook finishes with an organized package even when essential evidence is missing. **Pipeline finished** and **Phase 2 complete** are separate states. Read PHASE2_COMPLETION_REPORT.md inside the generated ZIP.
+Successful checkpoints are bound to code, source, dataset, prompts, model, configuration and runtime. Rerun unchanged inputs to reuse them; changed identities create another run. See [PROJECT_STATE.md](PROJECT_STATE.md) for the current milestone, last successful tests/experiments and next exact action.
 
 ## Outputs
 
-The handover contains all seven requested reports: PHASE2_COMPLETION_REPORT.md, PHASE3_HANDOVER.md, METHODOLOGY.md, DATASET_PROVENANCE.md, EXPERIMENT_RESULTS.md, LIMITATIONS_AND_REPRODUCIBILITY.md and REPRODUCTION_INSTRUCTIONS.md. It also includes experiment/dataset/model/prompt manifests, source hashes, configuration, results JSON/CSVs, original/generated comparisons, slices/reachability, verification plans/decisions/rounds, execution traces, raw model call records, checkpoints, a chart, software checks and artifact integrity validation. Exact project source/configuration/tests are included for continuation. Weights, caches, private PDF, credentials and unrelated files are excluded. Unlicensed external datasets are referenced, not redistributed.
+The pipeline exports source slices, descriptions, source-to-claim records, verification tasks/decisions, execution traces, task comparisons, metrics and a graph; model/prompt/dataset/experiment manifests; environment/dependency records; seven research/handover reports; and a member-hash-verified ZIP. A generated ZIP never implies scientific completion. The final project report states exactly what was executed and what remains incomplete.
 
-Successful checkpoints are bound to configuration, dataset, source, model, prompts and runtime identity. Rerun unchanged cells in the same VM to reuse completed work and retry failed stages. Changed identities use another run directory. Colab disk is ephemeral: download the ZIP before discarding the VM. The bootstrap checks every runtime module against embedded hashes and a fixed Git revision; it does not run moving main.
+Model weights, caches, credentials, the private paper PDF and unrelated personal files are excluded. The pinned MIT public example retains its license. External datasets without redistribution permission are referenced by revision/hash rather than bundled.
 
-## Validation and development
-
-Core software uses Python >=3.11 with the standard library. Inference dependencies are pinned in requirements-colab.txt and torch 2.9.0 is selected automatically by the notebook; full installed versions are exported. This is a direct dependency lock plus per-run resolved environment, not a universal transitive CUDA lock.
+## Validation
 
 ```sh
 PYTHONPATH=src python3 -m unittest discover -s tests -t .
-PYTHONPATH=src python3 scripts/validate_reproduction_notebook.py --execute-fixture --output /tmp/trustdesc-validation
+python3 scripts/check_python_startup.py --context terminal --output startup-check.json
 ```
 
-Delivery validation records distinguish local software tests, real CPU inference and a real Colab T4 session. **No T4 or real-container validation is claimed from local tests.** See docs/VALIDATION_AND_LIMITATIONS.md and reports/reproduction_delivery/ for the actual checks performed.
-
-The earlier notebooks, runs, reports and commits remain intact. docs/HISTORICAL_README_PHASE1.md preserves the previous README. docs/IMPLEMENTATION_AUDIT_2026_11_09.md records the inspected baseline. docs/PAPER_ANALYSIS.md retains the detailed paper reading. Earlier upload/review instructions describe the historical workflow; the root automatic notebook supersedes them. Existing review-based evaluation remains available separately and is not auto-populated with invented human judgments.
-
-LICENSE and NOTICE.md retain the existing project rights and third-party notices. No license or repository visibility change is made by this delivery.
+Tests are software validation, not experimental labels. Recorded real-model experiments and their limitations belong in the final completion report and preserved run manifests. Historical reports remain available under `reports/`; historical Colab instructions do not supersede the local notebook.

@@ -1,0 +1,16 @@
+{
+  "pid": 28156,
+  "model_loaded": false,
+  "metal_available": true,
+  "default_device": "Device(gpu, 0)",
+  "device_info": {
+    "device_name": "Apple M3",
+    "max_recommended_working_set_size": 12713115648,
+    "memory_size": 17179869184,
+    "architecture": "applegpu_g15g",
+    "max_buffer_length": 9534832640,
+    "resource_limit": 499000
+  },
+  "rss_before_bytes": 17219584,
+  "rss_after_bytes": 33849344
+}

@@ -3,6 +3,7 @@ import copy
 import gc
 import time
 import uuid
+import traceback
 from pathlib import Path
 
 from trustdesc.common.io import digest, ValidationError
@@ -61,7 +62,7 @@ class LoggedModel:
             value.update(status='completed',response=result)
             return result
         except Exception as exc:
-            value.update(status='failed',error_type=type(exc).__name__,error=str(exc))
+            value.update(status='failed',error_type=type(exc).__name__,error=str(exc),traceback=traceback.format_exc())
             raise
         finally:
             audits=getattr(self.model,'audit',[])[before:]

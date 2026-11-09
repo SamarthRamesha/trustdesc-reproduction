@@ -100,6 +100,13 @@ class VerificationTests(unittest.TestCase):
         m=ReplayModel([record('agent',{'action':'call','tool':'apply_formula','arguments':{'formula':'=1'}})])
         self.assertEqual(ControlledAgent(m,max_steps=1).run('test')['status'],'step_limit')
 
+    def test_observed_exception_type_is_preserved_for_judging(self):
+        m=ReplayModel([record('agent',{'action':'call','tool':'apply_formula','arguments':{'formula':'SUM(A1:A5)'}}),
+                       record('agent',{'action':'finish','answer':'Observed rejection.'})])
+        trace=ControlledAgent(m,max_steps=2).run('Try the formula without a prefix.')
+        self.assertEqual(trace['events'][0]['error_type'],'ValueError')
+        self.assertEqual(trace['events'][0]['error'],'Formula must start with =')
+
     def test_agent_failure(self):
         self.assertEqual(ControlledAgent(ReplayModel([])).run('test')['status'],'agent_error')
 

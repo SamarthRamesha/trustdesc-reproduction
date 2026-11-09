@@ -1,0 +1,124 @@
+{
+  "scope": "public SDK example source-body software smoke; no model; not full MCP server or paper benchmark",
+  "source_git_blob": "70a83a56e4b69d90f7c8c8d675df4433f4cc01e4",
+  "records": [
+    {
+      "arguments": {
+        "a": 2,
+        "b": 3
+      },
+      "expected": 5,
+      "observation": {
+        "backend": "macos_seatbelt_offline_python",
+        "process_status": "exited",
+        "returncode": 0,
+        "stdout": "{\"status\": \"ok\", \"result\": 5}\n",
+        "stderr": "",
+        "seconds": 0.05215150000003632,
+        "peak_rss_bytes": 14467072,
+        "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+        "policy_sha256": "9011373bac0d1201455218a597479200288460d19283c52895c3907983bbe0df",
+        "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+        "observation": {
+          "status": "ok",
+          "result": 5
+        }
+      },
+      "passed": true
+    },
+    {
+      "arguments": {
+        "a": -7,
+        "b": 2
+      },
+      "expected": -5,
+      "observation": {
+        "backend": "macos_seatbelt_offline_python",
+        "process_status": "exited",
+        "returncode": 0,
+        "stdout": "{\"status\": \"ok\", \"result\": -5}\n",
+        "stderr": "",
+        "seconds": 0.05224620800026969,
+        "peak_rss_bytes": 14385152,
+        "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+        "policy_sha256": "d1d229fcee7ad227c0d7df7a504268f8637024ce55d11ead7e05464a3cf579da",
+        "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+        "observation": {
+          "status": "ok",
+          "result": -5
+        }
+      },
+      "passed": true
+    },
+    {
+      "arguments": {
+        "a": 0,
+        "b": 0
+      },
+      "expected": 0,
+      "observation": {
+        "backend": "macos_seatbelt_offline_python",
+        "process_status": "exited",
+        "returncode": 0,
+        "stdout": "{\"status\": \"ok\", \"result\": 0}\n",
+        "stderr": "",
+        "seconds": 0.05210787500027436,
+        "peak_rss_bytes": 14548992,
+        "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+        "policy_sha256": "f04490387221eb94b3ab95294b3f31bfc47e5ead8c31f88f6bea89f219a7f79e",
+        "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+        "observation": {
+          "status": "ok",
+          "result": 0
+        }
+      },
+      "passed": true
+    },
+    {
+      "arguments": {
+        "a": 123456789,
+        "b": 987654321
+      },
+      "expected": 1111111110,
+      "observation": {
+        "backend": "macos_seatbelt_offline_python",
+        "process_status": "exited",
+        "returncode": 0,
+        "stdout": "{\"status\": \"ok\", \"result\": 1111111110}\n",
+        "stderr": "",
+        "seconds": 0.05076966700016783,
+        "peak_rss_bytes": 14483456,
+        "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+        "policy_sha256": "c8603df962a702a94099390f9659a111a64b0d1cc39858c56f60e109a1aa1683",
+        "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+        "observation": {
+          "status": "ok",
+          "result": 1111111110
+        }
+      },
+      "passed": true
+    }
+  ],
+  "probe": {
+    "backend": "macos_seatbelt_offline_python",
+    "process_status": "exited",
+    "returncode": 0,
+    "stdout": "{\"status\": \"ok\", \"result\": {\"read_denied\": true, \"write_denied\": true, \"network_denied\": true, \"process_denied\": true}}\n",
+    "stderr": "",
+    "seconds": 0.052172000000155094,
+    "peak_rss_bytes": 13484032,
+    "source_sha256": "68fd9bb50c2a32ccd6fc0ff59234b128894d819f3d7cd2542ef057dcfa167e35",
+    "policy_sha256": "3f4ebd2d3ae990819dbaea47e158f8419379d7f2288cf332380591b7c72be3d8",
+    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+    "observation": {
+      "status": "ok",
+      "result": {
+        "read_denied": true,
+        "write_denied": true,
+        "network_denied": true,
+        "process_denied": true
+      }
+    },
+    "passed": true
+  }
+}

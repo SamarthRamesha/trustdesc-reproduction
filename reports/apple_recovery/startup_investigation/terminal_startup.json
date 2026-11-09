@@ -1,0 +1,594 @@
+{
+  "context": "terminal",
+  "parent_pid": 25200,
+  "controller_pid": 25201,
+  "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+  "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+  "environment": {
+    "TERM_PROGRAM": "Apple_Terminal",
+    "PATH": "/Users/macbramesha/.nvm/versions/node/v24.22.1/bin:/opt/homebrew/opt/node@24/bin:/Users/macbramesha/.codeium/windsurf/bin:/usr/local/mongodb/bin:/opt/homebrew/opt/openjdk@21/bin:/Users/macbramesha/.local/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/X11/bin:/Library/TeX/texbin:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/bin:/Users/macbramesha/.spicetify:/usr/local/share/dotnet:/usr/local/share/dotnet:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+  },
+  "controller_parent": "  PID  PPID COMM\n25200 24783 zsh\n",
+  "direct_inherited": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25204, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25204,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 2,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25205, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25205,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 3,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25206, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25206,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 4,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25207, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25207,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 5,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25208, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25208,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 6,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25209, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25209,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 7,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25210, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25210,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 8,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25211, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25211,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 9,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25212, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25212,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 10,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25213, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25213,
+          "ppid": 25201
+        },
+        "passed": true
+      }
+    ],
+    "retry_after_failure": false,
+    "inference_imported": false
+  },
+  "direct_clean": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25214, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25214,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 2,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25215, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25215,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 3,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25216, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25216,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 4,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25217, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25217,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 5,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25218, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25218,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 6,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25219, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25219,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 7,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25220, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25220,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 8,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25221, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25221,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 9,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25222, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25222,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 10,
+        "command": [
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25223, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25223,
+          "ppid": 25201
+        },
+        "passed": true
+      }
+    ],
+    "retry_after_failure": false,
+    "inference_imported": false
+  },
+  "seatbelt_probe": {
+    "backend": "macos_seatbelt_offline_python",
+    "process_status": "exited",
+    "returncode": 0,
+    "stdout": "{\"status\": \"ok\", \"result\": {\"read_denied\": true, \"write_denied\": true, \"network_denied\": true, \"process_denied\": true}}\n",
+    "stderr": "",
+    "seconds": 0.05167895799991129,
+    "peak_rss_bytes": 16367616,
+    "source_sha256": "68fd9bb50c2a32ccd6fc0ff59234b128894d819f3d7cd2542ef057dcfa167e35",
+    "policy_sha256": "17b2137666790ceedc5e953b0dd6b7d775b97e8322ab9658416a5465852017b0",
+    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+    "observation": {
+      "status": "ok",
+      "result": {
+        "read_denied": true,
+        "write_denied": true,
+        "network_denied": true,
+        "process_denied": true
+      }
+    },
+    "passed": true
+  },
+  "seatbelt_startup": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "command": [
+          "/usr/bin/sandbox-exec",
+          "-f",
+          "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24/policy.sb",
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25224, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25224,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 2,
+        "command": [
+          "/usr/bin/sandbox-exec",
+          "-f",
+          "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24/policy.sb",
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25225, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25225,
+          "ppid": 25201
+        },
+        "passed": true
+      },
+      {
+        "attempt": 3,
+        "command": [
+          "/usr/bin/sandbox-exec",
+          "-f",
+          "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24/policy.sb",
+          "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "-I",
+          "-S",
+          "-c",
+          "import json,os,platform,sys; print(json.dumps({\"startup\":\"ok\",\"version\":platform.python_version(),\"machine\":platform.machine(),\"executable\":sys.executable,\"pid\":os.getpid(),\"ppid\":os.getppid()}))"
+        ],
+        "cwd": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/repo/reports/apple_recovery/startup_investigation/scratch/startup-kw3ekl24",
+        "returncode": 0,
+        "stdout": "{\"startup\": \"ok\", \"version\": \"3.11.14\", \"machine\": \"arm64\", \"executable\": \"/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python\", \"pid\": 25226, \"ppid\": 25201}\n",
+        "stderr": "",
+        "observation": {
+          "startup": "ok",
+          "version": "3.11.14",
+          "machine": "arm64",
+          "executable": "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python",
+          "pid": 25226,
+          "ppid": 25201
+        },
+        "passed": true
+      }
+    ],
+    "retry_after_failure": false,
+    "inference_imported": false
+  },
+  "passed": true
+}

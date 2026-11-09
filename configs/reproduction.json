@@ -6,11 +6,83 @@
   "paid_models_enabled": false,
   "external_execution_enabled": false,
   "models_by_hardware": {
-    "cuda": {"id":"qwen-t4","provider":"local","model_id":"Qwen/Qwen2.5-Coder-1.5B-Instruct","revision":"2e1fd397ee46e1388853d2af2c993145b0f1098a","estimated_weight_bytes":3100000000,"minimum_available_ram_bytes":5368709120,"minimum_gpu_free_bytes":5368709120},
-    "cpu": {"id":"qwen-cpu","provider":"local","model_id":"Qwen/Qwen2.5-Coder-0.5B-Instruct","revision":"ea3f2471cf1b1f0db85067f1ef93848e38e88c25","estimated_weight_bytes":1000000000,"minimum_available_ram_bytes":4294967296}
+    "cuda": {
+      "id": "qwen-t4",
+      "provider": "local",
+      "model_id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+      "estimated_weight_bytes": 3100000000,
+      "minimum_available_ram_bytes": 5368709120,
+      "minimum_gpu_free_bytes": 8589934592,
+      "precision": "float32",
+      "temperature": 0.0
+    },
+    "cpu": {
+      "id": "qwen-cpu",
+      "provider": "local",
+      "model_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "estimated_weight_bytes": 1000000000,
+      "minimum_available_ram_bytes": 4294967296
+    },
+    "mlx": {
+      "id": "qwen3-mlx-4b",
+      "provider": "local",
+      "backend": "mlx",
+      "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+      "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+      "estimated_weight_bytes": 2263022417,
+      "minimum_available_ram_bytes": 3758096384,
+      "max_input_tokens": 12288,
+      "max_generation_seconds": 180,
+      "temperature": 0.0
+    },
+    "mlx_small": {
+      "id": "qwen-mlx-1.5b",
+      "provider": "local",
+      "backend": "mlx",
+      "model_id": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
+      "revision": "b3252a2f97102b1fb1571fec2c9b27219a8536be",
+      "estimated_weight_bytes": 868628559,
+      "minimum_available_ram_bytes": 2147483648,
+      "max_input_tokens": 4096,
+      "max_generation_seconds": 180,
+      "temperature": 0.0
+    },
+    "mps": {
+      "id": "qwen-mps",
+      "provider": "local",
+      "model_id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+      "estimated_weight_bytes": 3100000000,
+      "minimum_available_ram_bytes": 5368709120,
+      "backend": "transformers",
+      "temperature": 0.0
+    },
+    "mlx_3b": {
+      "id": "qwen-mlx-3b",
+      "provider": "local",
+      "backend": "mlx",
+      "model_id": "mlx-community/Qwen2.5-Coder-3B-Instruct-4bit",
+      "revision": "3dd939c621c08e5753d5b89f35a2642cd83b98ca",
+      "estimated_weight_bytes": 1736293090,
+      "minimum_available_ram_bytes": 3221225472,
+      "max_input_tokens": 8192,
+      "max_generation_seconds": 180,
+      "temperature": 0.0
+    }
   },
-  "model_settings": {"temperature":0.2,"seed":42,"max_input_tokens":4096,"max_new_tokens":1600,"max_generation_seconds":90,"max_calls":250,"debloat":true,"reasoning":"provider_default"},
-  "minimum_disk_free_bytes":8589934592,
-  "missing_resource_policy":"Record unavailable; continue independent stages; never substitute semantic replay",
-  "evaluation":"Fixed local task agent; authored fixture oracles; original human-reviewed paper TSR withheld"
+  "model_settings": {
+    "temperature": 0.2,
+    "seed": 42,
+    "max_input_tokens": 4096,
+    "max_new_tokens": 1600,
+    "max_generation_seconds": 90,
+    "max_calls": 600,
+    "debloat": true,
+    "reasoning": "provider_default"
+  },
+  "minimum_disk_free_bytes": 8589934592,
+  "missing_resource_policy": "Record unavailable; continue independent stages; never substitute semantic replay",
+  "evaluation": "Fixed local task agent; authored fixture oracles; original human-reviewed paper TSR withheld"
 }

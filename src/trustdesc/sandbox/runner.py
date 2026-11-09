@@ -62,7 +62,7 @@ class ControlledAgent:
                 try:
                     event.update({'status': 'ok', 'result': invoke(action['tool'], action['arguments'])})
                 except ValueError as exc:
-                    event.update({'status': 'tool_error', 'error': str(exc)})
+                    event.update({'status': 'tool_error', 'error': str(exc), 'error_type': type(exc).__name__})
                 events.append(event)
         except SandboxError as exc:
             return {'backend': 'synthetic_allowlist', 'status': 'blocked', 'events': events, 'reason': str(exc)}

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import uuid
+import traceback
 
 from trustdesc.common.io import canonical, digest, ValidationError
 
@@ -65,7 +66,7 @@ class Store:
             result=operation()
             result.setdefault('status','completed')
         except Exception as exc:
-            result={'status':getattr(exc,'experiment_status','failed'),'error_type':type(exc).__name__,'error':str(exc)}
+            result={'status':getattr(exc,'experiment_status','failed'),'error_type':type(exc).__name__,'error':str(exc),'traceback':traceback.format_exc()}
         result['recorded_at']=now()
         self.write(folder/f'attempt-{attempt}.json',result)
         self.write(folder/'result.json',result)

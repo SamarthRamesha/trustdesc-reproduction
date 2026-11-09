@@ -1,0 +1,11 @@
+{
+  "name": "public SDK addition example",
+  "classification": "external_public_example_not_original_benchmark",
+  "url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/77001c96f9507be0f4d009b83210a384a5e08bda/examples/snippets/servers/mcpserver_quickstart.py",
+  "revision": "77001c96f9507be0f4d009b83210a384a5e08bda",
+  "git_blob_sha1": "70a83a56e4b69d90f7c8c8d675df4433f4cc01e4",
+  "sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+  "license": "MIT",
+  "original_TRUSTDESC_membership": false,
+  "scope": "offline unchanged add function body; no MCP transport"
+}

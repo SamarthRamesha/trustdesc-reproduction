@@ -5,8 +5,14 @@ import json
 from pathlib import Path
 import re
 import time
+import gc
+import traceback
 from trustdesc.common.io import canonical, digest
 from trustdesc.common.models import ModelError
+
+# Modern tokenizers can store the model's chat protocol outside JSON.
+# Download it as data and verify its publisher hash; never fetch remote Python.
+MODEL_FILE_PATTERNS = ['*.json','*.safetensors','*.txt','*.model','*.tiktoken','*.jinja']
 
 
 def json_object(text):
@@ -78,15 +84,18 @@ class LocalModel:
         self.audit = []
         self.torch = torch
         self.device = config.get('device', 'cpu')
-        if self.device not in {'cpu', 'cuda'}:
+        if self.device not in {'cpu', 'cuda', 'mps'}:
             raise ModelError('Unsupported explicit inference device')
         if self.device == 'cuda' and not torch.cuda.is_available():
             raise ModelError('CUDA selected but PyTorch cannot use it; no silent CPU execution of the larger model')
         if self.device == 'cpu':
             torch.set_num_threads(min(4, torch.get_num_threads()))
+        if self.device == 'mps' and not torch.backends.mps.is_available():
+            raise ModelError('MPS selected but unavailable; no silent device substitution')
+        self.fatal_error = False
         expected_assets = model_file_manifest(self.model_id, config['revision'], cache)
         snapshot = Path(snapshot_download(self.model_id, revision=config['revision'], cache_dir=str(cache),
-                        token=False, allow_patterns=['*.json', '*.safetensors', '*.txt', '*.model', '*.tiktoken']))
+                        token=False, allow_patterns=MODEL_FILE_PATTERNS))
         assets = {}
         for path in sorted(snapshot.rglob('*')):
             if path.is_file():
@@ -102,19 +111,22 @@ class LocalModel:
                     assets[relative] = check_asset(repaired, expected_assets[relative])
                     assets[relative]['cache_repaired'] = True
         self.tokenizer = AutoTokenizer.from_pretrained(snapshot, local_files_only=True, trust_remote_code=False)
+        precision = config.get('precision','float16' if self.device in {'cuda','mps'} else 'float32')
         self.model = AutoModelForCausalLM.from_pretrained(snapshot, local_files_only=True, trust_remote_code=False,
-                    use_safetensors=True, torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
+                    use_safetensors=True, torch_dtype=getattr(torch,precision),
                     attn_implementation='eager').to(self.device).eval()
         self.runtime = {'model_id': self.model_id, 'revision': config['revision'], 'device': self.device,
                         'torch': torch.__version__, 'transformers': transformers.__version__, 'assets': assets,
-                        'precision': 'float16' if self.device == 'cuda' else 'float32',
+                        'precision': precision,
                         'integrity': 'immutable HF commit metadata over TLS; LFS SHA-256 or Git blob SHA-1 verified before loading; metadata cached locally; no separate signed publisher manifest',
                         'paper_equivalence': False, 'api_cost_usd': 0.0, 'compute_cost_usd': None}
 
     def complete(self, stage, system, payload):
+        if self.fatal_error:
+            raise ModelError('Accelerator context failed; restart model worker before further inference')
         messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': canonical(payload)}]
         inputs = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True,
-                    return_dict=True, return_tensors='pt').to(self.device)
+                    return_dict=True, return_tensors='pt')
         count = inputs['input_ids'].shape[-1]
         record = {'stage': stage, 'messages': messages, 'request_hash': digest(messages),
                   'input_tokens': count, 'output_tokens': None, 'model': self.model_id,
@@ -122,6 +134,13 @@ class LocalModel:
                   'status': 'started', 'temperature': self.cfg.get('temperature', .2),
                   'max_generation_seconds': self.cfg.get('max_generation_seconds',90)}
         self.audit.append(record)
+        ids = inputs['input_ids']
+        low,high = int(ids.min()),int(ids.max())
+        vocab = self.model.get_input_embeddings().num_embeddings
+        record['token_bounds']={'min':low,'max':high,'embedding_rows':vocab}
+        if low < 0 or high >= vocab:
+            record.update(status='failed',error='Input token outside embedding vocabulary')
+            raise ModelError('Input token outside embedding vocabulary; prevented device assertion')
         if count > self.cfg.get('max_input_tokens', 4096):
             record['status'] = 'context_limit'
             raise ModelError(f'Input has {count} tokens, beyond context cap; no truncation')
@@ -129,10 +148,20 @@ class LocalModel:
         self.torch.manual_seed(seed)
         start = time.perf_counter()
         try:
+            inputs = inputs.to(self.device)
             if self.device == 'cuda':
                 self.torch.cuda.synchronize()
             with self.torch.inference_mode():
-                output = self.model.generate(**inputs, do_sample=True, temperature=self.cfg.get('temperature', .2),
+                from transformers import LogitsProcessor, LogitsProcessorList
+                class FiniteLogits(LogitsProcessor):
+                    def __call__(processor, input_ids, scores):
+                        if self.torch.isnan(scores).any().item() or self.torch.isposinf(scores).any().item() or self.torch.isneginf(scores).all(dim=-1).any().item():
+                            raise ModelError('Non-finite logits detected before sampling; no fabricated recovery')
+                        return scores
+                temperature=self.cfg.get('temperature', .2)
+                output = self.model.generate(**inputs, do_sample=temperature>0,
+                    **({'temperature':temperature} if temperature>0 else {}),
+                    logits_processor=LogitsProcessorList([FiniteLogits()]),
                     max_new_tokens=self.cfg.get('max_new_tokens', 1600), max_time=self.cfg.get('max_generation_seconds',90),
                     pad_token_id=self.tokenizer.eos_token_id)
             if self.device == 'cuda':
@@ -140,6 +169,8 @@ class LocalModel:
             tokens = output[0][count:]
             text = self.tokenizer.decode(tokens, skip_special_tokens=True)
             record.update(raw_content=text, output_tokens=len(tokens), seed=seed)
+            if not len(tokens):
+                raise ModelError('Model generated no output tokens')
             if time.perf_counter()-start >= self.cfg.get('max_generation_seconds',90) and int(tokens[-1]) != self.tokenizer.eos_token_id:
                 raise ModelError('Generation deadline reached; partial response not accepted')
             if len(tokens) >= self.cfg.get('max_new_tokens', 1600) and int(tokens[-1]) != self.tokenizer.eos_token_id:
@@ -148,10 +179,17 @@ class LocalModel:
             record.update(status='completed', response=result)
             return result
         except Exception as exc:
-            record.update(status='failed', error_type=type(exc).__name__, error=str(exc))
+            self.fatal_error = 'device-side assert' in str(exc).lower()
+            record.update(status='failed', error_type=type(exc).__name__, error=str(exc),traceback=traceback.format_exc(),fatal_accelerator_error=self.fatal_error)
             raise
         finally:
             record['seconds'] = time.perf_counter() - start
+
+    def close(self):
+        self.model = self.tokenizer = None
+        gc.collect()
+        if self.device == 'mps': self.torch.mps.empty_cache()
+        if self.device == 'cuda' and not self.fatal_error: self.torch.cuda.empty_cache()
 
 
 class RepairModel:
@@ -171,5 +209,24 @@ class RepairModel:
             if 'JSON' not in str(exc):
                 raise
             raw = self.model.audit[-1].get('raw_content', '')
+            # Some models emit the requested records as a bare JSON array.
+            # Restore only the container key: never invent/change a record,
+            # claim, reference, rationale, task or verdict. Downstream validators
+            # still require exact claim coverage and real source references.
+            key={'source_grounding':'evidence','verification_plan':'tasks'}.get(stage)
+            if key:
+                try:
+                    array=json.loads(raw,parse_constant=lambda value: (_ for _ in ()).throw(ValueError('Non-finite JSON')))
+                except ValueError:
+                    array=None
+                if isinstance(array,list) and all(isinstance(row,dict) for row in array):
+                    value={key:array}
+                    self.model.audit[-1]['format_normalization']={'kind':'bare_array_container','key':key,
+                        'semantic_content_changed':False,'downstream_validation_required':True}
+                    self.model.audit[-1]['normalized_response']=value
+                    return value
             return self.model.complete(stage, system + '\nThe previous response was invalid JSON. Return ONLY the specified JSON object.',
                          {'original_request': payload, 'invalid_response': raw, 'error': str(exc)})
+
+    def close(self):
+        self.model.close()
