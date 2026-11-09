@@ -1,0 +1,32 @@
+{
+  "valid": true,
+  "errors": [],
+  "required_files": [
+    "PHASE2_COMPLETION_REPORT.md",
+    "PHASE3_HANDOVER.md",
+    "METHODOLOGY.md",
+    "DATASET_PROVENANCE.md",
+    "EXPERIMENT_RESULTS.md",
+    "LIMITATIONS_AND_REPRODUCIBILITY.md",
+    "REPRODUCTION_INSTRUCTIONS.md",
+    "results.json",
+    "EXPERIMENT_MANIFEST.json",
+    "dataset_manifest.json",
+    "model_manifest.json",
+    "prompt_manifest.json",
+    "source_hashes.json",
+    "config.json",
+    "execution_traces.jsonl",
+    "tool_verification.json",
+    "acquisition_report.json",
+    "environment.json",
+    "installed_packages.txt",
+    "metrics.csv",
+    "description_comparisons.json"
+  ],
+  "fixed_task_agent": true,
+  "original_paper_TSR_computed": false,
+  "phase2_complete": false,
+  "scope": "artifact/software consistency, not scientific efficacy",
+  "scientific_stage_failures": 27
+}

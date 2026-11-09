@@ -1,0 +1,1257 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-09T03:27:36.069253+00:00",
+  "scope": "independent_partial_reproduction",
+  "phase2_complete": false,
+  "pipeline_finished": true,
+  "scientific_reproduction_complete": false,
+  "conditions": [
+    {
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 8,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 0,
+      "fixture_oracle_success_rate_percent": 0.0,
+      "observed_subset_success_rate_percent": 0.0,
+      "descriptive_wilson95_percent": [
+        0,
+        32.440756488388026
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "tool": "apply_formula",
+      "expected_tasks": 4,
+      "observed_tasks": 4,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 0,
+      "fixture_oracle_success_rate_percent": 0.0,
+      "observed_subset_success_rate_percent": 0.0,
+      "descriptive_wilson95_percent": [
+        0,
+        48.98908364545973
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "tool": "normalize_name",
+      "expected_tasks": 4,
+      "observed_tasks": 4,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 0,
+      "fixture_oracle_success_rate_percent": 0.0,
+      "observed_subset_success_rate_percent": 0.0,
+      "descriptive_wilson95_percent": [
+        0,
+        48.98908364545973
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 0,
+      "missing_tasks": 8,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "tool": "apply_formula",
+      "expected_tasks": 4,
+      "observed_tasks": 0,
+      "missing_tasks": 4,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "tool": "normalize_name",
+      "expected_tasks": 4,
+      "observed_tasks": 0,
+      "missing_tasks": 4,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 0,
+      "missing_tasks": 8,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "tool": "apply_formula",
+      "expected_tasks": 4,
+      "observed_tasks": 0,
+      "missing_tasks": 4,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "tool": "normalize_name",
+      "expected_tasks": 4,
+      "observed_tasks": 0,
+      "missing_tasks": 4,
+      "completed_fixture_objectives": null,
+      "fixture_oracle_success_rate_percent": null,
+      "observed_subset_success_rate_percent": null,
+      "descriptive_wilson95_percent": null,
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    }
+  ],
+  "paired_overhead": [
+    {
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "common_success_task_ids": [],
+      "relative_percent": {
+        "latency_seconds": null,
+        "cost_usd": null,
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "scope": "Synthetic oracle intersection; not original paper benchmark",
+      "aggregation": "ratio of means; zero baseline cost makes relative cost undefined"
+    },
+    {
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "common_success_task_ids": [],
+      "relative_percent": {
+        "latency_seconds": null,
+        "cost_usd": null,
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "scope": "Synthetic oracle intersection; not original paper benchmark",
+      "aggregation": "ratio of means; zero baseline cost makes relative cost undefined"
+    }
+  ],
+  "generation_measurements": [
+    {
+      "stage": "debloat",
+      "calls": 2,
+      "failed_calls": 0,
+      "seconds": 39.022386083961464,
+      "input_tokens": 482,
+      "output_tokens": 180,
+      "api_cost_usd": 0.0,
+      "compute_cost_usd": null
+    },
+    {
+      "stage": "description",
+      "calls": 1,
+      "failed_calls": 0,
+      "seconds": 6.809257416985929,
+      "input_tokens": 294,
+      "output_tokens": 80,
+      "api_cost_usd": 0.0,
+      "compute_cost_usd": null
+    },
+    {
+      "stage": "identifier_filter",
+      "calls": 3,
+      "failed_calls": 0,
+      "seconds": 36.07557950000046,
+      "input_tokens": 921,
+      "output_tokens": 320,
+      "api_cost_usd": 0.0,
+      "compute_cost_usd": null
+    },
+    {
+      "stage": "source_grounding",
+      "calls": 1,
+      "failed_calls": 0,
+      "seconds": 37.75702629197622,
+      "input_tokens": 448,
+      "output_tokens": 408,
+      "api_cost_usd": 0.0,
+      "compute_cost_usd": null
+    },
+    {
+      "stage": "verification_plan",
+      "calls": 1,
+      "failed_calls": 0,
+      "seconds": 22.627453916997183,
+      "input_tokens": 348,
+      "output_tokens": 171,
+      "api_cost_usd": 0.0,
+      "compute_cost_usd": null
+    }
+  ],
+  "task_results": [
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 1,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "sum(a1:a5)"
+            }
+          },
+          {
+            "index": 2,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "sum(a1:a5)"
+            }
+          },
+          {
+            "index": 3,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "sum(a1:a5)"
+            }
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 13.993153124989476,
+      "input_tokens": 1758,
+      "output_tokens": 96,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:23:18.953785+00:00",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "sum(a1:a5)"
+            }
+          },
+          {
+            "index": 1,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 2,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "SUM(A1:A5)"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "sum(a1:a5)"
+            }
+          },
+          {
+            "index": 3,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "SUM(A1:A5)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 12.609882791992277,
+      "input_tokens": 1778,
+      "output_tokens": 96,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": true,
+        "objective_observation": true,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:23:31.571772+00:00",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "INDIRECT(\"A1\")."
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 1,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "A1"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "a1"
+            }
+          },
+          {
+            "index": 2,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "a1"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "a1"
+            }
+          },
+          {
+            "index": 3,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "INDIRECT(\"A1\")."
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 21.00426137499744,
+      "input_tokens": 1741,
+      "output_tokens": 90,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:23:52.588053+00:00",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "HYPERLINK(\"x\")."
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 1,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "x"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "x"
+            }
+          },
+          {
+            "index": 2,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "x"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "x"
+            }
+          },
+          {
+            "index": 3,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "HYPERLINK(\"x\")."
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 14.9448529999936,
+      "input_tokens": 1735,
+      "output_tokens": 88,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:24:07.566803+00:00",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "agent_error",
+        "events": [],
+        "reason": "ModelError"
+      },
+      "latency_seconds": 4.697389749984723,
+      "input_tokens": 437,
+      "output_tokens": 30,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:24:12.270886+00:00",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "''"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "''"
+            }
+          },
+          {
+            "index": 1,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "''"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 2,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "''"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "''"
+            }
+          },
+          {
+            "index": 3,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "''"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "''"
+            }
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 189.72477062500548,
+      "input_tokens": 3497,
+      "output_tokens": 74,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:27:22.001522+00:00",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "trim(name) && tolower(name)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 1,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "trim(name) && tolower(name)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 2,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "trim(name) && tolower(name)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 3,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "trim(name) && tolower(name)"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 7.619405124976765,
+      "input_tokens": 1742,
+      "output_tokens": 104,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:27:29.624091+00:00",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "failed",
+      "trace": {
+        "backend": "synthetic_allowlist",
+        "status": "step_limit",
+        "events": [
+          {
+            "index": 0,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "BOB"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 1,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "BOB"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 2,
+            "tool": "apply_formula",
+            "arguments": {
+              "formula": "BOB"
+            },
+            "status": "tool_error",
+            "error": "Formula must start with ="
+          },
+          {
+            "index": 3,
+            "tool": "normalize_name",
+            "arguments": {
+              "name": "BOB"
+            },
+            "status": "ok",
+            "result": {
+              "normalized": "bob"
+            }
+          }
+        ],
+        "reason": "Maximum agent steps reached"
+      },
+      "latency_seconds": 6.343586000031792,
+      "input_tokens": 1706,
+      "output_tokens": 80,
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "fixture_oracle": {
+        "success": false,
+        "target_invoked": true,
+        "objective_observation": true,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      },
+      "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+      "human_reviewed": false,
+      "recorded_at": "2026-11-09T03:27:36.024176+00:00",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "original",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.026637+00:00",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.028854+00:00",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.031015+00:00",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.033270+00:00",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.035443+00:00",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.037421+00:00",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.039683+00:00",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.041798+00:00",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "lite",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.043947+00:00",
+      "task_id": "synthetic-001",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.046122+00:00",
+      "task_id": "synthetic-002",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.048096+00:00",
+      "task_id": "synthetic-003",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.050136+00:00",
+      "task_id": "synthetic-004",
+      "tool_id": "apply_formula",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.052084+00:00",
+      "task_id": "synthetic-005",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.054075+00:00",
+      "task_id": "synthetic-006",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.056330+00:00",
+      "task_id": "synthetic-007",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    },
+    {
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition",
+      "recorded_at": "2026-11-09T03:27:36.058576+00:00",
+      "task_id": "synthetic-008",
+      "tool_id": "normalize_name",
+      "generator": "qwen-cpu",
+      "variant": "full",
+      "task_agent_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "task_agent_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "origin": "synthetic",
+      "paper_TSR_eligible": false
+    }
+  ],
+  "tool_assessments": [
+    {
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "trust_assessment": "not_assessed",
+      "reason": "No valid implementation-grounded draft"
+    },
+    {
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "trust_assessment": "not_assessed",
+      "reason": "Nonverifiable claims must have null task"
+    }
+  ],
+  "failure_analysis": [
+    {
+      "stage": "DescGen",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "status": "failed",
+      "reason": "DescGen validation failed twice: ValidationError: Identifier normalization collision; preserve evidence and review | ValidationError: Identifier normalization collision; preserve evidence and review"
+    },
+    {
+      "stage": "DynVer",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "status": "blocked",
+      "reason": "No valid implementation-grounded draft"
+    },
+    {
+      "stage": "DynVer",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "status": "failed",
+      "reason": "Nonverifiable claims must have null task"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-001",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-002",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-003",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-004",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-005",
+      "condition": "original",
+      "status": "failed",
+      "reason": "ModelError"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-006",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-007",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-008",
+      "condition": "original",
+      "status": "failed",
+      "reason": "Maximum agent steps reached"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-001",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-002",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-003",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-004",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-005",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-006",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-007",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-008",
+      "condition": "lite",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-001",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-002",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-003",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "apply_formula",
+      "task": "synthetic-004",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-005",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-006",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-007",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    },
+    {
+      "stage": "evaluation",
+      "model": "qwen-cpu",
+      "tool": "normalize_name",
+      "task": "synthetic-008",
+      "condition": "full",
+      "status": "unavailable",
+      "reason": "Complete matched tool descriptions unavailable for this condition"
+    }
+  ],
+  "blockers": [
+    "Original 52-tool/208-task release, labels, traces and exact prompts not recovered.",
+    "Original generation models and fixed Gemini-3-Flash task agent replaced by explicitly named free local model.",
+    "Python AST subset; TypeScript, unrestricted dynamic dispatch and proof of slicing equivalence unavailable.",
+    "External MCP execution not available in default Colab without an approved local container image and successful probes.",
+    "Finite authored fixture observations and automated oracles do not establish original human-reviewed TSR.",
+    "Q3 degraded-tool competition, Q4 seven original attacks and Q5 adaptive naming experiments lack authenticated experimental artifacts."
+  ],
+  "paper_reference_only": {
+    "original_tasks": 208,
+    "original_tools": 52,
+    "baseline_completed": 175,
+    "baseline_TSR_percent": 84.1,
+    "mean_full_TSR_percent": 87.7,
+    "mean_lite_TSR_percent": 86.3,
+    "source": "arXiv:2604.07536v1 Table 2; not measured in this run"
+  },
+  "attack_success_rate": null,
+  "tool_modification_rate": null,
+  "paper_TSR_percent": null
+}

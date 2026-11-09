@@ -1,0 +1,49 @@
+{
+  "model_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+  "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+  "all_cached_assets_verified": true,
+  "metadata_source": "Hugging Face model_info(files_metadata=True) over TLS",
+  "expected_file_hashes": {
+    ".gitattributes": {
+      "sha256": null,
+      "blob_id": "a6344aac8c09253b3b630fb776ae94478aa0275b"
+    },
+    "LICENSE": {
+      "sha256": null,
+      "blob_id": "6634c8cc3133b3848ec74b9f275acaaa1ea618ab"
+    },
+    "README.md": {
+      "sha256": null,
+      "blob_id": "ac19f5b31845270145a877d1ff18c35926895c22"
+    },
+    "config.json": {
+      "sha256": null,
+      "blob_id": "e2aa18293b0dd66539341467fa454878a5adb2be"
+    },
+    "generation_config.json": {
+      "sha256": null,
+      "blob_id": "c28f9c697cbc09f047434efec57556505af31111"
+    },
+    "merges.txt": {
+      "sha256": null,
+      "blob_id": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+    },
+    "model.safetensors": {
+      "sha256": "f9523886352217ded3aeeef552b381af79d568c6d49a4b9e423288cea56b0a44",
+      "blob_id": "eec1bfbec6eb971923b39af693d096d1016b0df3"
+    },
+    "tokenizer.json": {
+      "sha256": null,
+      "blob_id": "443909a61d429dff23010e5bddd28ff530edda00"
+    },
+    "tokenizer_config.json": {
+      "sha256": null,
+      "blob_id": "acee076f49bf3c0298e15de0909d1da7b392f0c3"
+    },
+    "vocab.json": {
+      "sha256": null,
+      "blob_id": "4783fe10ac3adce15ac8f358ef5462739852c569"
+    }
+  },
+  "scope": "real CPU model asset integrity; not inference or Colab validation"
+}

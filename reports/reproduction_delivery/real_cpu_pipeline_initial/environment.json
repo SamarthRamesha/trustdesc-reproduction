@@ -1,0 +1,21 @@
+{
+  "python": "3.13.9",
+  "python_supported": true,
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "ram_total_bytes": 17179869184,
+  "ram_available_bytes": null,
+  "disk_free_bytes": 65002602496,
+  "gpus": [],
+  "cuda_driver_supported_version": null,
+  "packages": {
+    "torch": "2.9.0",
+    "transformers": "4.57.1",
+    "matplotlib": null,
+    "huggingface-hub": "0.36.0",
+    "safetensors": "0.6.2"
+  },
+  "runtime_type": "local_validation",
+  "recommended_profile": "A",
+  "note": "Recommendation selects capacity profile only, never a scientific model automatically."
+}

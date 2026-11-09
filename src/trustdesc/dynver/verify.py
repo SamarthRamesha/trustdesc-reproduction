@@ -95,7 +95,7 @@ def verify(description, model, runner):
         decisions.append({'claim_id': cid, **judged})
     full = filter_description(description, decisions)
     lite = {k: copy.deepcopy(v) for k, v in full.items() if k not in {'functionalities', 'claims'}}
-    return {'full': full, 'lite': lite, 'decisions': decisions, 'traces': traces,
+    return {'full': full, 'lite': lite, 'decisions': decisions, 'traces': traces, 'plan': plan,
             'model': model.model_id, 'model_mode': model.mode,
             'status': 'synthetic_evidence_only' if any(t['trace']['backend'] == 'synthetic_allowlist' for t in traces) else 'requires_backend_validation',
             'usable_summary': bool(full['summary']), 'trust_decision': 'not_assessed',

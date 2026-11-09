@@ -5,9 +5,10 @@ import copy
 from trustdesc.common.io import ValidationError, digest
 from trustdesc.descgen import generate
 from trustdesc.descgen.generate import validate_description, prose_paths
-from trustdesc.descgen.sanitize import sanitize
+from trustdesc.descgen.sanitize import sanitize, check_mapping
 from trustdesc.descgen.prompts import BOUNDARY
 from trustdesc.dynver import verify
+from trustdesc.common.io import require_fields, nonempty
 
 GENERATE_COMPACT = BOUNDARY + '''Describe only the behavior implemented by the supplied
 Python code. Return exactly three fields: "summary" (string), "functionalities"
@@ -95,7 +96,7 @@ def validate_evidence(response, description, spans):
 def grounded_generate(slice_result, model):
     signature = interface(slice_result)
     template = {k: copy.deepcopy(signature[k]) for k in ['type','properties','required']}
-    sanitized = sanitize(slice_result['source'], model)
+    sanitized = sanitize(slice_result['source'], IdentifierGuard(model))
     generated = model.complete('description', GENERATE_COMPACT,
                    {'tool': slice_result['tool'], 'entry': slice_result['entry'], 'code': sanitized['source'],
                     'input_schema_template': template})
@@ -127,7 +128,7 @@ def iterative_verify(description, model, runner, slice_result, *, max_rounds=2, 
     current_evidence = copy.deepcopy(source_evidence) if source_evidence is not None else None
     signature = interface(slice_result)
     for iteration in range(max_rounds):
-        checked = verify(current, model, runner)
+        checked = verify(current, VerificationGuard(model), runner)
         if current_evidence is not None:
             grounded = {r['claim_id'] for r in current_evidence if r['references']}
             excluded = []
@@ -171,3 +172,59 @@ def iterative_verify(description, model, runner, slice_result, *, max_rounds=2, 
                    confidence='finite_observations_only',
                    structural_schema_status='static_signature_checked; nested constraints and return schema not certified')
     return checked
+
+
+class IdentifierGuard:
+    """Explain invalid classifier mappings to the same real model once."""
+    def __init__(self, model):
+        self.model = model
+
+    def complete(self, stage, system, payload):
+        response = self.model.complete(stage, system, payload)
+        try:
+            renames = response.get('renames')
+            if not isinstance(renames, dict) or not set(renames).issubset(payload['identifiers']):
+                raise ValidationError('Unknown identifiers or malformed rename mapping')
+            check_mapping(set(payload['identifiers']), renames)
+            return response
+        except ValidationError as exc:
+            return self.model.complete(stage, system + '\nYour previous mapping was rejected. Preserve neutral identifiers; every final name must be unique including unchanged identifiers. Return only necessary promotional-term removals.',
+                        {**payload, 'rejected_mapping': response, 'validation_error': str(exc)})
+
+
+class VerificationGuard:
+    """Bounded validation-feedback retry; never invents a task or verdict."""
+    def __init__(self, model):
+        self.model = model
+        self.model_id, self.mode = model.model_id, model.mode
+
+    def complete(self, stage, system, payload):
+        response = self.model.complete(stage, system, payload)
+        try:
+            if stage == 'verification_plan':
+                require_fields(response, {'tasks'}, 'verification plan')
+                if not isinstance(response['tasks'], list):
+                    raise ValidationError('tasks must be a list')
+                expected = {c['id'] for c in payload['description']['claims']}
+                seen = set()
+                for task in response['tasks']:
+                    require_fields(task, {'claim_id','verifiable','task','reason'}, 'verification task')
+                    if task['claim_id'] not in expected or task['claim_id'] in seen or type(task['verifiable']) is not bool:
+                        raise ValidationError('Exactly one task per actual claim id and boolean verifiable are required')
+                    seen.add(task['claim_id'])
+                    nonempty(task['reason'], 'reason')
+                    if task['verifiable']:
+                        nonempty(task['task'], 'task')
+                    elif task['task'] is not None:
+                        raise ValidationError('If verifiable=false, task MUST be JSON null; never a string')
+                if seen != expected:
+                    raise ValidationError('Verification plan omitted actual claim ids')
+            elif stage == 'judge':
+                require_fields(response, {'verdict','reason'}, 'judge')
+                if response['verdict'] not in {'supported','refuted','inconclusive'}:
+                    raise ValidationError('verdict must be supported, refuted or inconclusive')
+                nonempty(response['reason'], 'reason')
+            return response
+        except (ValidationError, TypeError, KeyError) as exc:
+            return self.model.complete(stage, system + '\nYour previous response failed protocol validation. Correct its format using the actual diagnostic. Do not fabricate an observation or verdict.',
+                       {**payload,'rejected_response':response,'validation_error':str(exc)})

@@ -17,7 +17,10 @@ This rewrite is a reasoning artifact, never a replacement executable tool.
 
 IDENTIFIERS = BOUNDARY + """Classify identifiers in context. Remove promotional or biased
 terms while preserving their functional role. Do not change behavior-bearing
-string constants. Return {"renames": {"old_identifier": "neutral_identifier"}}.
+string constants. Neutral names, ordinary validation helpers, Python builtins
+and standard library/API method names are not promotional and must be retained.
+Do not rename an identifier merely to expand an abbreviation or restyle it.
+Return {"renames": {"old_identifier": "neutral_identifier"}}.
 Use only identifiers in the supplied list; replacements must be unique valid
 identifiers at most 20 characters. Use an empty mapping if no bias is found.
 """

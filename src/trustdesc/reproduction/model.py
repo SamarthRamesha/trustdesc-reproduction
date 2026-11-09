@@ -22,13 +22,54 @@ def json_object(text):
     return value
 
 
+def check_asset(path, expected):
+    """HF LFS SHA-256 or Git blob SHA-1, bound to the pinned commit metadata."""
+    path = Path(path)
+    sha = hashlib.sha256()
+    blob = hashlib.sha1(b'blob ' + str(path.stat().st_size).encode() + b'\x00')
+    with path.open('rb') as f:
+        for block in iter(lambda: f.read(4*1024*1024), b''):
+            sha.update(block)
+            blob.update(block)
+    expected_hash = expected.get('sha256') or expected.get('blob_id')
+    actual = sha.hexdigest() if expected.get('sha256') else blob.hexdigest()
+    if not expected_hash or actual != expected_hash:
+        raise ModelError('Pinned model asset checksum mismatch: ' + path.name)
+    return {'sha256': sha.hexdigest(), 'bytes': path.stat().st_size, 'publisher_hash_verified': True}
+
+
+def model_file_manifest(model_id, revision, cache):
+    cache = Path(cache)
+    metadata = cache / ('manifest-' + digest([model_id,revision]) + '.json')
+    if metadata.exists():
+        value = json.loads(metadata.read_text())
+        if value.get('model_id') != model_id or value.get('revision') != revision:
+            raise ModelError('Model metadata cache identity mismatch')
+        return value['files']
+    from huggingface_hub import HfApi
+    info = HfApi().model_info(model_id, revision=revision, files_metadata=True, token=False)
+    if info.sha != revision:
+        raise ModelError('Resolved model commit differs from pinned commit')
+    result = {}
+    for file in info.siblings:
+        lfs = file.lfs
+        expected_sha = getattr(lfs,'sha256',None) if lfs is not None else None
+        if isinstance(lfs,dict):expected_sha=lfs.get('sha256')
+        result[file.rfilename] = {'sha256':expected_sha, 'blob_id':file.blob_id}
+    metadata.parent.mkdir(parents=True,exist_ok=True)
+    temp = metadata.with_suffix('.part')
+    temp.write_text(json.dumps({'model_id':model_id,'revision':revision,'files':result},indent=2)+'\n')
+    temp.replace(metadata)
+    return result
+
+
 class LocalModel:
     mode = 'real_local_transformers_inference'
 
     def __init__(self, config, cache):
         import torch
         import transformers
-        from huggingface_hub import snapshot_download
+        from huggingface_hub import snapshot_download, hf_hub_download
         from transformers import AutoModelForCausalLM, AutoTokenizer
         if not re.fullmatch('[0-9a-f]{40}', config['revision']):
             raise ModelError('Full immutable model revision required')
@@ -43,16 +84,23 @@ class LocalModel:
             raise ModelError('CUDA selected but PyTorch cannot use it; no silent CPU execution of the larger model')
         if self.device == 'cpu':
             torch.set_num_threads(min(4, torch.get_num_threads()))
+        expected_assets = model_file_manifest(self.model_id, config['revision'], cache)
         snapshot = Path(snapshot_download(self.model_id, revision=config['revision'], cache_dir=str(cache),
                         token=False, allow_patterns=['*.json', '*.safetensors', '*.txt', '*.model', '*.tiktoken']))
         assets = {}
         for path in sorted(snapshot.rglob('*')):
             if path.is_file():
-                h = hashlib.sha256()
-                with path.open('rb') as f:
-                    for block in iter(lambda: f.read(4*1024*1024), b''):
-                        h.update(block)
-                assets[path.relative_to(snapshot).as_posix()] = {'sha256': h.hexdigest(), 'bytes': path.stat().st_size}
+                relative = path.relative_to(snapshot).as_posix()
+                if relative not in expected_assets:
+                    raise ModelError('Unexpected file in pinned model snapshot: ' + relative)
+                try:
+                    assets[relative] = check_asset(path, expected_assets[relative])
+                except ModelError:
+                    # Repair a corrupt cached asset once, then validate again.
+                    repaired = hf_hub_download(self.model_id, relative, revision=config['revision'], cache_dir=str(cache),
+                                               token=False, force_download=True)
+                    assets[relative] = check_asset(repaired, expected_assets[relative])
+                    assets[relative]['cache_repaired'] = True
         self.tokenizer = AutoTokenizer.from_pretrained(snapshot, local_files_only=True, trust_remote_code=False)
         self.model = AutoModelForCausalLM.from_pretrained(snapshot, local_files_only=True, trust_remote_code=False,
                     use_safetensors=True, torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
@@ -60,7 +108,7 @@ class LocalModel:
         self.runtime = {'model_id': self.model_id, 'revision': config['revision'], 'device': self.device,
                         'torch': torch.__version__, 'transformers': transformers.__version__, 'assets': assets,
                         'precision': 'float16' if self.device == 'cuda' else 'float32',
-                        'integrity': 'immutable HF commit over TLS; observed asset SHA-256; no separate signed publisher manifest',
+                        'integrity': 'immutable HF commit metadata over TLS; LFS SHA-256 or Git blob SHA-1 verified before loading; metadata cached locally; no separate signed publisher manifest',
                         'paper_equivalence': False, 'api_cost_usd': 0.0, 'compute_cost_usd': None}
 
     def complete(self, stage, system, payload):
@@ -71,7 +119,8 @@ class LocalModel:
         record = {'stage': stage, 'messages': messages, 'request_hash': digest(messages),
                   'input_tokens': count, 'output_tokens': None, 'model': self.model_id,
                   'revision': self.cfg['revision'], 'cost_usd': 0.0, 'compute_cost_usd': None,
-                  'status': 'started', 'temperature': self.cfg.get('temperature', .2)}
+                  'status': 'started', 'temperature': self.cfg.get('temperature', .2),
+                  'max_generation_seconds': self.cfg.get('max_generation_seconds',90)}
         self.audit.append(record)
         if count > self.cfg.get('max_input_tokens', 4096):
             record['status'] = 'context_limit'
@@ -84,12 +133,15 @@ class LocalModel:
                 self.torch.cuda.synchronize()
             with self.torch.inference_mode():
                 output = self.model.generate(**inputs, do_sample=True, temperature=self.cfg.get('temperature', .2),
-                    max_new_tokens=self.cfg.get('max_new_tokens', 1600), pad_token_id=self.tokenizer.eos_token_id)
+                    max_new_tokens=self.cfg.get('max_new_tokens', 1600), max_time=self.cfg.get('max_generation_seconds',90),
+                    pad_token_id=self.tokenizer.eos_token_id)
             if self.device == 'cuda':
                 self.torch.cuda.synchronize()
             tokens = output[0][count:]
             text = self.tokenizer.decode(tokens, skip_special_tokens=True)
             record.update(raw_content=text, output_tokens=len(tokens), seed=seed)
+            if time.perf_counter()-start >= self.cfg.get('max_generation_seconds',90) and int(tokens[-1]) != self.tokenizer.eos_token_id:
+                raise ModelError('Generation deadline reached; partial response not accepted')
             if len(tokens) >= self.cfg.get('max_new_tokens', 1600) and int(tokens[-1]) != self.tokenizer.eos_token_id:
                 raise ModelError('Output token limit reached; partial JSON not accepted')
             result = json_object(text)

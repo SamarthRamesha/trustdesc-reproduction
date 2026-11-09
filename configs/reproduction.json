@@ -9,7 +9,7 @@
     "cuda": {"id":"qwen-t4","provider":"local","model_id":"Qwen/Qwen2.5-Coder-1.5B-Instruct","revision":"2e1fd397ee46e1388853d2af2c993145b0f1098a","estimated_weight_bytes":3100000000,"minimum_available_ram_bytes":5368709120,"minimum_gpu_free_bytes":5368709120},
     "cpu": {"id":"qwen-cpu","provider":"local","model_id":"Qwen/Qwen2.5-Coder-0.5B-Instruct","revision":"ea3f2471cf1b1f0db85067f1ef93848e38e88c25","estimated_weight_bytes":1000000000,"minimum_available_ram_bytes":4294967296}
   },
-  "model_settings": {"temperature":0.2,"seed":42,"max_input_tokens":4096,"max_new_tokens":1600,"max_calls":250,"debloat":true,"reasoning":"provider_default"},
+  "model_settings": {"temperature":0.2,"seed":42,"max_input_tokens":4096,"max_new_tokens":1600,"max_generation_seconds":90,"max_calls":250,"debloat":true,"reasoning":"provider_default"},
   "minimum_disk_free_bytes":8589934592,
   "missing_resource_policy":"Record unavailable; continue independent stages; never substitute semantic replay",
   "evaluation":"Fixed local task agent; authored fixture oracles; original human-reviewed paper TSR withheld"

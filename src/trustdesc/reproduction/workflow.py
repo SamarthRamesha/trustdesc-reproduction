@@ -179,7 +179,7 @@ def score_fixture(task, trace):
         return {'success': None, 'reason': 'No authored oracle; no guessed label'}
     events = [e for e in trace.get('events', []) if e['tool'] == task['tool'] and e['arguments'] == task['fixture_arguments']]
     observed = any(e['status'] == expected[0] and e.get('result' if expected[0] == 'ok' else 'error') == expected[1] for e in events)
-    return {'success': trace.get('status') == 'completed' and observed, 'target_invoked': bool(events),
+    return {'success': observed, 'target_invoked': bool(events), 'agent_finished': trace.get('status') == 'completed',
             'objective_observation': observed, 'method': 'authored_exact_trace_oracle', 'human_reviewed': False,
             'scope': 'Synthetic software/agent check; not paper human-reviewed task success'}
 

@@ -1,0 +1,215 @@
+{
+  "new_inference_run": false,
+  "scope": "explicit reanalysis of saved authored-fixture traces; not paper TSR",
+  "oracle_source_sha256": "76bf7b94b159831ae7085dff7dbc8aba19d25651fabd097a3e0e395759ccacee",
+  "records": [
+    {
+      "task_id": "synthetic-001",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-002",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": true,
+        "target_invoked": true,
+        "agent_finished": false,
+        "objective_observation": true,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-003",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-004",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-005",
+      "condition": "original",
+      "original_trace_status": "agent_error",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-006",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-007",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": false,
+        "target_invoked": false,
+        "agent_finished": false,
+        "objective_observation": false,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-008",
+      "condition": "original",
+      "original_trace_status": "step_limit",
+      "final_oracle": {
+        "success": true,
+        "target_invoked": true,
+        "agent_finished": false,
+        "objective_observation": true,
+        "method": "authored_exact_trace_oracle",
+        "human_reviewed": false,
+        "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+      }
+    },
+    {
+      "task_id": "synthetic-001",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-002",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-003",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-004",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-005",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-006",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-007",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-008",
+      "condition": "lite",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-001",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-002",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-003",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-004",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-005",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-006",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-007",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    },
+    {
+      "task_id": "synthetic-008",
+      "condition": "full",
+      "original_trace_status": null,
+      "final_oracle": null
+    }
+  ]
+}

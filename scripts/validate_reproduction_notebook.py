@@ -22,6 +22,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--execute-fixture',action='store_true')
     parser.add_argument('--execute-missing-model',action='store_true')
+    parser.add_argument('--remote-bootstrap',action='store_true',help='Fetch/verify pinned source in a fresh directory before importing project modules')
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
@@ -36,16 +37,19 @@ def main():
             'actual_external_MCP_execution':False,'model_inference':False,'validation_kind':'software_fixture_or_missing_model_only'}
     stream=io.StringIO()
     if args.execute_fixture or args.execute_missing_model:
-        from tests.unit.test_reproduction import SoftwareValidationModel
         with tempfile.TemporaryDirectory(prefix='trustdesc-notebook-') as tmp:
             options={'project':ROOT,'workspace':str(Path(tmp)/'workspace'),'skip_install':True,'offline':True,'skip_tests':True}
-            if args.execute_fixture:options['model']=SoftwareValidationModel()
-            else:options['model_error']='Explicit missing-model recovery validation'
+            if args.remote_bootstrap:options.pop('project')
+            if not args.execute_fixture:options['model_error']='Explicit missing-model recovery validation'
             scope={'_TRUSTDESC_VALIDATION':options}
             try:
                 with contextlib.redirect_stdout(stream),contextlib.redirect_stderr(stream):
                     for cell in codes:
                         exec(compile(''.join(cell['source']),cell['id'],'exec'),scope)
+                        if cell['id']=='bootstrap' and args.execute_fixture:
+                            sys.path.insert(0,str(scope['PROJECT']))
+                            from tests.unit.test_reproduction import SoftwareValidationModel
+                            options['model']=SoftwareValidationModel()
                         result['executed_cells']+=1
                 session=scope['SESSION'];export=scope['EXPORT']
                 assert session.results['phase2_complete'] is False
@@ -58,6 +62,7 @@ def main():
                 shutil.copy2(export['archive'],args.output/'phase3_handover.zip')
                 shutil.copy2(export['checksum_file'],args.output/'phase3_handover.zip.sha256')
                 result.update(task_records=24,zip_valid=True,model_mode=session.model_manifest.get('mode'),
+                              remote_bootstrap=args.remote_bootstrap,source_revision=scope['SOURCE_REVISION'],
                               success_rates=[r['fixture_oracle_success_rate_percent'] for r in session.results['conditions'] if r['tool']=='ALL'])
             except BaseException:
                 stream.write(traceback.format_exc())

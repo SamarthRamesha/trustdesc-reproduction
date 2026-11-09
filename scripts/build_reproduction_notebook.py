@@ -254,13 +254,19 @@ def build(revision):
     print("ZIP verified:", EXPORT["sha256"])
     print("Indexed output files:", EXPORT["files"])
     display(Markdown("### Download handover and reports"))
-    # Colab links are relative to /content and invoke the notebook file server.
+    # Small report links are self-contained downloads; the ZIP also uses
+    # Colab's native browser downloader below.
     def result_link(path):
         path = Path(path).resolve()
         if Path("/content").exists() and path.is_relative_to(Path("/content")):
             from html import escape
-            relative = path.relative_to("/content").as_posix()
-            display(HTML(f'<a href="/files/{escape(relative)}" download target="_blank">{escape(path.name)}</a>'))
+            if path.stat().st_size <= 2_000_000:
+                import base64
+                encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+                display(HTML(f'<a href="data:application/octet-stream;base64,{encoded}" download="{escape(path.name)}">{escape(path.name)}</a>'))
+            else:
+                relative = path.relative_to("/content").as_posix()
+                display(HTML(f'<a href="/files/{escape(relative)}" download target="_blank">{escape(path.name)}</a>'))
         else:
             display(FileLink(str(path)))
     result_link(EXPORT["archive"])

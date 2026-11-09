@@ -1,0 +1,21 @@
+{
+  "baseline_tests": 119,
+  "final_tests": 144,
+  "python_versions": [
+    "3.11",
+    "3.13"
+  ],
+  "pinned_dependencies_clean_install": true,
+  "pip_check": "no broken requirements found",
+  "notebook_code_cells_compiled": 10,
+  "notebook_code_cells_executed_with_test_injection": 10,
+  "missing_model_notebook_completed": true,
+  "remote_source_bootstrap_checked": true,
+  "real_CPU_descgen_smoke": "passed",
+  "real_CPU_full_pipeline": "packaged_with_recorded_generation_and_verification_failures",
+  "actual_colab_T4_run": false,
+  "actual_external_MCP_execution": false,
+  "phase2_scientific_complete": false,
+  "paid_APIs_used": false,
+  "untrusted_external_code_executed_on_Mac": false
+}
