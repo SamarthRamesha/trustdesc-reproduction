@@ -1,0 +1,59 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=HYPERLINK(\"x\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      },
+      {
+        "index": 1,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=HYPERLINK(\"x\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      },
+      {
+        "index": 2,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=HYPERLINK(\"x\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      }
+    ],
+    "answer": "The formula =HYPERLINK(\"x\") is blocked due to security restrictions. The system does not allow unsafe functions like HYPERLINK. Please use a safe formula instead.",
+    "answer_format_normalized": false,
+    "seconds": 28.587257166999734
+  },
+  "latency_seconds": 28.587778582999817,
+  "input_tokens": 2768,
+  "output_tokens": 131,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": true,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "bf6ad9cf40c9e1afa00b2c0169b2a0c9878838dab04fc5a39de2d8fa94eacbf0",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:27:37.866215+00:00"
+}

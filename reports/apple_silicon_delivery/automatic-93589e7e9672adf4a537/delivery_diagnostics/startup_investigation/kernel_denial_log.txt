@@ -1,0 +1,5 @@
+Timestamp               Ty Process[PID:TID]
+2026-11-09 13:54:32.558 A  zsh[5020:8c350b] (libsystem_info.dylib) Retrieve User by ID
+2026-11-09 13:54:32.578 A  zsh[5020:8c350c] (libsystem_info.dylib) Retrieve User by ID
+2026-11-09 13:54:32.670 E  kernel[0:8c3515] (Sandbox) Sandbox: Python(5022) deny(1) file-read-data /
+2026-11-09 13:54:32.681 E  kernel[0:8c3519] (Sandbox) Sandbox: Python(5023) deny(1) file-read-data /

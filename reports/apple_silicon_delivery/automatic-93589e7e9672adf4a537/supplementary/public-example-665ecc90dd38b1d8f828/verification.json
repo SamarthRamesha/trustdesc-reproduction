@@ -1,0 +1,1000 @@
+{
+  "full": {
+    "summary": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+    "functionalities": [
+      "Accepts two integer inputs (a and b)",
+      "Computes and returns the sum of the two integers",
+      "Operates as a callable MCP tool with defined input and output types"
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+      "properties": {
+        "a": {
+          "type": "integer"
+        },
+        "b": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ],
+      "type": "object"
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Accepts two integer inputs (a and b)",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Computes and returns the sum of the two integers",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Operates as a callable MCP tool with defined input and output types",
+        "target": [
+          "functionalities",
+          2
+        ]
+      }
+    ]
+  },
+  "lite": {
+    "summary": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+      "properties": {
+        "a": {
+          "type": "integer"
+        },
+        "b": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ],
+      "type": "object"
+    }
+  },
+  "decisions": [
+    {
+      "claim_id": "c1",
+      "verdict": "supported",
+      "reason": "The execution log shows that when inputs a=5 and b=3 are provided, the tool returns 8, which is the sum of the two integers. The output is confirmed as a single integer value matching a + b. The backend execution details, including the observation of result 8 with status 'ok' and a successful exit code, validate the tool's behavior as specified in the claim."
+    },
+    {
+      "claim_id": "c2",
+      "verdict": "supported",
+      "reason": "The execution log explicitly states that the tool accepts two integer inputs 'a' and 'b', with a specific example of a=3 and b=5. The backend confirms the inputs are properly parsed, and the operation completes without error, returning the correct sum of 8. The observation from the tool 'add' includes a successful result and status 'ok', directly supporting the claim that the tool accepts two integer inputs (a and b) as required."
+    },
+    {
+      "claim_id": "c3",
+      "verdict": "supported",
+      "reason": "The execution logs show that the input values a=10 and b=20 were processed, and the output was exactly 30, which matches the expected sum. The tool's response includes a status of 'ok' and a return code of 0, confirming successful execution. The backend observation confirms the result via the stdout output: '{\"status\": \"ok\", \"result\": 30}'. This directly supports the claim that the tool computes and returns the sum of the two integers."
+    },
+    {
+      "claim_id": "c4",
+      "verdict": "supported",
+      "reason": "The execution logs show that the 'add' tool receives inputs (a=5, b=3) and returns a structured JSON response with 'status': 'ok' and 'result': 8. The output is consistently formatted as valid JSON and contains a properly typed integer ('result': 8), confirming that the tool operates as a callable MCP tool with defined input and output types. The response conforms to MCP protocol expectations, as evidenced by the structured JSON format and successful execution with returncode 0."
+    },
+    {
+      "claim_id": "c5",
+      "verdict": "inconclusive",
+      "reason": "No completed tool evidence: completed"
+    },
+    {
+      "claim_id": "c6",
+      "verdict": "inconclusive",
+      "reason": "No completed tool evidence: completed"
+    }
+  ],
+  "traces": [
+    {
+      "claim_id": "c1",
+      "task": "Verify that the tool returns the sum of two integers when provided with valid integer inputs a and b, and confirm that the output is a single integer value representing a + b.",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "add",
+            "arguments": {
+              "a": 5,
+              "b": 3
+            },
+            "status": "ok",
+            "result": 8,
+            "isolation": {
+              "backend": "macos_seatbelt_offline_python",
+              "process_status": "exited",
+              "returncode": 0,
+              "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+              "stderr": "",
+              "seconds": 0.23100558299938712,
+              "peak_rss_bytes": 14794752,
+              "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+              "policy_sha256": "b08876e06228f9279f80edd556c82f759df4dd5f5586f3dbc74372a6ae96d002",
+              "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+              "observation": {
+                "status": "ok",
+                "result": 8
+              }
+            }
+          }
+        ],
+        "answer": "The tool correctly returns the sum of two integers when provided with valid integer inputs. For inputs a=5 and b=3, the output is 8, which matches the expected result of a + b. The operation is verified as correct and consistent with the tool's specified functionality.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    },
+    {
+      "claim_id": "c2",
+      "task": "Provide inputs where a and b are integers (e.g., a=3, b=5), and confirm the tool accepts both values without error, ensuring both are required and properly parsed.",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "add",
+            "arguments": {
+              "a": 3,
+              "b": 5
+            },
+            "status": "ok",
+            "result": 8,
+            "isolation": {
+              "backend": "macos_seatbelt_offline_python",
+              "process_status": "exited",
+              "returncode": 0,
+              "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+              "stderr": "",
+              "seconds": 0.053662958000131766,
+              "peak_rss_bytes": 12795904,
+              "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+              "policy_sha256": "4754cff7ab72cecab101a0d7355af2b1cef459181831b19d3add3cf35d4aa55b",
+              "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+              "observation": {
+                "status": "ok",
+                "result": 8
+              }
+            }
+          }
+        ],
+        "answer": "The tool accepts two integer inputs, a and b, as required. For the inputs a=3 and b=5, the tool correctly computes the sum and returns 8. Both values are properly parsed, and the operation completes without error, confirming that the tool handles the required inputs and returns the expected result.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    },
+    {
+      "claim_id": "c3",
+      "task": "Input two integers (e.g., a=10, b=20) and verify that the output is exactly 30, confirming the tool computes and returns the sum of the two integers.",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "add",
+            "arguments": {
+              "a": 10,
+              "b": 20
+            },
+            "status": "ok",
+            "result": 30,
+            "isolation": {
+              "backend": "macos_seatbelt_offline_python",
+              "process_status": "exited",
+              "returncode": 0,
+              "stdout": "{\"status\": \"ok\", \"result\": 30}\n",
+              "stderr": "",
+              "seconds": 0.05361224999978731,
+              "peak_rss_bytes": 13172736,
+              "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+              "policy_sha256": "96f895085ab20ac0c452e8fbecc68a10bca804c62bb0b6ceecffb52b8df6e2c4",
+              "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+              "observation": {
+                "status": "ok",
+                "result": 30
+              }
+            }
+          }
+        ],
+        "answer": "The tool correctly computes the sum of the two integers. Given inputs a=10 and b=20, the output is 30, which matches the expected result. The operation was verified as successful with a status of 'ok' and a return code of 0, confirming the tool functions as intended.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    },
+    {
+      "claim_id": "c4",
+      "task": "Simulate a call to the tool using a valid input object matching the input schema and confirm that the output is a properly typed integer and that the tool responds with a structured output conforming to MCP protocol expectations (e.g., structured JSON with a valid response schema).",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [
+          {
+            "index": 0,
+            "tool": "add",
+            "arguments": {
+              "a": 5,
+              "b": 3
+            },
+            "status": "ok",
+            "result": 8,
+            "isolation": {
+              "backend": "macos_seatbelt_offline_python",
+              "process_status": "exited",
+              "returncode": 0,
+              "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+              "stderr": "",
+              "seconds": 0.053307959000449046,
+              "peak_rss_bytes": 11599872,
+              "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+              "policy_sha256": "79dd284c53fd87310780395f2fe6ea874e459d2dfe62ecc0e43d3a1567b23d5a",
+              "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+              "observation": {
+                "status": "ok",
+                "result": 8
+              }
+            }
+          },
+          {
+            "index": 1,
+            "tool": "add",
+            "arguments": {
+              "a": 5,
+              "b": 3
+            },
+            "status": "ok",
+            "result": 8,
+            "isolation": {
+              "backend": "macos_seatbelt_offline_python",
+              "process_status": "exited",
+              "returncode": 0,
+              "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+              "stderr": "",
+              "seconds": 0.05359708400010277,
+              "peak_rss_bytes": 12812288,
+              "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+              "policy_sha256": "e39a45df3c94132628f034fcfad9ab23216736804a2e47f71ec6d1a5bc8e2bec",
+              "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+              "observation": {
+                "status": "ok",
+                "result": 8
+              }
+            }
+          }
+        ],
+        "answer": "The tool 'add' correctly computes the sum of two integers and returns a properly typed integer in a structured JSON response conforming to MCP protocol expectations. For inputs (a=5, b=3), the output is 8, as verified in both observations. The response includes a valid JSON structure with 'status': 'ok' and 'result': 8, confirming correct functionality and protocol compliance.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    },
+    {
+      "claim_id": "c5",
+      "task": "Check the input schema's property 'a' and confirm its description is exactly 'The first integer to be added' as specified in the schema.",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [],
+        "answer": "The description of property 'a' in the input schema is confirmed to be 'The first integer to be added', as specified.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    },
+    {
+      "claim_id": "c6",
+      "task": "Check the input schema's property 'b' and confirm its description is exactly 'The second integer to be added' as specified in the schema.",
+      "trace": {
+        "backend": "macos_seatbelt_public_function",
+        "status": "completed",
+        "events": [],
+        "answer": "The description for property 'b' in the input schema is confirmed to be 'The second integer to be added', as specified.",
+        "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+      }
+    }
+  ],
+  "plan": {
+    "tasks": [
+      {
+        "claim_id": "c1",
+        "verifiable": true,
+        "task": "Verify that the tool returns the sum of two integers when provided with valid integer inputs a and b, and confirm that the output is a single integer value representing a + b.",
+        "reason": "This tests the core functionality and correctness of the tool's summary statement by validating that it indeed performs addition as described in the summary."
+      },
+      {
+        "claim_id": "c2",
+        "verifiable": true,
+        "task": "Provide inputs where a and b are integers (e.g., a=3, b=5), and confirm the tool accepts both values without error, ensuring both are required and properly parsed.",
+        "reason": "This directly validates the claim that the tool accepts two integer inputs (a and b) by testing the input schema's requirements and behavior under valid integer input."
+      },
+      {
+        "claim_id": "c3",
+        "verifiable": true,
+        "task": "Input two integers (e.g., a=10, b=20) and verify that the output is exactly 30, confirming the tool computes and returns the sum of the two integers.",
+        "reason": "This tests the mathematical correctness and functional behavior of the tool's core operation—summing two integers."
+      },
+      {
+        "claim_id": "c4",
+        "verifiable": true,
+        "task": "Simulate a call to the tool using a valid input object matching the input schema and confirm that the output is a properly typed integer and that the tool responds with a structured output conforming to MCP protocol expectations (e.g., structured JSON with a valid response schema).",
+        "reason": "This verifies the tool operates as a callable MCP function with defined input and output types, ensuring compatibility with MCP protocol constraints and type enforcement."
+      },
+      {
+        "claim_id": "c5",
+        "verifiable": true,
+        "task": "Check the input schema's property 'a' and confirm its description is exactly 'The first integer to be added' as specified in the schema.",
+        "reason": "This validates the accuracy of the schema metadata and ensures the description field for property 'a' matches the stated requirement."
+      },
+      {
+        "claim_id": "c6",
+        "verifiable": true,
+        "task": "Check the input schema's property 'b' and confirm its description is exactly 'The second integer to be added' as specified in the schema.",
+        "reason": "This validates the accuracy of the schema metadata and ensures the description field for property 'b' matches the stated requirement."
+      }
+    ]
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "requires_backend_validation",
+  "usable_summary": true,
+  "trust_decision": "not_assessed",
+  "limitations": [
+    "Claims only supported on observed cases, not universally proven.",
+    "Structural schema fields are not separately dynamically certified.",
+    "Inconclusive/nonverifiable claims are excluded from supported output.",
+    "A new isolated execution backend must authenticate its own traces."
+  ],
+  "source_grounding_exclusions": [],
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The function `server:add` is defined as an MCP tool with input parameters `a` and `b` of type `int`, and returns an integer result, which matches the claim that it adds two integers and returns their sum as a callable MCP function with a defined input schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The input schema of the `server:add` function explicitly defines two integer parameters, `a` and `b`, which directly supports the claim that the tool accepts two integer inputs (a and b).",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The function body contains `return a + b`, which computes and returns the sum of the two input integers, directly supporting the claim that it computes and returns the sum of the two integers.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The function is decorated with `@mcp.tool()`, indicating it is implemented as a callable MCP tool with defined input and output types, as specified in the claim.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The input schema for parameter `a` in the `server:add` function is defined as an integer, and its description in the source code is 'The first integer to be added', which matches the claim about the description of property `a`.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "server:add",
+          "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+          "path": "server.py",
+          "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+          "line_start": 15,
+          "line_end": 17
+        }
+      ],
+      "rationale": "The input schema for parameter `b` in the `server:add` function is defined as an integer, and its description in the source code is 'The second integer to be added', which matches the claim about the description of property `b`.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "history": [
+    {
+      "round": 1,
+      "input_description": {
+        "summary": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+        "functionalities": [
+          "Accepts two integer inputs (a and b)",
+          "Computes and returns the sum of the two integers",
+          "Operates as a callable MCP tool with defined input and output types"
+        ],
+        "input_schema": {
+          "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+          "properties": {
+            "a": {
+              "description": "The first integer to be added",
+              "type": "integer"
+            },
+            "b": {
+              "description": "The second integer to be added",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "type": "object"
+        },
+        "claims": [
+          {
+            "id": "c1",
+            "text": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+            "target": [
+              "summary"
+            ]
+          },
+          {
+            "id": "c2",
+            "text": "Accepts two integer inputs (a and b)",
+            "target": [
+              "functionalities",
+              0
+            ]
+          },
+          {
+            "id": "c3",
+            "text": "Computes and returns the sum of the two integers",
+            "target": [
+              "functionalities",
+              1
+            ]
+          },
+          {
+            "id": "c4",
+            "text": "Operates as a callable MCP tool with defined input and output types",
+            "target": [
+              "functionalities",
+              2
+            ]
+          },
+          {
+            "id": "c5",
+            "text": "The first integer to be added",
+            "target": [
+              "input_schema",
+              "properties",
+              "a",
+              "description"
+            ]
+          },
+          {
+            "id": "c6",
+            "text": "The second integer to be added",
+            "target": [
+              "input_schema",
+              "properties",
+              "b",
+              "description"
+            ]
+          }
+        ]
+      },
+      "verification": {
+        "full": {
+          "summary": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+          "functionalities": [
+            "Accepts two integer inputs (a and b)",
+            "Computes and returns the sum of the two integers",
+            "Operates as a callable MCP tool with defined input and output types"
+          ],
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "type": "object"
+          },
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c2",
+              "text": "Accepts two integer inputs (a and b)",
+              "target": [
+                "functionalities",
+                0
+              ]
+            },
+            {
+              "id": "c3",
+              "text": "Computes and returns the sum of the two integers",
+              "target": [
+                "functionalities",
+                1
+              ]
+            },
+            {
+              "id": "c4",
+              "text": "Operates as a callable MCP tool with defined input and output types",
+              "target": [
+                "functionalities",
+                2
+              ]
+            }
+          ]
+        },
+        "lite": {
+          "summary": "A tool that adds two integers and returns their sum. It is implemented as a MCP (Model Control Protocol) function with a defined input schema requiring two integer parameters, a and b, and returns the sum of these parameters.",
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "type": "object"
+          }
+        },
+        "decisions": [
+          {
+            "claim_id": "c1",
+            "verdict": "supported",
+            "reason": "The execution log shows that when inputs a=5 and b=3 are provided, the tool returns 8, which is the sum of the two integers. The output is confirmed as a single integer value matching a + b. The backend execution details, including the observation of result 8 with status 'ok' and a successful exit code, validate the tool's behavior as specified in the claim."
+          },
+          {
+            "claim_id": "c2",
+            "verdict": "supported",
+            "reason": "The execution log explicitly states that the tool accepts two integer inputs 'a' and 'b', with a specific example of a=3 and b=5. The backend confirms the inputs are properly parsed, and the operation completes without error, returning the correct sum of 8. The observation from the tool 'add' includes a successful result and status 'ok', directly supporting the claim that the tool accepts two integer inputs (a and b) as required."
+          },
+          {
+            "claim_id": "c3",
+            "verdict": "supported",
+            "reason": "The execution logs show that the input values a=10 and b=20 were processed, and the output was exactly 30, which matches the expected sum. The tool's response includes a status of 'ok' and a return code of 0, confirming successful execution. The backend observation confirms the result via the stdout output: '{\"status\": \"ok\", \"result\": 30}'. This directly supports the claim that the tool computes and returns the sum of the two integers."
+          },
+          {
+            "claim_id": "c4",
+            "verdict": "supported",
+            "reason": "The execution logs show that the 'add' tool receives inputs (a=5, b=3) and returns a structured JSON response with 'status': 'ok' and 'result': 8. The output is consistently formatted as valid JSON and contains a properly typed integer ('result': 8), confirming that the tool operates as a callable MCP tool with defined input and output types. The response conforms to MCP protocol expectations, as evidenced by the structured JSON format and successful execution with returncode 0."
+          },
+          {
+            "claim_id": "c5",
+            "verdict": "inconclusive",
+            "reason": "No completed tool evidence: completed"
+          },
+          {
+            "claim_id": "c6",
+            "verdict": "inconclusive",
+            "reason": "No completed tool evidence: completed"
+          }
+        ],
+        "traces": [
+          {
+            "claim_id": "c1",
+            "task": "Verify that the tool returns the sum of two integers when provided with valid integer inputs a and b, and confirm that the output is a single integer value representing a + b.",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [
+                {
+                  "index": 0,
+                  "tool": "add",
+                  "arguments": {
+                    "a": 5,
+                    "b": 3
+                  },
+                  "status": "ok",
+                  "result": 8,
+                  "isolation": {
+                    "backend": "macos_seatbelt_offline_python",
+                    "process_status": "exited",
+                    "returncode": 0,
+                    "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+                    "stderr": "",
+                    "seconds": 0.23100558299938712,
+                    "peak_rss_bytes": 14794752,
+                    "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+                    "policy_sha256": "b08876e06228f9279f80edd556c82f759df4dd5f5586f3dbc74372a6ae96d002",
+                    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+                    "observation": {
+                      "status": "ok",
+                      "result": 8
+                    }
+                  }
+                }
+              ],
+              "answer": "The tool correctly returns the sum of two integers when provided with valid integer inputs. For inputs a=5 and b=3, the output is 8, which matches the expected result of a + b. The operation is verified as correct and consistent with the tool's specified functionality.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          },
+          {
+            "claim_id": "c2",
+            "task": "Provide inputs where a and b are integers (e.g., a=3, b=5), and confirm the tool accepts both values without error, ensuring both are required and properly parsed.",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [
+                {
+                  "index": 0,
+                  "tool": "add",
+                  "arguments": {
+                    "a": 3,
+                    "b": 5
+                  },
+                  "status": "ok",
+                  "result": 8,
+                  "isolation": {
+                    "backend": "macos_seatbelt_offline_python",
+                    "process_status": "exited",
+                    "returncode": 0,
+                    "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+                    "stderr": "",
+                    "seconds": 0.053662958000131766,
+                    "peak_rss_bytes": 12795904,
+                    "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+                    "policy_sha256": "4754cff7ab72cecab101a0d7355af2b1cef459181831b19d3add3cf35d4aa55b",
+                    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+                    "observation": {
+                      "status": "ok",
+                      "result": 8
+                    }
+                  }
+                }
+              ],
+              "answer": "The tool accepts two integer inputs, a and b, as required. For the inputs a=3 and b=5, the tool correctly computes the sum and returns 8. Both values are properly parsed, and the operation completes without error, confirming that the tool handles the required inputs and returns the expected result.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          },
+          {
+            "claim_id": "c3",
+            "task": "Input two integers (e.g., a=10, b=20) and verify that the output is exactly 30, confirming the tool computes and returns the sum of the two integers.",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [
+                {
+                  "index": 0,
+                  "tool": "add",
+                  "arguments": {
+                    "a": 10,
+                    "b": 20
+                  },
+                  "status": "ok",
+                  "result": 30,
+                  "isolation": {
+                    "backend": "macos_seatbelt_offline_python",
+                    "process_status": "exited",
+                    "returncode": 0,
+                    "stdout": "{\"status\": \"ok\", \"result\": 30}\n",
+                    "stderr": "",
+                    "seconds": 0.05361224999978731,
+                    "peak_rss_bytes": 13172736,
+                    "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+                    "policy_sha256": "96f895085ab20ac0c452e8fbecc68a10bca804c62bb0b6ceecffb52b8df6e2c4",
+                    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+                    "observation": {
+                      "status": "ok",
+                      "result": 30
+                    }
+                  }
+                }
+              ],
+              "answer": "The tool correctly computes the sum of the two integers. Given inputs a=10 and b=20, the output is 30, which matches the expected result. The operation was verified as successful with a status of 'ok' and a return code of 0, confirming the tool functions as intended.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          },
+          {
+            "claim_id": "c4",
+            "task": "Simulate a call to the tool using a valid input object matching the input schema and confirm that the output is a properly typed integer and that the tool responds with a structured output conforming to MCP protocol expectations (e.g., structured JSON with a valid response schema).",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [
+                {
+                  "index": 0,
+                  "tool": "add",
+                  "arguments": {
+                    "a": 5,
+                    "b": 3
+                  },
+                  "status": "ok",
+                  "result": 8,
+                  "isolation": {
+                    "backend": "macos_seatbelt_offline_python",
+                    "process_status": "exited",
+                    "returncode": 0,
+                    "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+                    "stderr": "",
+                    "seconds": 0.053307959000449046,
+                    "peak_rss_bytes": 11599872,
+                    "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+                    "policy_sha256": "79dd284c53fd87310780395f2fe6ea874e459d2dfe62ecc0e43d3a1567b23d5a",
+                    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+                    "observation": {
+                      "status": "ok",
+                      "result": 8
+                    }
+                  }
+                },
+                {
+                  "index": 1,
+                  "tool": "add",
+                  "arguments": {
+                    "a": 5,
+                    "b": 3
+                  },
+                  "status": "ok",
+                  "result": 8,
+                  "isolation": {
+                    "backend": "macos_seatbelt_offline_python",
+                    "process_status": "exited",
+                    "returncode": 0,
+                    "stdout": "{\"status\": \"ok\", \"result\": 8}\n",
+                    "stderr": "",
+                    "seconds": 0.05359708400010277,
+                    "peak_rss_bytes": 12812288,
+                    "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+                    "policy_sha256": "e39a45df3c94132628f034fcfad9ab23216736804a2e47f71ec6d1a5bc8e2bec",
+                    "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+                    "observation": {
+                      "status": "ok",
+                      "result": 8
+                    }
+                  }
+                }
+              ],
+              "answer": "The tool 'add' correctly computes the sum of two integers and returns a properly typed integer in a structured JSON response conforming to MCP protocol expectations. For inputs (a=5, b=3), the output is 8, as verified in both observations. The response includes a valid JSON structure with 'status': 'ok' and 'result': 8, confirming correct functionality and protocol compliance.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          },
+          {
+            "claim_id": "c5",
+            "task": "Check the input schema's property 'a' and confirm its description is exactly 'The first integer to be added' as specified in the schema.",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [],
+              "answer": "The description of property 'a' in the input schema is confirmed to be 'The first integer to be added', as specified.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          },
+          {
+            "claim_id": "c6",
+            "task": "Check the input schema's property 'b' and confirm its description is exactly 'The second integer to be added' as specified in the schema.",
+            "trace": {
+              "backend": "macos_seatbelt_public_function",
+              "status": "completed",
+              "events": [],
+              "answer": "The description for property 'b' in the input schema is confirmed to be 'The second integer to be added', as specified.",
+              "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+            }
+          }
+        ],
+        "plan": {
+          "tasks": [
+            {
+              "claim_id": "c1",
+              "verifiable": true,
+              "task": "Verify that the tool returns the sum of two integers when provided with valid integer inputs a and b, and confirm that the output is a single integer value representing a + b.",
+              "reason": "This tests the core functionality and correctness of the tool's summary statement by validating that it indeed performs addition as described in the summary."
+            },
+            {
+              "claim_id": "c2",
+              "verifiable": true,
+              "task": "Provide inputs where a and b are integers (e.g., a=3, b=5), and confirm the tool accepts both values without error, ensuring both are required and properly parsed.",
+              "reason": "This directly validates the claim that the tool accepts two integer inputs (a and b) by testing the input schema's requirements and behavior under valid integer input."
+            },
+            {
+              "claim_id": "c3",
+              "verifiable": true,
+              "task": "Input two integers (e.g., a=10, b=20) and verify that the output is exactly 30, confirming the tool computes and returns the sum of the two integers.",
+              "reason": "This tests the mathematical correctness and functional behavior of the tool's core operation—summing two integers."
+            },
+            {
+              "claim_id": "c4",
+              "verifiable": true,
+              "task": "Simulate a call to the tool using a valid input object matching the input schema and confirm that the output is a properly typed integer and that the tool responds with a structured output conforming to MCP protocol expectations (e.g., structured JSON with a valid response schema).",
+              "reason": "This verifies the tool operates as a callable MCP function with defined input and output types, ensuring compatibility with MCP protocol constraints and type enforcement."
+            },
+            {
+              "claim_id": "c5",
+              "verifiable": true,
+              "task": "Check the input schema's property 'a' and confirm its description is exactly 'The first integer to be added' as specified in the schema.",
+              "reason": "This validates the accuracy of the schema metadata and ensures the description field for property 'a' matches the stated requirement."
+            },
+            {
+              "claim_id": "c6",
+              "verifiable": true,
+              "task": "Check the input schema's property 'b' and confirm its description is exactly 'The second integer to be added' as specified in the schema.",
+              "reason": "This validates the accuracy of the schema metadata and ensures the description field for property 'b' matches the stated requirement."
+            }
+          ]
+        },
+        "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+        "model_mode": "real_local_mlx_inference",
+        "status": "requires_backend_validation",
+        "usable_summary": true,
+        "trust_decision": "not_assessed",
+        "limitations": [
+          "Claims only supported on observed cases, not universally proven.",
+          "Structural schema fields are not separately dynamically certified.",
+          "Inconclusive/nonverifiable claims are excluded from supported output.",
+          "A new isolated execution backend must authenticate its own traces."
+        ],
+        "source_grounding_exclusions": [],
+        "source_evidence": [
+          {
+            "claim_id": "c1",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The function `server:add` is defined as an MCP tool with input parameters `a` and `b` of type `int`, and returns an integer result, which matches the claim that it adds two integers and returns their sum as a callable MCP function with a defined input schema.",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          },
+          {
+            "claim_id": "c2",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The input schema of the `server:add` function explicitly defines two integer parameters, `a` and `b`, which directly supports the claim that the tool accepts two integer inputs (a and b).",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          },
+          {
+            "claim_id": "c3",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The function body contains `return a + b`, which computes and returns the sum of the two input integers, directly supporting the claim that it computes and returns the sum of the two integers.",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          },
+          {
+            "claim_id": "c4",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The function is decorated with `@mcp.tool()`, indicating it is implemented as a callable MCP tool with defined input and output types, as specified in the claim.",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          },
+          {
+            "claim_id": "c5",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The input schema for parameter `a` in the `server:add` function is defined as an integer, and its description in the source code is 'The first integer to be added', which matches the claim about the description of property `a`.",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          },
+          {
+            "claim_id": "c6",
+            "references": [
+              {
+                "function": "server:add",
+                "quote": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+                "path": "server.py",
+                "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+                "line_start": 15,
+                "line_end": 17
+              }
+            ],
+            "rationale": "The input schema for parameter `b` in the `server:add` function is defined as an integer, and its description in the source code is 'The second integer to be added', which matches the claim about the description of property `b`.",
+            "confidence": "model_attributed_source_and_finite_tests_required"
+          }
+        ]
+      }
+    }
+  ],
+  "refinement_rounds": 1,
+  "convergence": "stopped_with_explicit_uncertainty",
+  "confidence": "finite_observations_only",
+  "structural_schema_status": "static_signature_checked; nested constraints and return schema not certified"
+}

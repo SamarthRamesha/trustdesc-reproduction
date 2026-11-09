@@ -1,0 +1,8 @@
+{
+  "scope": "explicit software-validation fixture only; not research observations",
+  "rebuild_returncode": 0,
+  "stdout": "",
+  "stderr": "",
+  "rebuilt_notebook_exists": true,
+  "exact_notebook_match": true
+}

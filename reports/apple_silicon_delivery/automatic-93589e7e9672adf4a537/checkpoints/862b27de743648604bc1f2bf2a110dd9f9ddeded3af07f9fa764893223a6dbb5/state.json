@@ -1,0 +1,11 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "research_static_v2",
+    "tool": "apply_formula"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:11:52.118755+00:00",
+  "result_sha256": "dec1ba7c7a474d28e4b213d4690010b117382d6a40d50e6c9bc9699917f0e81a"
+}

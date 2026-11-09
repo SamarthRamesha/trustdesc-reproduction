@@ -1,0 +1,566 @@
+[
+  {
+    "condition": "original",
+    "task": "positive",
+    "arguments": {
+      "a": 2,
+      "b": 3
+    },
+    "expected": 5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 2,
+            "b": 3
+          },
+          "status": "ok",
+          "result": 5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 5}\n",
+            "stderr": "",
+            "seconds": 0.053582457999254984,
+            "peak_rss_bytes": 12042240,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "29b9b256f2db0af47fcbb8e310cfaccbec386fa7068c9a3cba53646860a2dac0",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 5
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 2 and 3 is 5.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "original",
+    "task": "negative",
+    "arguments": {
+      "a": -7,
+      "b": 2
+    },
+    "expected": -5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": -7,
+            "b": 2
+          },
+          "status": "ok",
+          "result": -5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": -5}\n",
+            "stderr": "",
+            "seconds": 0.05382300000019313,
+            "peak_rss_bytes": 12779520,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "9898c842847688738350d7f87cdd77f4915ddc57be3704ababd9b133d86b2fe0",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": -5
+            }
+          }
+        }
+      ],
+      "answer": "The sum of -7 and 2 is -5.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "original",
+    "task": "zero",
+    "arguments": {
+      "a": 0,
+      "b": 0
+    },
+    "expected": 0,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 0,
+            "b": 0
+          },
+          "status": "ok",
+          "result": 0,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 0}\n",
+            "stderr": "",
+            "seconds": 0.05369729200083384,
+            "peak_rss_bytes": 13156352,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "eac62e43a274ddc7df5f1d95ecf9e7c1f49dae6f415577df6f5c13e31844c6f3",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 0
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 0 and 0 is 0.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "original",
+    "task": "large",
+    "arguments": {
+      "a": 123456789,
+      "b": 987654321
+    },
+    "expected": 1111111110,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 123456789,
+            "b": 987654321
+          },
+          "status": "ok",
+          "result": 1111111110,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 1111111110}\n",
+            "stderr": "",
+            "seconds": 0.07975350000015169,
+            "peak_rss_bytes": 14237696,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "d0aa03b78aaadffcd711b2d7738a016880ae3921a40373933344ca7d4041b360",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 1111111110
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 123456789 and 987654321 is 1111111110.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "lite",
+    "task": "positive",
+    "arguments": {
+      "a": 2,
+      "b": 3
+    },
+    "expected": 5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 2,
+            "b": 3
+          },
+          "status": "ok",
+          "result": 5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 5}\n",
+            "stderr": "",
+            "seconds": 0.05304999999952997,
+            "peak_rss_bytes": 13139968,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "10bed5af35961f39a1ce7cd25af06949e62ee1c7762af9ef1105eedd23b884b0",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 5
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 2 and 3 is 5.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "lite",
+    "task": "negative",
+    "arguments": {
+      "a": -7,
+      "b": 2
+    },
+    "expected": -5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": -7,
+            "b": 2
+          },
+          "status": "ok",
+          "result": -5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": -5}\n",
+            "stderr": "",
+            "seconds": 0.05347720899953856,
+            "peak_rss_bytes": 11976704,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "627088e3060c94df2ce5e6e25958ea6efd27aacba4855cd7ab8f1e3a0ebe3824",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": -5
+            }
+          }
+        }
+      ],
+      "answer": "The sum of -7 and 2 is -5.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "lite",
+    "task": "zero",
+    "arguments": {
+      "a": 0,
+      "b": 0
+    },
+    "expected": 0,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 0,
+            "b": 0
+          },
+          "status": "ok",
+          "result": 0,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 0}\n",
+            "stderr": "",
+            "seconds": 0.053556541000034485,
+            "peak_rss_bytes": 12926976,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "3df171e8398f3a0e82b3da17a18e924537a5c92dd61b0e18c8aa5c09c5654938",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 0
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 0 and 0 is 0.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "lite",
+    "task": "large",
+    "arguments": {
+      "a": 123456789,
+      "b": 987654321
+    },
+    "expected": 1111111110,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 123456789,
+            "b": 987654321
+          },
+          "status": "ok",
+          "result": 1111111110,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 1111111110}\n",
+            "stderr": "",
+            "seconds": 0.0776815830004125,
+            "peak_rss_bytes": 13910016,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "7f730a679b86490cd9ade86d130b18e45626e1d29cef2eb9ffa81a260e9e0340",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 1111111110
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 123456789 and 987654321 is 1111111110.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "full",
+    "task": "positive",
+    "arguments": {
+      "a": 2,
+      "b": 3
+    },
+    "expected": 5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 2,
+            "b": 3
+          },
+          "status": "ok",
+          "result": 5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 5}\n",
+            "stderr": "",
+            "seconds": 0.054001583000172104,
+            "peak_rss_bytes": 11632640,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "fc11fd1946a878d30b7405659cc8eeb7c02ff81312b3d9cd7ed446d192b8f1dc",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 5
+            }
+          }
+        }
+      ],
+      "answer": "5",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "full",
+    "task": "negative",
+    "arguments": {
+      "a": -7,
+      "b": 2
+    },
+    "expected": -5,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": -7,
+            "b": 2
+          },
+          "status": "ok",
+          "result": -5,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": -5}\n",
+            "stderr": "",
+            "seconds": 0.05379700000048615,
+            "peak_rss_bytes": 12713984,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "2db7fad3c5176cbb00cf51d04ba9e112d394af00f3d228f84dabbd8e3d2ee1de",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": -5
+            }
+          }
+        }
+      ],
+      "answer": "-5",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "full",
+    "task": "zero",
+    "arguments": {
+      "a": 0,
+      "b": 0
+    },
+    "expected": 0,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 0,
+            "b": 0
+          },
+          "status": "ok",
+          "result": 0,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 0}\n",
+            "stderr": "",
+            "seconds": 0.053669125000851636,
+            "peak_rss_bytes": 12238848,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "8b158c36d0361341b36bbd2e6914d4be5700fe21852633c33d15179d378c5229",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 0
+            }
+          }
+        }
+      ],
+      "answer": "The sum of the two integers 0 and 0 is 0.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  },
+  {
+    "condition": "full",
+    "task": "large",
+    "arguments": {
+      "a": 123456789,
+      "b": 987654321
+    },
+    "expected": 1111111110,
+    "trace": {
+      "backend": "macos_seatbelt_public_function",
+      "status": "completed",
+      "events": [
+        {
+          "index": 0,
+          "tool": "add",
+          "arguments": {
+            "a": 123456789,
+            "b": 987654321
+          },
+          "status": "ok",
+          "result": 1111111110,
+          "isolation": {
+            "backend": "macos_seatbelt_offline_python",
+            "process_status": "exited",
+            "returncode": 0,
+            "stdout": "{\"status\": \"ok\", \"result\": 1111111110}\n",
+            "stderr": "",
+            "seconds": 0.22010129099999176,
+            "peak_rss_bytes": 14942208,
+            "source_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+            "policy_sha256": "89dbf3fc3ed3c422c7642c43a3d4e17220a7445268352788e9f5f46086fa55f1",
+            "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+            "observation": {
+              "status": "ok",
+              "result": 1111111110
+            }
+          }
+        }
+      ],
+      "answer": "The sum of 123456789 and 987654321 is 1111111110.",
+      "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark"
+    },
+    "status": "completed",
+    "success": true,
+    "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+    "oracle": "project-authored exact arithmetic observation"
+  }
+]

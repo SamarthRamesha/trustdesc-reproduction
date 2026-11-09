@@ -1,0 +1,12 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "iterative_dynver_v2",
+    "model": "qwen3-mlx-4b",
+    "tool": "apply_formula"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:19:22.539906+00:00",
+  "result_sha256": "1d02fde7d5fe292ab55ad024a44aedddd5fac35aa859dfba75bd098641a25e47"
+}

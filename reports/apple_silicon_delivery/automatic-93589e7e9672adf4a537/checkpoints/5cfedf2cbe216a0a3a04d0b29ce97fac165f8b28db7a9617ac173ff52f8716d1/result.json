@@ -1,0 +1,51 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": "BOB"
+        },
+        "status": "ok",
+        "result": {
+          "normalized": "bob"
+        }
+      },
+      {
+        "index": 1,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": "BOB"
+        },
+        "status": "ok",
+        "result": {
+          "normalized": "bob"
+        }
+      }
+    ],
+    "answer": "The normalized form of \"BOB\" is \"bob\".",
+    "answer_format_normalized": false,
+    "seconds": 13.469883250000748
+  },
+  "latency_seconds": 13.470668250000017,
+  "input_tokens": 1305,
+  "output_tokens": 73,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": true,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:26:03.749728+00:00"
+}

@@ -1,0 +1,135 @@
+[
+  {
+    "source": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction/outputs/cpu_validation/phase3_handover.zip",
+    "sha256": "bf82438b7b2b57c3837630d5396d9e93a881c68a8e866f05b86740ee8f23df49",
+    "bytes": 316792,
+    "crc_valid": true,
+    "members": 237,
+    "model": {
+      "status": "injected_real_model_validation",
+      "mode": "real_local_transformers_inference",
+      "error": null
+    },
+    "conditions": [
+      {
+        "variant": "original",
+        "observed_tasks": 8,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": 0,
+        "fixture_oracle_success_rate_percent": 0.0
+      },
+      {
+        "variant": "lite",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      },
+      {
+        "variant": "full",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      }
+    ],
+    "phase2_report": "# Phase 2 status: INCOMPLETE\n\nThe automatic pipeline finished and produced a handover package. This is an independent, partial reimplementation. It is not the authors' released implementation or a completed quantitative reproduction.\n\n0/24 task attempts completed in this run. These are authored fixture tasks, not the original 208 tasks. Consult results.json for actual outcomes and missing observations. A generated report or ZIP does not establish scientific completion.\n\n## Outstanding essential evidence\n\n- Original 52-tool/208-task release, labels, traces and exact prompts not recovered.\n- Original generation models and fixed Gemini-3-Flash task agent replaced by explicitly named free local model.\n- Python AST subset; TypeScript, unrestricted dynamic dispatch and proof of slicing equivalence unavailable.\n- External MCP execution not available in default Colab without an approved local container image and successful probes.\n- Finite authored fixture observations and automated oracles do not establish original human-reviewed TSR.\n- Q3 degraded-tool competition, Q4 seven original attacks and Q5 adaptive naming experiments lack authenticated experimental artifacts.\n\n## Delivered implementation\n\nAutomatic source acquisition, conservative SliceMin, local-model DescGen with exact-source attribution and interface checks, iterative DynVer, a fixed task agent across original/lite/full, explicit fixture oracles, checkpoints, validation, reports and an integrity-indexed ZIP. Failed scientific stages are recorded; no replay substitutes for a failed model.\n",
+    "environment": {
+      "python": "3.13.9",
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "gpus": []
+    }
+  },
+  {
+    "source": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction/work/real-cpu-pipeline/deliverables/automatic-b15ba65c460cf96f1847/phase3_handover.zip",
+    "sha256": "bf82438b7b2b57c3837630d5396d9e93a881c68a8e866f05b86740ee8f23df49",
+    "bytes": 316792,
+    "crc_valid": true,
+    "members": 237,
+    "model": {
+      "status": "injected_real_model_validation",
+      "mode": "real_local_transformers_inference",
+      "error": null
+    },
+    "conditions": [
+      {
+        "variant": "original",
+        "observed_tasks": 8,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": 0,
+        "fixture_oracle_success_rate_percent": 0.0
+      },
+      {
+        "variant": "lite",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      },
+      {
+        "variant": "full",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      }
+    ],
+    "phase2_report": "# Phase 2 status: INCOMPLETE\n\nThe automatic pipeline finished and produced a handover package. This is an independent, partial reimplementation. It is not the authors' released implementation or a completed quantitative reproduction.\n\n0/24 task attempts completed in this run. These are authored fixture tasks, not the original 208 tasks. Consult results.json for actual outcomes and missing observations. A generated report or ZIP does not establish scientific completion.\n\n## Outstanding essential evidence\n\n- Original 52-tool/208-task release, labels, traces and exact prompts not recovered.\n- Original generation models and fixed Gemini-3-Flash task agent replaced by explicitly named free local model.\n- Python AST subset; TypeScript, unrestricted dynamic dispatch and proof of slicing equivalence unavailable.\n- External MCP execution not available in default Colab without an approved local container image and successful probes.\n- Finite authored fixture observations and automated oracles do not establish original human-reviewed TSR.\n- Q3 degraded-tool competition, Q4 seven original attacks and Q5 adaptive naming experiments lack authenticated experimental artifacts.\n\n## Delivered implementation\n\nAutomatic source acquisition, conservative SliceMin, local-model DescGen with exact-source attribution and interface checks, iterative DynVer, a fixed task agent across original/lite/full, explicit fixture oracles, checkpoints, validation, reports and an integrity-indexed ZIP. Failed scientific stages are recorded; no replay substitutes for a failed model.\n",
+    "environment": {
+      "python": "3.13.9",
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "gpus": []
+    }
+  },
+  {
+    "source": "/Users/macbramesha/Desktop/Capstone/phase3_handover.zip",
+    "sha256": "f17e4d4e56fc9c13dcae43365b44974eba3d44a584a07078f892112675ab6339",
+    "bytes": 388386,
+    "crc_valid": true,
+    "members": 237,
+    "model": {
+      "status": "loaded_real_local_model",
+      "mode": "real_local_transformers_inference",
+      "error": null
+    },
+    "conditions": [
+      {
+        "variant": "original",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      },
+      {
+        "variant": "lite",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      },
+      {
+        "variant": "full",
+        "observed_tasks": 0,
+        "expected_tasks": 8,
+        "completed_fixture_objectives": null,
+        "fixture_oracle_success_rate_percent": null
+      }
+    ],
+    "phase2_report": "# Phase 2 status: INCOMPLETE\n\nThe automatic pipeline finished and produced a handover package. This is an independent, partial reimplementation. It is not the authors' released implementation or a completed quantitative reproduction.\n\n0/24 task attempts completed in this run. These are authored fixture tasks, not the original 208 tasks. Consult results.json for actual outcomes and missing observations. A generated report or ZIP does not establish scientific completion.\n\n## Outstanding essential evidence\n\n- Original 52-tool/208-task release, labels, traces and exact prompts not recovered.\n- Original generation models and fixed Gemini-3-Flash task agent replaced by explicitly named free local model.\n- Python AST subset; TypeScript, unrestricted dynamic dispatch and proof of slicing equivalence unavailable.\n- External MCP execution not available in default Colab without an approved local container image and successful probes.\n- Finite authored fixture observations and automated oracles do not establish original human-reviewed TSR.\n- Q3 degraded-tool competition, Q4 seven original attacks and Q5 adaptive naming experiments lack authenticated experimental artifacts.\n\n## Delivered implementation\n\nAutomatic source acquisition, conservative SliceMin, local-model DescGen with exact-source attribution and interface checks, iterative DynVer, a fixed task agent across original/lite/full, explicit fixture oracles, checkpoints, validation, reports and an integrity-indexed ZIP. Failed scientific stages are recorded; no replay substitutes for a failed model.\n",
+    "environment": {
+      "python": "3.13.16",
+      "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+      "machine": "x86_64",
+      "gpus": [
+        {
+          "name": "Tesla T4",
+          "total_bytes": 16106127360,
+          "free_bytes": 15637413888,
+          "driver": "580.82.07"
+        }
+      ]
+    }
+  }
+]

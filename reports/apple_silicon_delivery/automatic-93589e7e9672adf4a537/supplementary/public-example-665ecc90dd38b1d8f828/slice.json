@@ -1,0 +1,59 @@
+{
+  "tool": "add",
+  "entry": "server:add",
+  "entry_method": "registration_pattern",
+  "source": "# module: server\nfrom mcp.server.mcpserver import MCPServer\nmcp = MCPServer('Demo')\n\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b",
+  "initial_functions": [
+    "server:add"
+  ],
+  "functions": [
+    "server:add"
+  ],
+  "edges": [],
+  "unresolved_calls": [],
+  "source_hashes": {
+    "server.py": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:add": {
+      "path": "server.py",
+      "line_start": 15,
+      "line_end": 17,
+      "file_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+      "source": "@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers\"\"\"\n    return a + b"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "resolved_in_supported_subset",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "MCPServer",
+        "a",
+        "b",
+        "int",
+        "mcp"
+      ],
+      "omitted": [
+        {
+          "kind": "If",
+          "line": 41,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

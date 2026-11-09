@@ -1,0 +1,12 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "grounded_descgen_v2",
+    "model": "qwen3-mlx-4b",
+    "tool": "arxiv-current-search"
+  },
+  "status": "not_requested_reference_only",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:15:17.463625+00:00",
+  "result_sha256": "2d5c59e1073c7e2199d839a6f0793150a43ba1d411ad12bd3028643b0cd69bdb"
+}

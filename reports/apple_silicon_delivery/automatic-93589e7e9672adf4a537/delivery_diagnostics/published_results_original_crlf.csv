@@ -1,0 +1,202 @@
+metric,published_result,unit,configuration,source_reference,reproduction_status,measured_result,difference,notes
+TSR,84.1,percent,original,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,175,count,original,Table 2 p.10,not_run_original_conditions,,,
+TSR,87.5,percent,Claude-4.5-Sonnet/lite,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,182,count,Claude-4.5-Sonnet/lite,Table 2 p.10,not_run_original_conditions,,,
+TSR,89.9,percent,Claude-4.5-Sonnet/full,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,187,count,Claude-4.5-Sonnet/full,Table 2 p.10,not_run_original_conditions,,,
+TSR,86.5,percent,Gemini-3-Flash/lite,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,180,count,Gemini-3-Flash/lite,Table 2 p.10,not_run_original_conditions,,,
+TSR,88.5,percent,Gemini-3-Flash/full,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,184,count,Gemini-3-Flash/full,Table 2 p.10,not_run_original_conditions,,,
+TSR,87.0,percent,GPT-5.2/lite,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,181,count,GPT-5.2/lite,Table 2 p.10,not_run_original_conditions,,,
+TSR,86.1,percent,GPT-5.2/full,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,179,count,GPT-5.2/full,Table 2 p.10,not_run_original_conditions,,,
+TSR,84.1,percent,gpt-oss-120b/lite,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,175,count,gpt-oss-120b/lite,Table 2 p.10,not_run_original_conditions,,,
+TSR,86.5,percent,gpt-oss-120b/full,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,180,count,gpt-oss-120b/full,Table 2 p.10,not_run_original_conditions,,,
+TSR,86.3,percent,model mean/lite,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,179.5,mean_count,model mean/lite,Table 2 p.10,not_run_original_conditions,,,
+TSR,87.7,percent,model mean/full,Table 2 p.10,not_run_original_conditions,,,
+tasks_completed,182.5,mean_count,model mean/full,Table 2 p.10,not_run_original_conditions,,,
+completed_all_conditions,169,count,Claude-4.5-Sonnet,Table 3 p.10,not_run_original_conditions,,,
+completed_only_original,0,count,Claude-4.5-Sonnet,Table 3 p.10,not_run_original_conditions,,,
+completed_generated_not_original,14,count,Claude-4.5-Sonnet,Table 3 p.10,not_run_original_conditions,,,
+completed_all_conditions,170,count,Gemini-3-Flash,Table 3 p.10,not_run_original_conditions,,,
+completed_only_original,1,count,Gemini-3-Flash,Table 3 p.10,not_run_original_conditions,,,
+completed_generated_not_original,11,count,Gemini-3-Flash,Table 3 p.10,not_run_original_conditions,,,
+completed_all_conditions,170,count,GPT-5.2,Table 3 p.10,not_run_original_conditions,,,
+completed_only_original,2,count,GPT-5.2,Table 3 p.10,not_run_original_conditions,,,
+completed_generated_not_original,11,count,GPT-5.2,Table 3 p.10,not_run_original_conditions,,,
+completed_all_conditions,172,count,gpt-oss-120b,Table 3 p.10,not_run_original_conditions,,,
+completed_only_original,2,count,gpt-oss-120b,Table 3 p.10,not_run_original_conditions,,,
+completed_generated_not_original,14,count,gpt-oss-120b,Table 3 p.10,not_run_original_conditions,,,
+generation_tokens,2757,tokens,Claude-4.5-Sonnet/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.009,USD,Claude-4.5-Sonnet/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,2.2,seconds,Claude-4.5-Sonnet/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2020,tokens,Claude-4.5-Sonnet/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.009,USD,Claude-4.5-Sonnet/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,8.3,seconds,Claude-4.5-Sonnet/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2242,tokens,Claude-4.5-Sonnet/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.011,USD,Claude-4.5-Sonnet/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,7.5,seconds,Claude-4.5-Sonnet/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,22256,tokens,Claude-4.5-Sonnet/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.077,USD,Claude-4.5-Sonnet/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,34.1,seconds,Claude-4.5-Sonnet/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,29277,tokens,Claude-4.5-Sonnet/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.106,USD,Claude-4.5-Sonnet/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,52.0,seconds,Claude-4.5-Sonnet/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,1650,tokens,Gemini-3-Flash/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.001,USD,Gemini-3-Flash/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,1.7,seconds,Gemini-3-Flash/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,1877,tokens,Gemini-3-Flash/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.002,USD,Gemini-3-Flash/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,4.1,seconds,Gemini-3-Flash/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2114,tokens,Gemini-3-Flash/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.002,USD,Gemini-3-Flash/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,2.7,seconds,Gemini-3-Flash/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,22146,tokens,Gemini-3-Flash/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.009,USD,Gemini-3-Flash/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,17.2,seconds,Gemini-3-Flash/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,27788,tokens,Gemini-3-Flash/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.013,USD,Gemini-3-Flash/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,25.7,seconds,Gemini-3-Flash/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,1350,tokens,GPT-5.2/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.003,USD,GPT-5.2/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,3.2,seconds,GPT-5.2/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,1988,tokens,GPT-5.2/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.01,USD,GPT-5.2/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,13.5,seconds,GPT-5.2/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,1927,tokens,GPT-5.2/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.008,USD,GPT-5.2/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,7.5,seconds,GPT-5.2/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,18070,tokens,GPT-5.2/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.046,USD,GPT-5.2/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,73.0,seconds,GPT-5.2/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,23336,tokens,GPT-5.2/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,0.067,USD,GPT-5.2/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_time,97.3,seconds,GPT-5.2/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2761,tokens,gpt-oss-120b/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,,USD,gpt-oss-120b/entry_identification,Table 4 p.11,not_run_original_conditions,,,"Dash in paper: not reported, not measured zero."
+generation_time,2.4,seconds,gpt-oss-120b/entry_identification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2078,tokens,gpt-oss-120b/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,,USD,gpt-oss-120b/debloating,Table 4 p.11,not_run_original_conditions,,,"Dash in paper: not reported, not measured zero."
+generation_time,4.7,seconds,gpt-oss-120b/debloating,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,2144,tokens,gpt-oss-120b/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,,USD,gpt-oss-120b/initial_description,Table 4 p.11,not_run_original_conditions,,,"Dash in paper: not reported, not measured zero."
+generation_time,4.1,seconds,gpt-oss-120b/initial_description,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,13862,tokens,gpt-oss-120b/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,,USD,gpt-oss-120b/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,"Dash in paper: not reported, not measured zero."
+generation_time,25.2,seconds,gpt-oss-120b/dynamic_verification,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_tokens,20847,tokens,gpt-oss-120b/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+generation_cost,,USD,gpt-oss-120b/total,Table 4 p.11,not_run_original_conditions,,,"Dash in paper: not reported, not measured zero."
+generation_time,36.3,seconds,gpt-oss-120b/total,Table 4 p.11,not_run_original_conditions,,,Printed values retained; rounding/aggregation may differ from stage sum.
+runtime_total_tokens,9.6,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,9.9,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,4,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,5.5,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,9,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,9.3,relative_percent,Claude-4.5-Sonnet/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,-3.3,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,-3.4,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-0.7,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,-2.6,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-0.3,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,1,relative_percent,Claude-4.5-Sonnet/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,9.2,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,9.8,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,1.4,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,4.3,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-4.1,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,0.7,relative_percent,Gemini-3-Flash/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,1.6,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,1.8,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-1.2,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,-1.7,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,0.5,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-2.3,relative_percent,Gemini-3-Flash/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,6.2,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,6.5,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,1.6,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,6.4,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-2.2,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-0.3,relative_percent,GPT-5.2/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,2.1,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,2.3,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-0.02,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,2.9,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-3.8,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-4.5,relative_percent,GPT-5.2/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,2.7,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,3.1,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-2.4,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,-0.3,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-1.8,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-2.3,relative_percent,gpt-oss-120b/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,0.4,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,0.5,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-0.7,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,2.4,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-3,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-3.9,relative_percent,gpt-oss-120b/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,6.9,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,7.3,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,1.2,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,4,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,0.2,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,1.9,relative_percent,Average/lite,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_total_tokens,0.2,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_input_tokens,0.3,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_output_tokens,-0.7,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_cost,0.3,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_latency,-1.7,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+runtime_tool_calls,-2.4,relative_percent,Average/full,Table 5 p.12,not_run_original_conditions,,,Only tasks successful in all three conditions.
+degraded_tool_selection,32.5,percent,Claude-4.5-Sonnet/security_checks_removed,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,10.9,percent,Claude-4.5-Sonnet/one_feature_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,10.6,percent,Claude-4.5-Sonnet/two_features_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,45.5,percent,Gemini-3-Flash/security_checks_removed,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,21.3,percent,Gemini-3-Flash/one_feature_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,20.8,percent,Gemini-3-Flash/two_features_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,44,percent,GPT-5.2/security_checks_removed,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,34.6,percent,GPT-5.2/one_feature_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,17.7,percent,GPT-5.2/two_features_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,44.3,percent,gpt-oss-120b/security_checks_removed,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,8.5,percent,gpt-oss-120b/one_feature_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,7.5,percent,gpt-oss-120b/two_features_disabled,Table 6 p.12,not_run_original_conditions,,,
+degraded_tool_selection,41.6,percent,model mean/security_checks_removed,Introduction p.2,not_run_original_conditions,,,"Printed introductory aggregate, not recomputed."
+degraded_tool_selection,18.8,percent,model mean/one_feature_disabled,Introduction p.2,not_run_original_conditions,,,"Printed introductory aggregate, not recomputed."
+degraded_tool_selection,14.5,percent,model mean/two_features_disabled,Introduction p.2,not_run_original_conditions,,,"Printed introductory aggregate, not recomputed."
+servers_listed,1364,count,paper,§5 pp.9–10,not_run_original_conditions,,,
+servers_sampled,20,count,paper,§5 pp.9–10,not_run_original_conditions,,,
+servers_excluded,8,count,paper,§5 p.10,not_run_original_conditions,,,
+servers_evaluated,12,count,paper,Table 1 p.9,not_run_original_conditions,,,
+tools_evaluated,52,count,paper,Table 1 p.9,not_run_original_conditions,,,
+tasks_evaluated,208,count,paper,§5.1 p.10,not_run_original_conditions,,,
+tasks_per_tool,4,count,paper,§5.1 p.10,not_run_original_conditions,,,
+tasks_per_description_source,2,count,paper,§5.1 p.10,not_run_original_conditions,,,
+implementation_lines,2377,lines,paper,§1 p.2,not_run_original_conditions,,,
+entry_pattern_matches,46,count,paper,§5.2 p.11,not_run_original_conditions,,,
+generation_temperature,0.2,temperature,paper,§5 p.10,not_run_original_conditions,,,
+local_GPUs,4,count,paper,§5 p.10,not_run_original_conditions,,,
+identifier_max_length,20,characters,paper,§4.2 p.8,not_run_original_conditions,,,
+relative_TSR_improvement,4.3,relative_percent,paper,§1 p.2,not_run_original_conditions,,,
+dynamic_time_share,70,approx_percent,paper,§5.2 p.11,not_run_original_conditions,,,
+dynamic_cost_share,71,approx_percent,paper,§5.2 p.11,not_run_original_conditions,,,
+Claude_Gemini_cost_ratio,8.3,approx_ratio,paper,§5.2 p.11,not_run_original_conditions,,,
+attacks_total,7,count,paper,§5.4 p.12,not_run_original_conditions,,,
+attacks_explicit,5,count,paper,§5.4 p.12,not_run_original_conditions,,,
+attacks_implicit,2,count,paper,§5.4 p.12,not_run_original_conditions,,,
+adaptive_iterations,15,count,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_tools,12,count,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_selection_min,44.7,percent,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_selection_max,67.4,percent,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_linear_beta,-0.00067,fraction_per_iteration,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_linear_p,0.87,p_value,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_kendall_tau,0.019,tau,paper,§5.5 p.13,not_run_original_conditions,,,
+adaptive_kendall_p,0.92,p_value,paper,§5.5 p.13,not_run_original_conditions,,,
+no_argument_descriptions,7,count,paper,§6 p.13,not_run_original_conditions,,,
+minimal_descriptions,19,count,paper,§6 p.13,not_run_original_conditions,,,
+complete_descriptions,16,count,paper,§6 p.13,not_run_original_conditions,,,
+usage_examples,9,count,paper,§6 p.13,not_run_original_conditions,,,

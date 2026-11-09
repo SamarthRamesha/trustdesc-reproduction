@@ -1,0 +1,3 @@
+2026-11-09T08:24:21.381Z info [host-app-server-manager] Reasoning summary item completed itemId=rs_012a73cbc02f117b016af18328e20487d0a79dee4622e38d05 summary=["**Preparing sandbox log checks**"] summaryPartCount=1 threadId=01a1bf5c-dabb-7fb2-a22e-ebda1f354234 turnId=01a1bf5d-1333-7013-9e32-2810bbbddba8
+2026-11-09T08:24:39.619Z info [host-app-server-manager] Reasoning summary item completed itemId=rs_012a73cbc02f117b016af18342c7a087d080b27cb94cd21d83 summary=[] summaryPartCount=0 threadId=01a1bf5c-dabb-7fb2-a22e-ebda1f354234 turnId=01a1bf5d-1333-7013-9e32-2810bbbddba8
+2026-11-09T08:24:48.678Z info [tpp-local-executor] Local Work executor connection observation connectedMs=60003.57066601515 eligibleMs=60003.57066601515 event=sample observationSequence=1403

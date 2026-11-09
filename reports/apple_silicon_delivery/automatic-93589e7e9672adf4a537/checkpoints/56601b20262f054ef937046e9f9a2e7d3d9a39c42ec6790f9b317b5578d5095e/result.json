@@ -1,0 +1,5 @@
+{
+  "status": "not_requested_reference_only",
+  "reason": "Pinned public static reference, outside the active task benchmark; not counted as generated or verified",
+  "recorded_at": "2026-11-09T10:15:17.461466+00:00"
+}

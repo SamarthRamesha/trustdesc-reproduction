@@ -1,0 +1,11 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "research_static_v2",
+    "tool": "normalize_name"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:11:52.124168+00:00",
+  "result_sha256": "fc3c0afab7d177ededd70e4aca42ca82bb9df64154a8118564ffe4da1455682c"
+}

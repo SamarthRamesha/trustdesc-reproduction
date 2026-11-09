@@ -1,0 +1,65 @@
+{
+  "source_sha256": "96f3a8692eff290dba9e68a788956f58893a72426a7a78539c3cae4b9ed65a02",
+  "extracted_sha256": "7c050f190f6a1f146357fbfe93270336926bdf1df0ef6dff0d8a19d2ca670f5d",
+  "model": {
+    "temperature": 0.0,
+    "seed": 42,
+    "max_input_tokens": 12288,
+    "max_new_tokens": 1600,
+    "max_generation_seconds": 180,
+    "max_calls": 600,
+    "debloat": true,
+    "reasoning": "provider_default",
+    "id": "qwen3-mlx-4b",
+    "provider": "local",
+    "backend": "mlx",
+    "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "estimated_weight_bytes": 2263022417,
+    "minimum_available_ram_bytes": 3758096384,
+    "device": "metal"
+  },
+  "tasks": [
+    [
+      "positive",
+      {
+        "a": 2,
+        "b": 3
+      },
+      5
+    ],
+    [
+      "negative",
+      {
+        "a": -7,
+        "b": 2
+      },
+      -5
+    ],
+    [
+      "zero",
+      {
+        "a": 0,
+        "b": 0
+      },
+      0
+    ],
+    [
+      "large",
+      {
+        "a": 123456789,
+        "b": 987654321
+      },
+      1111111110
+    ]
+  ],
+  "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+  "script_sha256": "c98139e66205d3aed5471d930f8cbe79339e69be2d818c65468a9ee4b46a2303",
+  "implementation_hash": "0bcb2e29c66edf6e6173082eb99684028f22aba1c427d87726783137d270fc5e",
+  "revision": "77001c96f9507be0f4d009b83210a384a5e08bda",
+  "git_blob": "70a83a56e4b69d90f7c8c8d675df4433f4cc01e4",
+  "license": "MIT",
+  "url": "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/examples/snippets/servers/mcpserver_quickstart.py",
+  "transformation": "Extract add AST node and remove only mcp.tool decorator; function signature/body unchanged; no framework validation or MCP transport",
+  "original_paper_benchmark": false
+}

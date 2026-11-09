@@ -1,0 +1,22 @@
+{
+  "backend": "macos_seatbelt_offline_python",
+  "process_status": "exited",
+  "returncode": 0,
+  "stdout": "{\"status\": \"ok\", \"result\": {\"read_denied\": true, \"write_denied\": true, \"network_denied\": true, \"process_denied\": true}}\n",
+  "stderr": "",
+  "seconds": 0.05176299999948242,
+  "peak_rss_bytes": 12566528,
+  "source_sha256": "68fd9bb50c2a32ccd6fc0ff59234b128894d819f3d7cd2542ef057dcfa167e35",
+  "policy_sha256": "0091e3bcd863e788a6daef5f269c0b46196387ed13692f6036162a53ff351bf9",
+  "scope": "offline Python source module; not full MCP transport; finite resource supervision",
+  "observation": {
+    "status": "ok",
+    "result": {
+      "read_denied": true,
+      "write_denied": true,
+      "network_denied": true,
+      "process_denied": true
+    }
+  },
+  "passed": true
+}

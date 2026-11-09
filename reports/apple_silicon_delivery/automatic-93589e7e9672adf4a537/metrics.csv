@@ -1,0 +1,10 @@
+generator,variant,tool,expected_tasks,observed_tasks,missing_tasks,completed_fixture_objectives,fixture_oracle_success_rate_percent,observed_subset_success_rate_percent,descriptive_wilson95_percent,paper_human_reviewed_TSR_percent,interval_caveat
+qwen3-mlx-4b,original,ALL,8,8,0,6,75.0,75.0,"[40.92754303101688, 92.8520787247891]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,original,apply_formula,4,4,0,4,100.0,100.0,"[51.01091635454027, 100]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,original,normalize_name,4,4,0,2,50.0,50.0,"[15.003898915214947, 84.99610108478505]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,lite,ALL,8,8,0,6,75.0,75.0,"[40.92754303101688, 92.8520787247891]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,lite,apply_formula,4,4,0,4,100.0,100.0,"[51.01091635454027, 100]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,lite,normalize_name,4,4,0,2,50.0,50.0,"[15.003898915214947, 84.99610108478505]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,full,ALL,8,8,0,6,75.0,75.0,"[40.92754303101688, 92.8520787247891]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,full,apply_formula,4,4,0,4,100.0,100.0,"[51.01091635454027, 100]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.
+qwen3-mlx-4b,full,normalize_name,4,4,0,2,50.0,50.0,"[15.003898915214947, 84.99610108478505]",,Descriptive binomial reference only; eight related authored tasks are not a random population sample.

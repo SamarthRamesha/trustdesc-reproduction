@@ -1,0 +1,68 @@
+{
+  "status": "failed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "step_limit",
+    "events": [
+      {
+        "index": 0,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=INDIRECT(\"A1\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      },
+      {
+        "index": 1,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=INDIRECT(\"A1\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      },
+      {
+        "index": 2,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=INDIRECT(\"A1\")"
+        },
+        "status": "tool_error",
+        "error": "Unsafe formula blocked",
+        "error_type": "ValueError"
+      },
+      {
+        "index": 3,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=A1+B1"
+        },
+        "status": "ok",
+        "result": {
+          "accepted_formula": "=A1+B1"
+        }
+      }
+    ],
+    "reason": "Maximum agent steps reached"
+  },
+  "latency_seconds": 36.152566916999604,
+  "input_tokens": 4616,
+  "output_tokens": 110,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": false,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "76d56df93d3eea2ebf9241dd07259d44f31d1ce14cf8d43676539f9f118d0e05",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:30:30.650380+00:00"
+}

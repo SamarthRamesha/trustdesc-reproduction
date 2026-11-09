@@ -1,0 +1,51 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": "  "
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      },
+      {
+        "index": 1,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": "  "
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      }
+    ],
+    "answer": "The input text contains only spaces and has been normalized to an empty string.",
+    "answer_format_normalized": false,
+    "seconds": 23.44082404099936
+  },
+  "latency_seconds": 23.44140654200055,
+  "input_tokens": 2146,
+  "output_tokens": 72,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": false,
+    "target_invoked": false,
+    "agent_finished": true,
+    "objective_observation": false,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "e77514f9b078a5e2abe1cf20151775496b9d19b3a179eb544bc9871cb0c34746",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:25:50.268442+00:00"
+}

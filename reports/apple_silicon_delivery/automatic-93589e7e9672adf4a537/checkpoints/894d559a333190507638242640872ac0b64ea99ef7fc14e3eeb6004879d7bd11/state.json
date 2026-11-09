@@ -1,0 +1,12 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "iterative_dynver_v2",
+    "model": "qwen3-mlx-4b",
+    "tool": "arxiv-current-search"
+  },
+  "status": "blocked",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:23:47.924306+00:00",
+  "result_sha256": "1b95427af7d2d62f3443eec3e329f307f42dfb8c52be1e5d0343ea629b21b571"
+}

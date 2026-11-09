@@ -1,0 +1,7 @@
+{
+  "reason": "Text handover preserved values but normalized CRLF, preventing byte-exact notebook reconstruction. Normalize only the reference CSV and retain its original bytes.",
+  "original_sha256": "38cf3479d4f4e6d8b7793bec413f81d9b0cd0e3ed9f64cc6c0af0d34c9494324",
+  "canonical_sha256": "efbbf393ddcd03db276a8ce7ea01c439d1cd9bc02cfd7b99ccc585d51a320661",
+  "parsed_rows_identical": true,
+  "model_or_experiment_code_changed": false
+}

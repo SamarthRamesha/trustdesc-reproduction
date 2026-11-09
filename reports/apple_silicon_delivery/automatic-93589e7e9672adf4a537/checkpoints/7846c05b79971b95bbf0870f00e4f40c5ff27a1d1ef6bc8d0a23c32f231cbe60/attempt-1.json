@@ -1,0 +1,40 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "apply_formula",
+        "arguments": {
+          "formula": "=SUM(A1:A5)"
+        },
+        "status": "ok",
+        "result": {
+          "accepted_formula": "=SUM(A1:A5)"
+        }
+      }
+    ],
+    "answer": "The formula =SUM(A1:A5) has been successfully accepted and validated.",
+    "answer_format_normalized": false,
+    "seconds": 19.415546874999563
+  },
+  "latency_seconds": 19.41625941699931,
+  "input_tokens": 2204,
+  "output_tokens": 56,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": true,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "76d56df93d3eea2ebf9241dd07259d44f31d1ce14cf8d43676539f9f118d0e05",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:29:16.107630+00:00"
+}

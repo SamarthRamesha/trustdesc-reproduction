@@ -1,0 +1,9 @@
+stage,calls,failed_calls,seconds,input_tokens,output_tokens,api_cost_usd,compute_cost_usd
+agent,38,0,201.25699683200128,14008,1315,0.0,
+debloat,2,0,37.87712204200034,482,420,0.0,
+description,2,0,49.074342625999634,1522,458,0.0,
+identifier_filter,2,0,17.56564041599995,632,156,0.0,
+judge,10,0,135.62815516700266,4464,1291,0.0,
+refinement,1,0,60.08682412500002,2727,409,0.0,
+source_grounding,2,0,100.4153349169992,1596,1010,0.0,
+verification_plan,2,0,113.10929329199917,1348,1149,0.0,

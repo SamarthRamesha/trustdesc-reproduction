@@ -1,0 +1,71 @@
+{
+  "status": "failed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "step_limit",
+    "events": [
+      {
+        "index": 0,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": ""
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      },
+      {
+        "index": 1,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": ""
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      },
+      {
+        "index": 2,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": ""
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      },
+      {
+        "index": 3,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": ""
+        },
+        "status": "ok",
+        "result": {
+          "normalized": ""
+        }
+      }
+    ],
+    "reason": "Maximum agent steps reached"
+  },
+  "latency_seconds": 34.17596079099985,
+  "input_tokens": 4502,
+  "output_tokens": 88,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": false,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "76d56df93d3eea2ebf9241dd07259d44f31d1ce14cf8d43676539f9f118d0e05",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:32:22.220189+00:00"
+}

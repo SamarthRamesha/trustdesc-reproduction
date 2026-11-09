@@ -4,6 +4,8 @@ Open [TRUSTDESC_REPRODUCTION.ipynb](TRUSTDESC_REPRODUCTION.ipynb) in local Jupyt
 
 This is an independent implementation of [Ye et al., TRUSTDESC](https://arxiv.org/abs/2604.07536v1). **The original scientific reproduction remains incomplete:** authenticated original 52-tool/208-task identities, snapshots, task texts, prompts, labels and traces have not been recovered. Authored fixtures and public example observations are labeled separately and never presented as the paper's benchmark or TSR.
 
+The [final completion report](FINAL_PROJECT_COMPLETION_REPORT.md) records the actual fresh-environment notebook run, 156 passing software tests, measured results and remaining scientific limits. Exact tool objectives were 6/8 in each main condition and 4/4 in each separate public-example condition. These finite observations show no measured improvement.
+
 ## Local execution
 
 The primary path uses **MLX on Apple Silicon**, a pinned 4-bit Qwen3-4B-Instruct-2507 model, and one supervised model process. Current memory checks guard model selection, load and generation. Each model must pass arithmetic inference, structured-output and exact-action tests before research stages start. The task-agent model, revision and settings stay fixed across Original / lite / full.

@@ -1,0 +1,51 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": " Alice"
+        },
+        "status": "ok",
+        "result": {
+          "normalized": "alice"
+        }
+      },
+      {
+        "index": 1,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": " Alice"
+        },
+        "status": "ok",
+        "result": {
+          "normalized": "alice"
+        }
+      }
+    ],
+    "answer": "The normalized form of 'Alice' is 'alice'.",
+    "answer_format_normalized": false,
+    "seconds": 17.707344333000037
+  },
+  "latency_seconds": 17.707917791,
+  "input_tokens": 1953,
+  "output_tokens": 70,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": false,
+    "target_invoked": false,
+    "agent_finished": true,
+    "objective_observation": false,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "bf6ad9cf40c9e1afa00b2c0169b2a0c9878838dab04fc5a39de2d8fa94eacbf0",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:27:55.580282+00:00"
+}

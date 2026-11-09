@@ -1,0 +1,12 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "iterative_dynver_v2",
+    "model": "qwen3-mlx-4b",
+    "tool": "normalize_name"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:23:47.919376+00:00",
+  "result_sha256": "2e41e5a2c8481411deb74fd635f95a9ed1fd4f1d6e8c2641053d3c5824a370bd"
+}

@@ -1,0 +1,31 @@
+
+Fetching 11 files:   0%|          | 0/11 [00:00<?, ?it/s]
+Fetching 11 files: 100%|██████████| 11/11 [00:00<00:00, 3728.87it/s]
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+{
+  "run": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/notebook-fresh/public-example/public-example-9677b254608f44c6aa50",
+  "scope": "Public MCP SDK example function-body experiment; not MCP transport or original TRUSTDESC benchmark",
+  "conditions": [
+    {
+      "condition": "original",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "lite",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "full",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    }
+  ]
+}

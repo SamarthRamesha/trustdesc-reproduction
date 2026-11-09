@@ -1,0 +1,40 @@
+{
+  "status": "completed",
+  "trace": {
+    "backend": "synthetic_allowlist",
+    "status": "completed",
+    "events": [
+      {
+        "index": 0,
+        "tool": "normalize_name",
+        "arguments": {
+          "name": "BOB"
+        },
+        "status": "ok",
+        "result": {
+          "normalized": "bob"
+        }
+      }
+    ],
+    "answer": "bob",
+    "answer_format_normalized": false,
+    "seconds": 11.475383582999712
+  },
+  "latency_seconds": 11.476192791999893,
+  "input_tokens": 1262,
+  "output_tokens": 37,
+  "cost_usd": 0.0,
+  "compute_cost_usd": null,
+  "fixture_oracle": {
+    "success": true,
+    "target_invoked": true,
+    "agent_finished": true,
+    "objective_observation": true,
+    "method": "authored_exact_trace_oracle",
+    "human_reviewed": false,
+    "scope": "Synthetic software/agent check; not paper human-reviewed task success"
+  },
+  "condition_descriptions_hash": "bf6ad9cf40c9e1afa00b2c0169b2a0c9878838dab04fc5a39de2d8fa94eacbf0",
+  "human_reviewed": false,
+  "recorded_at": "2026-11-09T10:28:56.685026+00:00"
+}

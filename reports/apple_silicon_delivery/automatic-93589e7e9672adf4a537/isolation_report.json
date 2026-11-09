@@ -1,0 +1,9 @@
+{
+  "platform": "Darwin",
+  "docker_cli": false,
+  "status": "unavailable",
+  "reason": "No automatic image pull or host execution fallback; default Colab does not supply an isolated Docker daemon.",
+  "external_execution_permitted": false,
+  "external_tools_executed": false,
+  "default_dynamic_backend": "authored_pure_fixture_allowlist_not_a_sandbox"
+}

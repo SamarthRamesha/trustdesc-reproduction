@@ -1,0 +1,72 @@
+{
+  "status": "completed",
+  "slice": {
+    "tool": "normalize_name",
+    "entry": "server:normalize_name",
+    "entry_method": "registration_pattern",
+    "source": "# module: server\n@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+    "initial_functions": [
+      "server:normalize_name"
+    ],
+    "functions": [
+      "server:normalize_name"
+    ],
+    "edges": [],
+    "unresolved_calls": [
+      {
+        "caller": "server:normalize_name",
+        "callee": null,
+        "callsite": "name.strip().lower()",
+        "line": 4,
+        "expression": "name.strip().lower",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "server:normalize_name",
+        "callee": null,
+        "callsite": "name.strip()",
+        "line": 4,
+        "expression": "name.strip",
+        "kind": "external_or_unresolved"
+      }
+    ],
+    "source_hashes": {
+      "server.py": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598"
+    },
+    "revisions": [],
+    "converged": true,
+    "mode": "static_only_no_debloating",
+    "warnings": [
+      "External and unresolved calls are not expanded",
+      "Module-level context is conservatively retained",
+      "Python AST subset; no soundness/equivalence guarantee",
+      "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+      "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+    ],
+    "evidence_spans": {
+      "server:normalize_name": {
+        "path": "server.py",
+        "line_start": 2,
+        "line_end": 4,
+        "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+        "source": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}"
+      }
+    },
+    "resolver": "python_ast_conservative_v2",
+    "resolution_confidence": "partial",
+    "transformation_validation": "no_executable_transformation",
+    "context_selection": [
+      {
+        "module": "server",
+        "referenced_names": [
+          "mcp",
+          "name",
+          "str"
+        ],
+        "omitted": [],
+        "scope": "reasoning context only; module-initialization equivalence is not certified"
+      }
+    ]
+  },
+  "recorded_at": "2026-11-09T10:11:52.122383+00:00"
+}

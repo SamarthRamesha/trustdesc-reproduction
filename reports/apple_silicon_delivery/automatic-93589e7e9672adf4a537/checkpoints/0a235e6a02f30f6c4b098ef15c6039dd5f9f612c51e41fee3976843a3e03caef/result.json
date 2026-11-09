@@ -1,0 +1,356 @@
+{
+  "status": "completed",
+  "slice": {
+    "tool": "normalize_name",
+    "entry": "server:normalize_name",
+    "entry_method": "registration_pattern",
+    "source": "# module: server\n@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+    "initial_functions": [
+      "server:normalize_name"
+    ],
+    "functions": [
+      "server:normalize_name"
+    ],
+    "edges": [],
+    "unresolved_calls": [
+      {
+        "caller": "server:normalize_name",
+        "callee": null,
+        "callsite": "name.strip().lower()",
+        "line": 4,
+        "expression": "name.strip().lower",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "server:normalize_name",
+        "callee": null,
+        "callsite": "name.strip()",
+        "line": 4,
+        "expression": "name.strip",
+        "kind": "external_or_unresolved"
+      }
+    ],
+    "source_hashes": {
+      "server.py": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598"
+    },
+    "revisions": [],
+    "converged": true,
+    "mode": "static_only_no_debloating",
+    "warnings": [
+      "External and unresolved calls are not expanded",
+      "Module-level context is conservatively retained",
+      "Python AST subset; no soundness/equivalence guarantee",
+      "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+      "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+    ],
+    "evidence_spans": {
+      "server:normalize_name": {
+        "path": "server.py",
+        "line_start": 2,
+        "line_end": 4,
+        "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+        "source": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}"
+      }
+    },
+    "resolver": "python_ast_conservative_v2",
+    "resolution_confidence": "partial",
+    "transformation_validation": "no_executable_transformation",
+    "context_selection": [
+      {
+        "module": "server",
+        "referenced_names": [
+          "mcp",
+          "name",
+          "str"
+        ],
+        "omitted": [],
+        "scope": "reasoning context only; module-initialization equivalence is not certified"
+      }
+    ]
+  },
+  "draft": {
+    "description": {
+      "summary": "A tool that normalizes a given name by removing leading and trailing whitespace and converting it to lowercase, returning a dictionary with the normalized version of the input name.",
+      "functionalities": [
+        "Normalizes input names by stripping whitespace from both ends and converting the string to lowercase.",
+        "Returns a structured response containing only the normalized name in a dictionary format.",
+        "Supports integration within a toolchain via a defined function interface for processing string inputs."
+      ],
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The input string to be normalized by removing leading and trailing whitespace and converting to lowercase."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "claims": [
+        {
+          "id": "c1",
+          "text": "A tool that normalizes a given name by removing leading and trailing whitespace and converting it to lowercase, returning a dictionary with the normalized version of the input name.",
+          "target": [
+            "summary"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "Normalizes input names by stripping whitespace from both ends and converting the string to lowercase.",
+          "target": [
+            "functionalities",
+            0
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "Returns a structured response containing only the normalized name in a dictionary format.",
+          "target": [
+            "functionalities",
+            1
+          ]
+        },
+        {
+          "id": "c4",
+          "text": "Supports integration within a toolchain via a defined function interface for processing string inputs.",
+          "target": [
+            "functionalities",
+            2
+          ]
+        },
+        {
+          "id": "c5",
+          "text": "The input string to be normalized by removing leading and trailing whitespace and converting to lowercase.",
+          "target": [
+            "input_schema",
+            "properties",
+            "name",
+            "description"
+          ]
+        }
+      ]
+    },
+    "sanitized": {
+      "source": "@tool.processor()\ndef adapt_name(input_name: string):\n    return {'normalized': input_name.trim().to_lower()}",
+      "truncations": {},
+      "semantic_renames": {
+        "lower": "to_lower",
+        "mcp": "tool",
+        "name": "input_name",
+        "normalize_name": "adapt_name",
+        "str": "string",
+        "strip": "trim",
+        "tool": "processor"
+      },
+      "semantic_filter": "model",
+      "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+    },
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "model_mode": "real_local_mlx_inference",
+    "status": "unverified_draft",
+    "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+    "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+    "source_evidence": [
+      {
+        "claim_id": "c1",
+        "references": [
+          {
+            "function": "server:normalize_name",
+            "quote": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+            "path": "server.py",
+            "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "rationale": "The function `server:normalize_name` returns a dictionary with the normalized version of the input name, which matches the claim's description of returning a dictionary containing the normalized name after removing leading/trailing whitespace and converting to lowercase.",
+        "confidence": "model_attributed_source_and_finite_tests_required"
+      },
+      {
+        "claim_id": "c2",
+        "references": [
+          {
+            "function": "server:normalize_name",
+            "quote": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+            "path": "server.py",
+            "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "rationale": "The function implements the described normalization behavior by stripping whitespace from both ends and converting the string to lowercase, as explicitly stated in its docstring and source code logic.",
+        "confidence": "model_attributed_source_and_finite_tests_required"
+      },
+      {
+        "claim_id": "c3",
+        "references": [
+          {
+            "function": "server:normalize_name",
+            "quote": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+            "path": "server.py",
+            "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "rationale": "The function returns a dictionary with the key 'normalized' and the value being the processed name, directly matching the claim's assertion about returning a structured response with only the normalized name in dictionary format.",
+        "confidence": "model_attributed_source_and_finite_tests_required"
+      },
+      {
+        "claim_id": "c4",
+        "references": [
+          {
+            "function": "server:normalize_name",
+            "quote": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+            "path": "server.py",
+            "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "rationale": "The function is decorated with `@mcp.tool()`, indicating it is designed to provide a defined function interface for toolchain integration, supporting the claim about integration via a defined function interface for processing string inputs.",
+        "confidence": "model_attributed_source_and_finite_tests_required"
+      },
+      {
+        "claim_id": "c5",
+        "references": [
+          {
+            "function": "server:normalize_name",
+            "quote": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+            "path": "server.py",
+            "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "rationale": "The input parameter `name` in the function signature is described as the input string to be normalized, with the function stripping whitespace and converting to lowercase, directly aligning with the claim's description of the input schema property's purpose.",
+        "confidence": "model_attributed_source_and_finite_tests_required"
+      }
+    ],
+    "implementation_interface": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "has_variadic": false,
+      "positional_only": [],
+      "certification": "static_signature_only; types/constraints/return behavior not proven"
+    },
+    "implementation_context": {
+      "records": [
+        {
+          "kind": "return_expression",
+          "function": "server:normalize_name",
+          "expression": "return {'normalized': name.strip().lower()}",
+          "path": "server.py",
+          "function_line_start": 2,
+          "function_line_end": 4,
+          "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598"
+        }
+      ],
+      "dependencies": [
+        {
+          "function": "server:normalize_name",
+          "call": "mcp.tool",
+          "expression": "mcp.tool()"
+        },
+        {
+          "function": "server:normalize_name",
+          "call": "name.strip().lower",
+          "expression": "name.strip().lower()"
+        },
+        {
+          "function": "server:normalize_name",
+          "call": "name.strip",
+          "expression": "name.strip()"
+        }
+      ],
+      "source_identity": "0f4acdf7c85ae153c7f7496275439cde0ea3f52751dcccf0a6fb21798d596de7",
+      "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+    },
+    "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+  },
+  "debloat": {
+    "status": "proposal_recorded",
+    "candidate": {
+      "tool": "normalize_name",
+      "entry": "server:normalize_name",
+      "entry_method": "registration_pattern",
+      "source": "# module: server\n@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}",
+      "initial_functions": [
+        "server:normalize_name"
+      ],
+      "functions": [
+        "server:normalize_name"
+      ],
+      "edges": [],
+      "unresolved_calls": [
+        {
+          "caller": "server:normalize_name",
+          "callee": null,
+          "callsite": "name.strip().lower()",
+          "line": 4,
+          "expression": "name.strip().lower",
+          "kind": "external_or_unresolved"
+        },
+        {
+          "caller": "server:normalize_name",
+          "callee": null,
+          "callsite": "name.strip()",
+          "line": 4,
+          "expression": "name.strip",
+          "kind": "external_or_unresolved"
+        }
+      ],
+      "source_hashes": {
+        "server.py": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598"
+      },
+      "revisions": [],
+      "converged": true,
+      "mode": "llm_debloat_unproven",
+      "warnings": [
+        "External and unresolved calls are not expanded",
+        "Module-level context is conservatively retained",
+        "Python AST subset; no soundness/equivalence guarantee",
+        "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+        "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+      ],
+      "evidence_spans": {
+        "server:normalize_name": {
+          "path": "server.py",
+          "line_start": 2,
+          "line_end": 4,
+          "file_sha256": "924c54353a223457762b5824b6e0c0d3a8f13f21028faa9c102a808933ff9598",
+          "source": "@mcp.tool()\ndef normalize_name(name: str):\n    \"\"\"Normalize a text name by trimming surrounding whitespace and lowercasing it.\"\"\"\n    return {'normalized': name.strip().lower()}"
+        }
+      },
+      "resolver": "python_ast_conservative_v2",
+      "resolution_confidence": "partial",
+      "transformation_validation": "no_executable_transformation",
+      "context_selection": [
+        {
+          "module": "server",
+          "referenced_names": [
+            "mcp",
+            "name",
+            "str"
+          ],
+          "omitted": [],
+          "scope": "reasoning context only; module-initialization equivalence is not certified"
+        }
+      ]
+    },
+    "accepted": true,
+    "equivalence": "AST_unchanged"
+  },
+  "prior_attempt_errors": [],
+  "recorded_at": "2026-11-09T10:15:17.454272+00:00"
+}

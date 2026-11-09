@@ -1,0 +1,28 @@
+{
+  "status": "experiment_finished",
+  "returncode": 0,
+  "scope": "public SDK function body; separate from authored benchmark and original MCP transport",
+  "conditions": [
+    {
+      "condition": "original",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "lite",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "full",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    }
+  ]
+}

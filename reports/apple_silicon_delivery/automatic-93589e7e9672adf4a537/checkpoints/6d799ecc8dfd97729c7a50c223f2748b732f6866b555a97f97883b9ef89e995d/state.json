@@ -1,0 +1,11 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "research_static_v2",
+    "tool": "arxiv-current-search"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:11:52.441330+00:00",
+  "result_sha256": "31344018e701016a36e4ea5ba7d1692edcd2d05acb2c26fbbb9e6756fee34d3e"
+}

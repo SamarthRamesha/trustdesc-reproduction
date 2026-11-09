@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "seed": 42,
+  "agent_max_steps": 4,
+  "refinement_rounds": 2,
+  "paid_models_enabled": false,
+  "external_execution_enabled": false,
+  "evaluation": "Fixed local task agent; authored fixture oracles; original human-reviewed paper TSR withheld",
+  "models": [
+    {
+      "temperature": 0.0,
+      "seed": 42,
+      "max_input_tokens": 12288,
+      "max_new_tokens": 1600,
+      "max_generation_seconds": 180,
+      "max_calls": 600,
+      "debloat": true,
+      "reasoning": "provider_default",
+      "id": "qwen3-mlx-4b",
+      "provider": "local",
+      "backend": "mlx",
+      "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+      "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+      "estimated_weight_bytes": 2263022417,
+      "minimum_available_ram_bytes": 3758096384,
+      "device": "metal",
+      "substitution": "Apple Silicon quantized local model; independent substitute, not paper models"
+    }
+  ],
+  "task_agent": {
+    "temperature": 0.0,
+    "seed": 42,
+    "max_input_tokens": 12288,
+    "max_new_tokens": 1600,
+    "max_generation_seconds": 180,
+    "max_calls": 600,
+    "debloat": true,
+    "reasoning": "provider_default",
+    "id": "qwen3-mlx-4b",
+    "provider": "local",
+    "backend": "mlx",
+    "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "estimated_weight_bytes": 2263022417,
+    "minimum_available_ram_bytes": 3758096384,
+    "device": "metal",
+    "substitution": "Apple Silicon quantized local model; independent substitute, not paper models"
+  },
+  "hardware_selection": "mlx"
+}

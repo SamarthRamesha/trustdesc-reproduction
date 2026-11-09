@@ -1,0 +1,98 @@
+{
+  "main_run": "automatic-93589e7e9672adf4a537",
+  "implementation_commit": "4a3239bfc85b48c3167cfce623169e750a0227ff",
+  "actual_jupyter": {
+    "kind": "actual local Jupyter kernel execution",
+    "fresh_python_environment": true,
+    "cached_model_assets_reverified": true,
+    "kernel_python": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/notebook-fresh/venv/bin/python",
+    "passed": true,
+    "executed_cells": 6,
+    "seconds": 1908.290946006775
+  },
+  "same_delivered_algorithm_sources": true,
+  "source_files_checked": 74,
+  "byte_exact_notebook_rebuild": true,
+  "software_test_count": 156,
+  "main_conditions": [
+    {
+      "generator": "qwen3-mlx-4b",
+      "variant": "original",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 8,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 6,
+      "fixture_oracle_success_rate_percent": 75.0,
+      "observed_subset_success_rate_percent": 75.0,
+      "descriptive_wilson95_percent": [
+        40.92754303101688,
+        92.8520787247891
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen3-mlx-4b",
+      "variant": "lite",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 8,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 6,
+      "fixture_oracle_success_rate_percent": 75.0,
+      "observed_subset_success_rate_percent": 75.0,
+      "descriptive_wilson95_percent": [
+        40.92754303101688,
+        92.8520787247891
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    },
+    {
+      "generator": "qwen3-mlx-4b",
+      "variant": "full",
+      "tool": "ALL",
+      "expected_tasks": 8,
+      "observed_tasks": 8,
+      "missing_tasks": 0,
+      "completed_fixture_objectives": 6,
+      "fixture_oracle_success_rate_percent": 75.0,
+      "observed_subset_success_rate_percent": 75.0,
+      "descriptive_wilson95_percent": [
+        40.92754303101688,
+        92.8520787247891
+      ],
+      "paper_human_reviewed_TSR_percent": null,
+      "interval_caveat": "Descriptive binomial reference only; eight related authored tasks are not a random population sample."
+    }
+  ],
+  "public_conditions": [
+    {
+      "condition": "original",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "lite",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    },
+    {
+      "condition": "full",
+      "expected": 4,
+      "observed": 4,
+      "successes": 4,
+      "source_body_oracle_rate_percent": 100.0
+    }
+  ],
+  "peak_worker_rss_bytes": 2136309760,
+  "peak_mlx_allocation_bytes": 3227936512,
+  "original_scientific_reproduction_complete": false,
+  "historical_records_preserved": true,
+  "paid_api_used": false
+}

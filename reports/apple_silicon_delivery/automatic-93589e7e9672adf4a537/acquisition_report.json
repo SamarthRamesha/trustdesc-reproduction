@@ -1,0 +1,273 @@
+{
+  "resources": [
+    {
+      "name": "zhiqiangwang4/MCPTox-Benchmark/README.md",
+      "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/README.md",
+      "status": "acquired_verified",
+      "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+      "sha256": "e248937f34abe5a7789cccf8be3046e05266c88cc6fefc51a5e7dc3301b95007",
+      "bytes": 9,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_reference",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.133998+00:00"
+    },
+    {
+      "name": "zhiqiangwang4/MCPTox-Benchmark/pure_tool.json",
+      "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/pure_tool.json",
+      "status": "acquired_verified",
+      "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+      "sha256": "54b1eb0e9d7b2f18465266aa9d9dfda828cd558b1269b74731ec2c5d8579e617",
+      "bytes": 316620,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_external_dataset",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.134745+00:00"
+    },
+    {
+      "name": "zhiqiangwang4/MCPTox-Benchmark/response_all.json",
+      "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/response_all.json",
+      "status": "acquired_verified",
+      "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+      "sha256": "79a90049be931c59e71446d6180b1d7f0d196d123d08a59bc155d142b5041c03",
+      "bytes": 20666873,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_external_dataset",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.158934+00:00"
+    },
+    {
+      "name": "AIS2Lab/MCPSecBench/README.md",
+      "url": "https://raw.githubusercontent.com/AIS2Lab/MCPSecBench/7612c5a3e811dcf01f64e4f2bb324591a2feaaf4/README.md",
+      "status": "acquired_verified",
+      "version": "7612c5a3e811dcf01f64e4f2bb324591a2feaaf4",
+      "sha256": "32f6ee7912336989b70aca77153c8810cd37e48d1575e0afda2e1f00ccb9453c",
+      "bytes": 6669,
+      "license": "MIT",
+      "classification": "public_reference",
+      "cache_hit": true,
+      "redistribute": true,
+      "timestamp": "2026-11-09T10:11:28.348017+00:00"
+    },
+    {
+      "name": "Snakinya/MCPCorpus/README.md",
+      "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/README.md",
+      "status": "acquired_verified",
+      "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+      "sha256": "535f0032923287421da403f6c505e46818e675bc57fd53be58f331ee58ed424f",
+      "bytes": 2405,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_reference",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.349646+00:00"
+    },
+    {
+      "name": "Snakinya/MCPCorpus/Website/mcpso_clients_cleaned.json",
+      "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/Website/mcpso_clients_cleaned.json",
+      "status": "acquired_verified",
+      "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+      "sha256": "1ce39bc223072efc14b25bc974367afbf0b1e42ded22a3e3bd35c26ca0b02399",
+      "bytes": 284046,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_external_dataset",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.350365+00:00"
+    },
+    {
+      "name": "AIS2Lab/MCPSecBench/data/data.json",
+      "url": "https://raw.githubusercontent.com/AIS2Lab/MCPSecBench/7612c5a3e811dcf01f64e4f2bb324591a2feaaf4/data/data.json",
+      "status": "acquired_verified",
+      "version": "7612c5a3e811dcf01f64e4f2bb324591a2feaaf4",
+      "sha256": "037b3824147d3c0b674af66fd27095e51a2379a4bf91b65861315de594e6ae48",
+      "bytes": 4156,
+      "license": "MIT",
+      "classification": "public_external_dataset",
+      "cache_hit": true,
+      "redistribute": true,
+      "timestamp": "2026-11-09T10:11:28.356797+00:00"
+    },
+    {
+      "name": "Snakinya/MCPCorpus/Website/mcpso_servers_cleaned.json",
+      "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/Website/mcpso_servers_cleaned.json",
+      "status": "acquired_verified",
+      "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+      "sha256": "cc14fc4fe5c68b73e77cbaa3e64fc2b58616a8e61d0e96d92b8fd861702b9e20",
+      "bytes": 13158383,
+      "license": "not specified; reference only, no redistribution",
+      "classification": "public_external_dataset",
+      "cache_hit": true,
+      "redistribute": false,
+      "timestamp": "2026-11-09T10:11:28.374281+00:00"
+    },
+    {
+      "name": "original 52 tool identities and revisions",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original 52 tool identities and revisions"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    },
+    {
+      "name": "original 208 tasks",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original 208 tasks"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    },
+    {
+      "name": "original reviewed labels",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original reviewed labels"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    },
+    {
+      "name": "original execution traces",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original execution traces"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    },
+    {
+      "name": "original prompts",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original prompts"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    },
+    {
+      "name": "original model snapshots/configuration",
+      "url": "https://anonymous.4open.science/r/ae-trustdesc-13A6",
+      "status": "not_recovered",
+      "classification": "original_paper_material",
+      "version": null,
+      "sha256": null,
+      "license": "unknown",
+      "missing_components": [
+        "original model snapshots/configuration"
+      ],
+      "note": "Artifact-to-paper authenticity not established; reachable HTML is not acquisition."
+    }
+  ],
+  "discovery_checks": [
+    {
+      "url": "https://anonymous.4open.science/api/repo/ae-trustdesc-13A6",
+      "status": "unavailable",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 401: Unauthorized"
+    },
+    {
+      "url": "https://api.github.com/orgs/PSU-Security-Universe/repos?per_page=100",
+      "status": "reachable",
+      "http_status": 200,
+      "sha256": "2d51d564f90616324bfb8e3b28571bc9fb6f9844c06e6ec6e46fd2430a402fc5",
+      "bytes": 54059,
+      "repository_names": [
+        "PSU-Security-Universe/sqlright-artifact",
+        "PSU-Security-Universe/sqlright",
+        "PSU-Security-Universe/viper",
+        "PSU-Security-Universe/data-only-attacks",
+        "PSU-Security-Universe/viper-artifact",
+        "PSU-Security-Universe/badass",
+        "PSU-Security-Universe/countdown",
+        "PSU-Security-Universe/sack",
+        "PSU-Security-Universe/contractguard"
+      ]
+    },
+    {
+      "url": "https://hengkai-ye.github.io/",
+      "status": "unavailable",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "inspections": [
+    {
+      "name": "zhiqiangwang4/MCPTox-Benchmark/pure_tool.json",
+      "status": "parsed_json_container",
+      "rows_or_keys": 45,
+      "top_level_type": "list",
+      "sha256": "54b1eb0e9d7b2f18465266aa9d9dfda828cd558b1269b74731ec2c5d8579e617",
+      "evaluation_eligible": false,
+      "reason": "External benchmark has no authenticated mapping to original TRUSTDESC tools/tasks/traces."
+    },
+    {
+      "name": "zhiqiangwang4/MCPTox-Benchmark/response_all.json",
+      "status": "parsed_json_container",
+      "rows_or_keys": 6,
+      "top_level_type": "dict",
+      "sha256": "79a90049be931c59e71446d6180b1d7f0d196d123d08a59bc155d142b5041c03",
+      "evaluation_eligible": false,
+      "reason": "External benchmark has no authenticated mapping to original TRUSTDESC tools/tasks/traces."
+    },
+    {
+      "name": "Snakinya/MCPCorpus/Website/mcpso_clients_cleaned.json",
+      "status": "parsed_json_container",
+      "rows_or_keys": 300,
+      "top_level_type": "list",
+      "sha256": "1ce39bc223072efc14b25bc974367afbf0b1e42ded22a3e3bd35c26ca0b02399",
+      "evaluation_eligible": false,
+      "reason": "External benchmark has no authenticated mapping to original TRUSTDESC tools/tasks/traces."
+    },
+    {
+      "name": "AIS2Lab/MCPSecBench/data/data.json",
+      "status": "parsed_json_container",
+      "rows_or_keys": 11,
+      "top_level_type": "list",
+      "sha256": "037b3824147d3c0b674af66fd27095e51a2379a4bf91b65861315de594e6ae48",
+      "evaluation_eligible": false,
+      "reason": "External benchmark has no authenticated mapping to original TRUSTDESC tools/tasks/traces."
+    },
+    {
+      "name": "Snakinya/MCPCorpus/Website/mcpso_servers_cleaned.json",
+      "status": "parsed_json_container",
+      "rows_or_keys": 13875,
+      "top_level_type": "list",
+      "sha256": "cc14fc4fe5c68b73e77cbaa3e64fc2b58616a8e61d0e96d92b8fd861702b9e20",
+      "evaluation_eligible": false,
+      "reason": "External benchmark has no authenticated mapping to original TRUSTDESC tools/tasks/traces."
+    }
+  ],
+  "original_artifact_recovered": false,
+  "original_benchmark_reconstructed": false,
+  "policy": "Public source/metadata only; no external setup scripts or server code executed. Failed resources remain explicit.",
+  "fixture_and_public_source": {
+    "status": "synthetic_inputs_ready",
+    "public_source": "pinned_snapshot_acquired_static_only",
+    "original_artifact": "not_recovered"
+  }
+}

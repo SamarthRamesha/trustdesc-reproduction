@@ -1,0 +1,2271 @@
+{
+  "status": "completed",
+  "slice": {
+    "tool": "search_papers",
+    "entry": "arxiv_mcp_server.tools.search:handle_search",
+    "entry_method": "explicit_operator_override",
+    "source": "# module: arxiv_mcp_server.arxiv_api\nimport asyncio\nimport logging\nimport os\nfrom pathlib import Path\nimport random\nimport tempfile\nimport threading\nimport time\nfrom typing import Awaitable, Callable, Protocol, TypeVar\nimport httpx\nlogger = logging.getLogger('arxiv-mcp-server')\nT = TypeVar('T')\n\ndef _parse_retry_after_seconds(retry_after: str | None) -> float | None:\n    \"\"\"Parse Retry-After header into seconds.\n\n    Supports both delay-seconds (integer) and HTTP-date formats.\n    Returns None if unparseable or not provided.\n    \"\"\"\n    if not retry_after:\n        return None\n    try:\n        return float(retry_after)\n    except ValueError:\n        pass\n    try:\n        from email.utils import parsedate_to_datetime\n        import datetime\n        retry_dt = parsedate_to_datetime(retry_after)\n        now = datetime.datetime.now(datetime.timezone.utc)\n        delta = (retry_dt - now).total_seconds()\n        return max(0.0, delta)\n    except Exception:\n        logger.warning(f'Could not parse Retry-After header: {retry_after}')\n        return None\n\ndef _compute_backoff_seconds(attempt: int, retry_after: str | None, initial_backoff: float, max_backoff: float) -> float:\n    \"\"\"Exponential backoff with jitter, with Retry-After as floor.\n\n    Args:\n        attempt: Zero-based retry attempt number.\n        retry_after: Optional Retry-After header value (int or HTTP-date).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n\n    Returns:\n        Computed backoff delay in seconds with jitter (0.5-1.5x) applied.\n        Retry-After (if provided) is used as a strict floor before and after jitter,\n        and is NOT capped to max_backoff.\n    \"\"\"\n    delay = min(initial_backoff * 2 ** attempt, max_backoff)\n    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n    if parsed_retry_after is not None:\n        delay = max(delay, parsed_retry_after)\n    jittered = delay * (0.5 + random.random())\n    if parsed_retry_after is not None:\n        jittered = max(jittered, parsed_retry_after)\n    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n        return jittered\n    return min(jittered, max_backoff)\n\nasync def retry_with_backoff(operation: Callable[[], Awaitable[T]], *, max_retries: int=3, initial_backoff: float=2.0, max_backoff: float=60.0, max_total_time: float | None=None, operation_name: str='operation') -> T:\n    \"\"\"Execute an async operation with exponential backoff on retryable errors.\n\n    Retries on:\n    - httpx.TimeoutException\n    - httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError\n    - httpx.HTTPStatusError with status 429, 503, 406\n\n    Note: HTTP 406 uses minimal retries (ARXIV_HTTP_406_MAX_RETRIES = 1)\n    because arXiv's 406 is IP-level burst throttling and retrying inside\n    the window extends the block (#277).\n\n    Args:\n        operation: Async callable to execute.\n        max_retries: Maximum number of retry attempts (for 429/503).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n        max_total_time: Optional maximum total time in seconds (raises on exceed).\n        operation_name: Name for logging.\n\n    Returns:\n        Result of the operation.\n\n    Raises:\n        Original exception after exhausting retries, wrapped with context.\n    \"\"\"\n    from .config import Settings\n    settings = Settings()\n    start_time = time.monotonic()\n    last_exception: Exception | None = None\n    retry_after: str | None = None\n    for attempt in range(max_retries + 1):\n        if max_total_time is not None:\n            elapsed = time.monotonic() - start_time\n            if elapsed >= max_total_time:\n                attempts_word = 'attempt' if attempt == 0 else 'attempts'\n                logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)\n                if last_exception:\n                    raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.') from last_exception\n                raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')\n        try:\n            if max_total_time is not None:\n                remaining = max_total_time - (time.monotonic() - start_time)\n                if remaining <= 0:\n                    raise asyncio.TimeoutError('Budget exhausted before attempt')\n                logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)\n                return await asyncio.wait_for(operation(), timeout=remaining)\n            return await operation()\n        except asyncio.TimeoutError as e:\n            if max_total_time is not None:\n                elapsed = time.monotonic() - start_time\n                logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)\n                if last_exception and isinstance(last_exception, httpx.HTTPStatusError):\n                    status_code = last_exception.response.status_code\n                    if status_code in (429, 503, 406):\n                        retry_after = 60.0 if status_code != 406 else 600.0\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after) from e\n                raise ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n            raise\n        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining:\n                        logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)\n                        raise ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)\n                raise ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.') from e\n        except httpx.TimeoutException as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining or remaining <= 0.1:\n                        logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)\n                        raise ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)\n                raise ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n        except httpx.HTTPStatusError as e:\n            if e.response is not None and e.response.status_code in (429, 503, 406):\n                last_exception = e\n                max_retries_for_status = settings.ARXIV_HTTP_406_MAX_RETRIES if e.response.status_code == 406 else max_retries\n                retry_after = e.response.headers.get('Retry-After')\n                if attempt < max_retries_for_status:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n                        if parsed_retry_after is None:\n                            parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                        logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                    wait = _compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)\n                    if max_total_time is not None:\n                        remaining = max_total_time - (time.monotonic() - start_time)\n                        if wait >= remaining:\n                            if parsed_retry_after is None:\n                                parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                            if parsed_retry_after is None:\n                                parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                            logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)\n                            raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                        wait = min(wait, remaining * 0.9)\n                    logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)\n                    await asyncio.sleep(wait)\n                else:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is None:\n                        parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                    logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)\n                    raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n            else:\n                raise\n        except (ArxivTimeoutError, ArxivConnectionError, ArxivRateLimitError):\n            raise\n        except Exception:\n            raise\n    if last_exception:\n        raise last_exception\n    raise RuntimeError(f'{operation_name} failed after exhausting retries')\n\n# module: arxiv_mcp_server.tools.search\nimport json\nimport logging\nimport httpx\nimport asyncio\nimport xml.etree.ElementTree as ET\nfrom urllib.parse import quote\nfrom typing import Dict, Any, List, Optional\nfrom datetime import datetime, timezone\nfrom dateutil import parser\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom ..config import Settings\nfrom ..arxiv_api import ARXIV_RATE_LIMITER, ArxivRateLimitError, retry_with_backoff\nfrom .content import CONTENT_WARNING\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nDEFAULT_MAX_RESULTS = 5\nDEFAULT_ABSTRACT_MODE = 'snippet'\nABSTRACT_SNIPPET_CHARS = 280\nABSTRACT_MODES = ('none', 'snippet', 'full')\nSORT_BY_VALUES = ('relevance', 'date')\n_ABSTRACT_TRUNCATION_MARK = '… [truncated]'\nARXIV_HEADERS = {'User-Agent': f'{settings.APP_NAME}/{settings.APP_VERSION} (https://github.com/blazickjp/arxiv-mcp-server; research tool)'}\n_DEFAULT_RETRY_AFTER_SECONDS = 60.0\nRATE_LIMIT_MESSAGE = 'arXiv is rate limiting this IP (HTTP 429). Please wait before retrying.'\n\ndef _status_response(status: str, message: str, **extra: Any) -> List[types.TextContent]:\n    \"\"\"Return a structured {status, message} tool payload.\"\"\"\n    payload: Dict[str, Any] = {'status': status, 'message': message}\n    payload.update(extra)\n    return [types.TextContent(type='text', text=json.dumps(payload, indent=2))]\n\ndef _error_response(message: str) -> List[types.TextContent]:\n    \"\"\"Structured error payload used by search_papers failure paths.\"\"\"\n    return _status_response('error', message)\n\ndef _rate_limited_response(message: str | None=None, *, retry_after_seconds: float | None=None, status_code: int=429) -> List[types.TextContent]:\n    \"\"\"Soft rate-limit result so callers can continue without a bare Error: stall.\"\"\"\n    extra: Dict[str, Any] = {'http_status': status_code}\n    if retry_after_seconds is None:\n        retry_after_seconds = _DEFAULT_RETRY_AFTER_SECONDS\n    extra['retry_after_seconds'] = retry_after_seconds\n    return _status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)\n\nasync def _rate_limited_get(client: httpx.AsyncClient, url: str) -> httpx.Response:\n    \"\"\"Make an HTTP request through the process-wide arXiv request gate with retry.\n\n    Retries HTTP 429/503/406 and timeouts/connection errors with exponential backoff.\n    Uses the unified retry_with_backoff infrastructure from arxiv_api.\n    Rate limiter lock is acquired per attempt, not held through sleeps.\n    \"\"\"\n\n    async def single_request() -> httpx.Response:\n        \"\"\"Single request wrapped with rate limiting.\"\"\"\n\n        async def request() -> httpx.Response:\n            response = await client.get(url, headers=ARXIV_HEADERS)\n            response.raise_for_status()\n            return response\n        return await ARXIV_RATE_LIMITER.run_async(request)\n    return await retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')\nARXIV_API_URL = 'https://export.arxiv.org/api/query'\nARXIV_NS = {'atom': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom', 'opensearch': 'http://a9.com/-/spec/opensearch/1.1/'}\nVALID_CATEGORIES = {'cs', 'econ', 'eess', 'math', 'physics', 'q-bio', 'q-fin', 'stat', 'astro-ph', 'cond-mat', 'gr-qc', 'hep-ex', 'hep-lat', 'hep-ph', 'hep-th', 'math-ph', 'nlin', 'nucl-ex', 'nucl-th', 'quant-ph'}\n_USER_QUERY_FIELD_PREFIXES = ('ti:', 'au:', 'abs:', 'cat:', 'co:', 'jr:', 'rn:', 'all:')\n\ndef _user_query_has_field_prefix(query: str) -> bool:\n    \"\"\"Return True if the user already targeted an arXiv search field.\"\"\"\n    lowered = query.lower()\n    return any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))\n\ndef _scope_user_query(query: str) -> str:\n    \"\"\"Group a user query and keep unprefixed terms in title/abstract.\n\n    Bare tokens are mapped by arXiv to ``all:``, which includes authors. A\n    short ``OR`` term such as ``MoE`` then matches author-name fragments\n    (for example ``Moe Jafari`` or ``Mo Zhou``). Under date sort that\n    collapses to \"newest papers in these categories.\"\n    \"\"\"\n    query = query.strip()\n    if not query:\n        return query\n    if _user_query_has_field_prefix(query):\n        return f'({query})'\n    return f'(ti:({query}) OR abs:({query}))'\n\ndef _format_submitted_date_filter(date_from: Optional[str], date_to: Optional[str]) -> str:\n    \"\"\"Build an arXiv submittedDate range using spaces around TO.\"\"\"\n    try:\n        if date_from:\n            start_date = parser.parse(date_from).strftime('%Y%m%d0000')\n        else:\n            start_date = '199107010000'\n        if date_to:\n            end_date = parser.parse(date_to).strftime('%Y%m%d2359')\n        else:\n            end_date = datetime.now().strftime('%Y%m%d2359')\n    except (ValueError, TypeError) as e:\n        logger.error(f'Error parsing dates: {e}')\n        raise ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')\n    return f'submittedDate:[{start_date} TO {end_date}]'\n\ndef build_arxiv_search_query(query: str, date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None) -> str:\n    \"\"\"Return the unencoded arXiv search_query string.\"\"\"\n    query_parts: list[str] = []\n    if query.strip():\n        query_parts.append(_scope_user_query(query))\n    if categories:\n        category_filter = ' OR '.join((f'cat:{cat}' for cat in categories))\n        query_parts.append(f'({category_filter})')\n    if date_from or date_to:\n        date_filter = _format_submitted_date_filter(date_from, date_to)\n        query_parts.append(date_filter)\n        logger.debug(f'Added date filter: {date_filter}')\n    if not query_parts:\n        raise ValueError('No search criteria provided')\n    return ' AND '.join(query_parts)\n\ndef build_arxiv_search_url(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> str:\n    \"\"\"Build a raw arXiv API URL with a percent-encoded search_query.\"\"\"\n    final_query = build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)\n    logger.debug(f'Raw API query: {final_query}')\n    sort_map = {'relevance': 'relevance', 'date': 'submittedDate'}\n    order = sort_order if sort_order in ('ascending', 'descending') else 'descending'\n    encoded_query = quote(final_query, safe='')\n    start = max(0, int(start))\n    base_params = f\"start={start}&max_results={max_results}&sortBy={sort_map.get(sort_by, 'relevance')}&sortOrder={order}\"\n    return f'{ARXIV_API_URL}?search_query={encoded_query}&{base_params}'\n\nasync def _raw_arxiv_search(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> tuple[List[Dict[str, Any]], Optional[int]]:\n    \"\"\"\n    Perform arXiv search using raw HTTP requests.\n\n    This bypasses the arxiv Python package to avoid URL encoding issues\n    with date filters. The arxiv package encodes '+' as '%2B' which breaks\n    the submittedDate:[YYYYMMDD TO YYYYMMDD] syntax.\n\n    Returns (papers, total_results) where total_results is the OpenSearch\n    corpus hit count from the Atom feed, not the page size.\n    \"\"\"\n    url = build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)\n    logger.debug(f'Raw API URL: {url}')\n    timeout = httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)\n    async with httpx.AsyncClient(timeout=timeout) as client:\n        response = await _rate_limited_get(client, url)\n    papers = _parse_arxiv_atom_response(response.text)\n    return (papers, _parse_opensearch_total_results(response.text))\n\ndef _parse_opensearch_total_results(xml_text: str) -> Optional[int]:\n    \"\"\"Return arXiv OpenSearch totalResults, or None if the feed omits it.\"\"\"\n    try:\n        root = ET.fromstring(xml_text)\n    except ET.ParseError:\n        return None\n    elem = root.find('opensearch:totalResults', ARXIV_NS)\n    if elem is None:\n        for child in list(root):\n            tag = child.tag.rsplit('}', 1)[-1]\n            if tag == 'totalResults':\n                elem = child\n                break\n    if elem is None or elem.text is None:\n        return None\n    try:\n        return int(elem.text.strip())\n    except ValueError:\n        return None\n\ndef _normalize_abstract_mode(value: Any) -> str:\n    \"\"\"Return a valid abstract_mode or raise ValueError.\"\"\"\n    if value is None:\n        return DEFAULT_ABSTRACT_MODE\n    if not isinstance(value, str):\n        raise ValueError(f'abstract_mode must be one of: none, snippet, full (got {type(value).__name__})')\n    mode = value.strip().lower()\n    if mode not in ABSTRACT_MODES:\n        raise ValueError(f'abstract_mode must be one of: none, snippet, full (got {value!r})')\n    return mode\n\ndef _normalize_sort_by(value: Any) -> str:\n    \"\"\"Return a valid sort_by or raise ValueError.\n\n    Only the documented values ``relevance`` and ``date`` are accepted.\n    Aliases such as ``submittedDate`` are intentionally rejected (HOLD).\n    \"\"\"\n    if value is None:\n        return 'relevance'\n    if not isinstance(value, str):\n        allowed = ', '.join(SORT_BY_VALUES)\n        raise ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')\n    sort_by = value.strip().lower()\n    if sort_by not in SORT_BY_VALUES:\n        allowed = ', '.join(SORT_BY_VALUES)\n        raise ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')\n    return sort_by\n\ndef _snippet_abstract(abstract: str, max_chars: int=ABSTRACT_SNIPPET_CHARS) -> str:\n    \"\"\"Return a deterministic bounded abstract snippet, marked when truncated.\"\"\"\n    if len(abstract) <= max_chars:\n        return abstract\n    return abstract[:max_chars].rstrip() + _ABSTRACT_TRUNCATION_MARK\n\ndef _apply_abstract_mode(papers: List[Dict[str, Any]], abstract_mode: str) -> List[Dict[str, Any]]:\n    \"\"\"Project paper dicts according to abstract_mode without mutating inputs.\"\"\"\n    mode = _normalize_abstract_mode(abstract_mode)\n    projected: List[Dict[str, Any]] = []\n    for paper in papers:\n        item = dict(paper)\n        if mode == 'none':\n            item.pop('abstract', None)\n        elif mode == 'snippet':\n            abstract = item.get('abstract')\n            if isinstance(abstract, str):\n                item['abstract'] = _snippet_abstract(abstract)\n        projected.append(item)\n    return projected\n\ndef _build_search_response(papers: List[Dict[str, Any]], *, total_results: Optional[int]=None, has_more: Optional[bool]=None, start: int=0, abstract_mode: str=DEFAULT_ABSTRACT_MODE) -> Dict[str, Any]:\n    \"\"\"Assemble search JSON. Never report page size as total_results.\n\n    Pagination mirrors read_paper / content helpers: ``start`` is the\n    zero-based offset for this page and ``next_start`` is set when more\n    results remain (otherwise None). ``abstract_mode`` is echoed so\n    clients can continue pagination with the same projection.\n    \"\"\"\n    returned = len(papers)\n    start = max(0, int(start))\n    mode = _normalize_abstract_mode(abstract_mode)\n    response: Dict[str, Any] = {'returned': returned, 'start': start, 'abstract_mode': mode, 'papers': papers}\n    if mode != 'none':\n        response['content_warning'] = CONTENT_WARNING\n    if total_results is not None:\n        response['total_results'] = total_results\n        if has_more is None:\n            has_more = total_results > start + returned\n    if has_more is not None:\n        response['has_more'] = bool(has_more)\n    if response.get('has_more'):\n        response['next_start'] = start + returned\n    else:\n        response['next_start'] = None\n    return response\n\ndef _parse_arxiv_atom_response(xml_text: str) -> List[Dict[str, Any]]:\n    \"\"\"Parse arXiv Atom XML response into paper dictionaries.\"\"\"\n    results = []\n    try:\n        root = ET.fromstring(xml_text)\n        for entry in root.findall('atom:entry', ARXIV_NS):\n            id_elem = entry.find('atom:id', ARXIV_NS)\n            if id_elem is None or id_elem.text is None:\n                continue\n            paper_id = id_elem.text.split('/abs/')[-1]\n            short_id = paper_id.split('v')[0] if 'v' in paper_id else paper_id\n            title_elem = entry.find('atom:title', ARXIV_NS)\n            title = title_elem.text.strip().replace('\\n', ' ') if title_elem is not None and title_elem.text else ''\n            authors = []\n            for author in entry.findall('atom:author', ARXIV_NS):\n                name_elem = author.find('atom:name', ARXIV_NS)\n                if name_elem is not None and name_elem.text:\n                    authors.append(name_elem.text)\n            summary_elem = entry.find('atom:summary', ARXIV_NS)\n            abstract = summary_elem.text.strip().replace('\\n', ' ') if summary_elem is not None and summary_elem.text else ''\n            categories = []\n            for cat in entry.findall('arxiv:primary_category', ARXIV_NS):\n                term = cat.get('term')\n                if term:\n                    categories.append(term)\n            for cat in entry.findall('atom:category', ARXIV_NS):\n                term = cat.get('term')\n                if term and term not in categories:\n                    categories.append(term)\n            published_elem = entry.find('atom:published', ARXIV_NS)\n            published = published_elem.text if published_elem is not None and published_elem.text else ''\n            pdf_url = None\n            for link in entry.findall('atom:link', ARXIV_NS):\n                if link.get('title') == 'pdf':\n                    pdf_url = link.get('href')\n                    break\n            if not pdf_url:\n                pdf_url = f'http://arxiv.org/pdf/{paper_id}'\n            results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})\n    except ET.ParseError as e:\n        logger.error(f'Failed to parse arXiv XML response: {e}')\n        raise ValueError(f'Failed to parse arXiv API response: {e}')\n    return results\n\ndef _validate_categories(categories: List[str]) -> bool:\n    \"\"\"Validate that all provided categories are valid arXiv categories.\"\"\"\n    for category in categories:\n        if '.' in category:\n            prefix = category.split('.')[0]\n        else:\n            prefix = category\n        if prefix not in VALID_CATEGORIES:\n            logger.warning(f'Unknown category prefix: {prefix}')\n            return False\n    return True\n\ndef _optimize_query(query: str) -> str:\n    \"\"\"Minimal query optimization - preserve user intent while fixing obvious issues.\"\"\"\n    if any((field in query for field in ['ti:', 'au:', 'abs:', 'cat:', 'AND', 'OR', 'ANDNOT'])):\n        logger.debug('Field-specific or boolean query detected - no optimization')\n        return query\n    if query.startswith('\"') and query.endswith('\"'):\n        logger.debug('Pre-quoted query detected - no optimization')\n        return query\n    terms = query.split()\n    if len(terms) > 10:\n        logger.warning(f'Very long query ({len(terms)} terms) - consider using quotes for phrases or field-specific searches')\n    return query\n\nasync def handle_search(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Handle paper search requests via the arXiv Atom API.\n\n    Always uses raw HTTP so OpenSearch ``totalResults`` (corpus hit count)\n    is available for every query — including those without date filters\n    (see #189). Raw requests also avoid the arxiv package URL-encoding\n    bug that breaks ``submittedDate`` ranges.\n    \"\"\"\n    try:\n        max_results = min(int(arguments.get('max_results', DEFAULT_MAX_RESULTS)), settings.MAX_RESULTS)\n        start_arg = arguments.get('start', 0)\n        try:\n            start = max(0, int(start_arg))\n        except (TypeError, ValueError):\n            start = 0\n        try:\n            abstract_mode = _normalize_abstract_mode(arguments.get('abstract_mode', DEFAULT_ABSTRACT_MODE))\n        except ValueError as e:\n            return _error_response(str(e))\n        base_query = arguments['query']\n        date_from_arg = arguments.get('date_from')\n        date_to_arg = arguments.get('date_to')\n        categories = arguments.get('categories')\n        try:\n            sort_by_arg = _normalize_sort_by(arguments.get('sort_by', 'relevance'))\n        except ValueError as e:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': str(e)}))]\n        logger.debug('Starting search with query: %r, max_results: %s, start: %s, abstract_mode: %s', base_query, max_results, start, abstract_mode)\n        if categories and (not _validate_categories(categories)):\n            return _error_response('Invalid category provided. Please check arXiv category names.')\n        try:\n            optimized_query = _optimize_query(base_query) if base_query.strip() else ''\n            results, total_results = await _raw_arxiv_search(query=optimized_query, max_results=max_results, sort_by=sort_by_arg, date_from=date_from_arg, date_to=date_to_arg, categories=categories, start=start)\n            results = _apply_abstract_mode(results, abstract_mode)\n            logger.info(f'Search completed: {len(results)} results returned')\n            response_data = _build_search_response(results, total_results=total_results, start=start, abstract_mode=abstract_mode)\n            return [types.TextContent(type='text', text=json.dumps(response_data, indent=2))]\n        except ArxivRateLimitError as e:\n            logger.warning('arXiv search rate limited after retries: %s', e)\n            return _rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)\n        except httpx.HTTPStatusError as e:\n            logger.error(f'arXiv API HTTP error: {e}')\n            status = e.response.status_code if e.response is not None else 'unknown'\n            return _error_response(f'arXiv API HTTP error (HTTP {status})')\n        except ValueError as e:\n            return _error_response(str(e))\n    except ArxivRateLimitError as e:\n        logger.warning('arXiv search rate limited after retries: %s', e)\n        return _rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)\n    except Exception as e:\n        logger.error(f'Unexpected search error: {e}')\n        return _error_response(str(e))",
+    "initial_functions": [
+      "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+      "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+      "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+      "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+      "arxiv_mcp_server.tools.search:_build_search_response",
+      "arxiv_mcp_server.tools.search:_error_response",
+      "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+      "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+      "arxiv_mcp_server.tools.search:_normalize_sort_by",
+      "arxiv_mcp_server.tools.search:_optimize_query",
+      "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+      "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+      "arxiv_mcp_server.tools.search:_rate_limited_get",
+      "arxiv_mcp_server.tools.search:_rate_limited_response",
+      "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+      "arxiv_mcp_server.tools.search:_scope_user_query",
+      "arxiv_mcp_server.tools.search:_snippet_abstract",
+      "arxiv_mcp_server.tools.search:_status_response",
+      "arxiv_mcp_server.tools.search:_user_query_has_field_prefix",
+      "arxiv_mcp_server.tools.search:_validate_categories",
+      "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+      "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+      "arxiv_mcp_server.tools.search:handle_search"
+    ],
+    "functions": [
+      "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+      "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+      "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+      "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+      "arxiv_mcp_server.tools.search:_build_search_response",
+      "arxiv_mcp_server.tools.search:_error_response",
+      "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+      "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+      "arxiv_mcp_server.tools.search:_normalize_sort_by",
+      "arxiv_mcp_server.tools.search:_optimize_query",
+      "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+      "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+      "arxiv_mcp_server.tools.search:_rate_limited_get",
+      "arxiv_mcp_server.tools.search:_rate_limited_response",
+      "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+      "arxiv_mcp_server.tools.search:_scope_user_query",
+      "arxiv_mcp_server.tools.search:_snippet_abstract",
+      "arxiv_mcp_server.tools.search:_status_response",
+      "arxiv_mcp_server.tools.search:_user_query_has_field_prefix",
+      "arxiv_mcp_server.tools.search:_validate_categories",
+      "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+      "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+      "arxiv_mcp_server.tools.search:handle_search"
+    ],
+    "edges": [
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callsite": "_normalize_abstract_mode(arguments.get('abstract_mode', DEFAULT_ABSTRACT_MODE))",
+        "line": 667
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_error_response",
+        "callsite": "_error_response(str(e))",
+        "line": 671
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_error_response",
+        "callee": "arxiv_mcp_server.tools.search:_status_response",
+        "callsite": "_status_response('error', message)",
+        "line": 62
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callsite": "_normalize_sort_by(arguments.get('sort_by', 'relevance'))",
+        "line": 677
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_validate_categories",
+        "callsite": "_validate_categories(categories)",
+        "line": 696
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_error_response",
+        "callsite": "_error_response('Invalid category provided. Please check arXiv category names.')",
+        "line": 697
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callsite": "_optimize_query(base_query)",
+        "line": 702
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callsite": "_raw_arxiv_search(query=optimized_query, max_results=max_results, sort_by=sort_by_arg, date_from=date_from_arg, date_to=date_to_arg, categories=categories, start=start)",
+        "line": 703
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callsite": "build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)",
+        "line": 289
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callsite": "build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)",
+        "line": 245
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": "arxiv_mcp_server.tools.search:_scope_user_query",
+        "callsite": "_scope_user_query(query)",
+        "line": 217
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_scope_user_query",
+        "callee": "arxiv_mcp_server.tools.search:_user_query_has_field_prefix",
+        "callsite": "_user_query_has_field_prefix(query)",
+        "line": 178
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callsite": "_format_submitted_date_filter(date_from, date_to)",
+        "line": 224
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": "arxiv_mcp_server.tools.search:_rate_limited_get",
+        "callsite": "_rate_limited_get(client, url)",
+        "line": 309
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_rate_limited_get",
+        "callee": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callsite": "retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')",
+        "line": 103
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callsite": "_compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)",
+        "line": 317
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callsite": "_parse_retry_after_seconds(retry_after)",
+        "line": 190
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callsite": "_compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)",
+        "line": 357
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callsite": "_parse_retry_after_seconds(retry_after)",
+        "line": 404
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callsite": "_compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)",
+        "line": 428
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callsite": "_parse_retry_after_seconds(retry_after)",
+        "line": 437
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callsite": "_parse_retry_after_seconds(retry_after)",
+        "line": 468
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callsite": "_parse_arxiv_atom_response(response.text)",
+        "line": 311
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callsite": "_parse_opensearch_total_results(response.text)",
+        "line": 312
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callsite": "_apply_abstract_mode(results, abstract_mode)",
+        "line": 712
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callsite": "_normalize_abstract_mode(abstract_mode)",
+        "line": 386
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": "arxiv_mcp_server.tools.search:_snippet_abstract",
+        "callsite": "_snippet_abstract(abstract)",
+        "line": 395
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callsite": "_build_search_response(results, total_results=total_results, start=start, abstract_mode=abstract_mode)",
+        "line": 715
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callsite": "_normalize_abstract_mode(abstract_mode)",
+        "line": 418
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_rate_limited_response",
+        "callsite": "_rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)",
+        "line": 728
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_rate_limited_response",
+        "callee": "arxiv_mcp_server.tools.search:_status_response",
+        "callsite": "_status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)",
+        "line": 76
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_error_response",
+        "callsite": "_error_response(f'arXiv API HTTP error (HTTP {status})')",
+        "line": 737
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_error_response",
+        "callsite": "_error_response(str(e))",
+        "line": 739
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_rate_limited_response",
+        "callsite": "_rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)",
+        "line": 743
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": "arxiv_mcp_server.tools.search:_error_response",
+        "callsite": "_error_response(str(e))",
+        "line": 750
+      }
+    ],
+    "unresolved_calls": [
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "min(int(arguments.get('max_results', DEFAULT_MAX_RESULTS)), settings.MAX_RESULTS)",
+        "line": 657,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "int(arguments.get('max_results', DEFAULT_MAX_RESULTS))",
+        "line": 658,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('max_results', DEFAULT_MAX_RESULTS)",
+        "line": 658,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('start', 0)",
+        "line": 661,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "max(0, int(start_arg))",
+        "line": 663,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "int(start_arg)",
+        "line": 663,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "isinstance(value, str)",
+        "line": 342,
+        "expression": "isinstance",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "ValueError(f'abstract_mode must be one of: none, snippet, full (got {type(value).__name__})')",
+        "line": 343,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "type(value)",
+        "line": 345,
+        "expression": "type",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "value.strip().lower()",
+        "line": 347,
+        "expression": "value.strip().lower",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "value.strip()",
+        "line": 347,
+        "expression": "value.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_abstract_mode",
+        "callee": null,
+        "callsite": "ValueError(f'abstract_mode must be one of: none, snippet, full (got {value!r})')",
+        "line": 349,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('abstract_mode', DEFAULT_ABSTRACT_MODE)",
+        "line": 668,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_status_response",
+        "callee": null,
+        "callsite": "payload.update(extra)",
+        "line": 56,
+        "expression": "payload.update",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_status_response",
+        "callee": null,
+        "callsite": "types.TextContent(type='text', text=json.dumps(payload, indent=2))",
+        "line": 57,
+        "expression": "types.TextContent",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_status_response",
+        "callee": null,
+        "callsite": "json.dumps(payload, indent=2)",
+        "line": 57,
+        "expression": "json.dumps",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 671,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('date_from')",
+        "line": 673,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('date_to')",
+        "line": 674,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('categories')",
+        "line": 675,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "isinstance(value, str)",
+        "line": 363,
+        "expression": "isinstance",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "', '.join(SORT_BY_VALUES)",
+        "line": 364,
+        "expression": "', '.join",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')",
+        "line": 365,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "value.strip().lower()",
+        "line": 366,
+        "expression": "value.strip().lower",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "value.strip()",
+        "line": 366,
+        "expression": "value.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "', '.join(SORT_BY_VALUES)",
+        "line": 368,
+        "expression": "', '.join",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_normalize_sort_by",
+        "callee": null,
+        "callsite": "ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')",
+        "line": 369,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "arguments.get('sort_by', 'relevance')",
+        "line": 677,
+        "expression": "arguments.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': str(e)}))",
+        "line": 680,
+        "expression": "types.TextContent",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "json.dumps({'status': 'error', 'message': str(e)})",
+        "line": 682,
+        "expression": "json.dumps",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 682,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.debug('Starting search with query: %r, max_results: %s, start: %s, abstract_mode: %s', base_query, max_results, start, abstract_mode)",
+        "line": 686,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_validate_categories",
+        "callee": null,
+        "callsite": "category.split('.')",
+        "line": 612,
+        "expression": "category.split",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_validate_categories",
+        "callee": null,
+        "callsite": "logger.warning(f'Unknown category prefix: {prefix}')",
+        "line": 616,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "base_query.strip()",
+        "line": 702,
+        "expression": "base_query.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "any((field in query for field in ['ti:', 'au:', 'abs:', 'cat:', 'AND', 'OR', 'ANDNOT']))",
+        "line": 625,
+        "expression": "any",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "logger.debug('Field-specific or boolean query detected - no optimization')",
+        "line": 629,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "query.startswith('\"')",
+        "line": 633,
+        "expression": "query.startswith",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "query.endswith('\"')",
+        "line": 633,
+        "expression": "query.endswith",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "logger.debug('Pre-quoted query detected - no optimization')",
+        "line": 634,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "query.split()",
+        "line": 638,
+        "expression": "query.split",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "len(terms)",
+        "line": 639,
+        "expression": "len",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "logger.warning(f'Very long query ({len(terms)} terms) - consider using quotes for phrases or field-specific searches')",
+        "line": 640,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_optimize_query",
+        "callee": null,
+        "callsite": "len(terms)",
+        "line": 641,
+        "expression": "len",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "query.strip()",
+        "line": 216,
+        "expression": "query.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "query_parts.append(_scope_user_query(query))",
+        "line": 217,
+        "expression": "query_parts.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_scope_user_query",
+        "callee": null,
+        "callsite": "query.strip()",
+        "line": 175,
+        "expression": "query.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_user_query_has_field_prefix",
+        "callee": null,
+        "callsite": "query.lower()",
+        "line": 163,
+        "expression": "query.lower",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_user_query_has_field_prefix",
+        "callee": null,
+        "callsite": "any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))",
+        "line": 164,
+        "expression": "any",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "' OR '.join((f'cat:{cat}' for cat in categories))",
+        "line": 220,
+        "expression": "' OR '.join",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "query_parts.append(f'({category_filter})')",
+        "line": 221,
+        "expression": "query_parts.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "parser.parse(date_from).strftime('%Y%m%d0000')",
+        "line": 189,
+        "expression": "parser.parse(date_from).strftime",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "parser.parse(date_from)",
+        "line": 189,
+        "expression": "parser.parse",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "parser.parse(date_to).strftime('%Y%m%d2359')",
+        "line": 194,
+        "expression": "parser.parse(date_to).strftime",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "parser.parse(date_to)",
+        "line": 194,
+        "expression": "parser.parse",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "datetime.now().strftime('%Y%m%d2359')",
+        "line": 196,
+        "expression": "datetime.now().strftime",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "datetime.now()",
+        "line": 196,
+        "expression": "datetime.now",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "logger.error(f'Error parsing dates: {e}')",
+        "line": 198,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_format_submitted_date_filter",
+        "callee": null,
+        "callsite": "ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')",
+        "line": 199,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "query_parts.append(date_filter)",
+        "line": 225,
+        "expression": "query_parts.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "logger.debug(f'Added date filter: {date_filter}')",
+        "line": 226,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "ValueError('No search criteria provided')",
+        "line": 229,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_query",
+        "callee": null,
+        "callsite": "' AND '.join(query_parts)",
+        "line": 231,
+        "expression": "' AND '.join",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": null,
+        "callsite": "logger.debug(f'Raw API query: {final_query}')",
+        "line": 251,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": null,
+        "callsite": "quote(final_query, safe='')",
+        "line": 258,
+        "expression": "quote",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": null,
+        "callsite": "max(0, int(start))",
+        "line": 259,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": null,
+        "callsite": "int(start)",
+        "line": 259,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:build_arxiv_search_url",
+        "callee": null,
+        "callsite": "sort_map.get(sort_by, 'relevance')",
+        "line": 263,
+        "expression": "sort_map.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "logger.debug(f'Raw API URL: {url}')",
+        "line": 299,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)",
+        "line": 302,
+        "expression": "httpx.Timeout",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "float(settings.ARXIV_CONNECT_TIMEOUT)",
+        "line": 303,
+        "expression": "float",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "float(settings.get_request_timeout())",
+        "line": 304,
+        "expression": "float",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "settings.get_request_timeout()",
+        "line": 304,
+        "expression": "settings.get_request_timeout",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_raw_arxiv_search",
+        "callee": null,
+        "callsite": "httpx.AsyncClient(timeout=timeout)",
+        "line": 308,
+        "expression": "httpx.AsyncClient",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "Settings()",
+        "line": 243,
+        "expression": "Settings",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 244,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "range(max_retries + 1)",
+        "line": 248,
+        "expression": "range",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 250,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)",
+        "line": 253,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+        "line": 261,
+        "expression": "ArxivTimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+        "line": 265,
+        "expression": "ArxivTimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 273,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "asyncio.TimeoutError('Budget exhausted before attempt')",
+        "line": 275,
+        "expression": "asyncio.TimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)",
+        "line": 276,
+        "expression": "logger.debug",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "asyncio.wait_for(operation(), timeout=remaining)",
+        "line": 282,
+        "expression": "asyncio.wait_for",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "operation()",
+        "line": 282,
+        "expression": "operation",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "operation()",
+        "line": 284,
+        "expression": "operation",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 288,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)",
+        "line": 289,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "isinstance(last_exception, httpx.HTTPStatusError)",
+        "line": 296,
+        "expression": "isinstance",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after)",
+        "line": 301,
+        "expression": "ArxivRateLimitError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "int(retry_after)",
+        "line": 303,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+        "line": 308,
+        "expression": "ArxivTimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "int(elapsed)",
+        "line": 309,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": null,
+        "callsite": "min(initial_backoff * 2 ** attempt, max_backoff)",
+        "line": 187,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "float(retry_after)",
+        "line": 149,
+        "expression": "float",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "parsedate_to_datetime(retry_after)",
+        "line": 158,
+        "expression": "parsedate_to_datetime",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "datetime.datetime.now(datetime.timezone.utc)",
+        "line": 159,
+        "expression": "datetime.datetime.now",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "(retry_dt - now).total_seconds()",
+        "line": 160,
+        "expression": "(retry_dt - now).total_seconds",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "max(0.0, delta)",
+        "line": 161,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds",
+        "callee": null,
+        "callsite": "logger.warning(f'Could not parse Retry-After header: {retry_after}')",
+        "line": 163,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": null,
+        "callsite": "max(delay, parsed_retry_after)",
+        "line": 192,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": null,
+        "callsite": "random.random()",
+        "line": 195,
+        "expression": "random.random",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": null,
+        "callsite": "max(jittered, parsed_retry_after)",
+        "line": 199,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds",
+        "callee": null,
+        "callsite": "min(jittered, max_backoff)",
+        "line": 204,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 322,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)",
+        "line": 325,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.')",
+        "line": 331,
+        "expression": "ArxivConnectionError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "min(wait, remaining * 0.9)",
+        "line": 335,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)",
+        "line": 336,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "asyncio.sleep(wait)",
+        "line": 343,
+        "expression": "asyncio.sleep",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)",
+        "line": 345,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.')",
+        "line": 350,
+        "expression": "ArxivConnectionError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 362,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)",
+        "line": 364,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.')",
+        "line": 370,
+        "expression": "ArxivTimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "min(wait, remaining * 0.9)",
+        "line": 374,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)",
+        "line": 375,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "asyncio.sleep(wait)",
+        "line": 382,
+        "expression": "asyncio.sleep",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)",
+        "line": 384,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.')",
+        "line": 387,
+        "expression": "ArxivTimeoutError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "e.response.headers.get('Retry-After')",
+        "line": 401,
+        "expression": "e.response.headers.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)",
+        "line": 414,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+        "line": 421,
+        "expression": "ArxivRateLimitError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "int(parsed_retry_after)",
+        "line": 423,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "time.monotonic()",
+        "line": 433,
+        "expression": "time.monotonic",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)",
+        "line": 444,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+        "line": 451,
+        "expression": "ArxivRateLimitError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "int(parsed_retry_after)",
+        "line": 453,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "min(wait, remaining * 0.9)",
+        "line": 457,
+        "expression": "min",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)",
+        "line": 458,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "asyncio.sleep(wait)",
+        "line": 466,
+        "expression": "asyncio.sleep",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)",
+        "line": 474,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+        "line": 480,
+        "expression": "ArxivRateLimitError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "int(parsed_retry_after)",
+        "line": 482,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.arxiv_api:retry_with_backoff",
+        "callee": null,
+        "callsite": "RuntimeError(f'{operation_name} failed after exhausting retries')",
+        "line": 496,
+        "expression": "RuntimeError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_rate_limited_get",
+        "callee": null,
+        "callsite": "float(settings.ARXIV_MAX_TOTAL_TIME)",
+        "line": 108,
+        "expression": "float",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "ET.fromstring(xml_text)",
+        "line": 446,
+        "expression": "ET.fromstring",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "root.findall('atom:entry', ARXIV_NS)",
+        "line": 448,
+        "expression": "root.findall",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.find('atom:id', ARXIV_NS)",
+        "line": 450,
+        "expression": "entry.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "id_elem.text.split('/abs/')",
+        "line": 455,
+        "expression": "id_elem.text.split",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "paper_id.split('v')",
+        "line": 457,
+        "expression": "paper_id.split",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.find('atom:title', ARXIV_NS)",
+        "line": 460,
+        "expression": "entry.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "title_elem.text.strip().replace('\\n', ' ')",
+        "line": 462,
+        "expression": "title_elem.text.strip().replace",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "title_elem.text.strip()",
+        "line": 462,
+        "expression": "title_elem.text.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.findall('atom:author', ARXIV_NS)",
+        "line": 469,
+        "expression": "entry.findall",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "author.find('atom:name', ARXIV_NS)",
+        "line": 470,
+        "expression": "author.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "authors.append(name_elem.text)",
+        "line": 472,
+        "expression": "authors.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.find('atom:summary', ARXIV_NS)",
+        "line": 475,
+        "expression": "entry.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "summary_elem.text.strip().replace('\\n', ' ')",
+        "line": 477,
+        "expression": "summary_elem.text.strip().replace",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "summary_elem.text.strip()",
+        "line": 477,
+        "expression": "summary_elem.text.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.findall('arxiv:primary_category', ARXIV_NS)",
+        "line": 484,
+        "expression": "entry.findall",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "cat.get('term')",
+        "line": 485,
+        "expression": "cat.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "categories.append(term)",
+        "line": 487,
+        "expression": "categories.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.findall('atom:category', ARXIV_NS)",
+        "line": 488,
+        "expression": "entry.findall",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "cat.get('term')",
+        "line": 489,
+        "expression": "cat.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "categories.append(term)",
+        "line": 491,
+        "expression": "categories.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.find('atom:published', ARXIV_NS)",
+        "line": 494,
+        "expression": "entry.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "entry.findall('atom:link', ARXIV_NS)",
+        "line": 503,
+        "expression": "entry.findall",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "link.get('title')",
+        "line": 504,
+        "expression": "link.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "link.get('href')",
+        "line": 505,
+        "expression": "link.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})",
+        "line": 510,
+        "expression": "results.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "logger.error(f'Failed to parse arXiv XML response: {e}')",
+        "line": 525,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response",
+        "callee": null,
+        "callsite": "ValueError(f'Failed to parse arXiv API response: {e}')",
+        "line": 526,
+        "expression": "ValueError",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "ET.fromstring(xml_text)",
+        "line": 318,
+        "expression": "ET.fromstring",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "root.find('opensearch:totalResults', ARXIV_NS)",
+        "line": 322,
+        "expression": "root.find",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "list(root)",
+        "line": 325,
+        "expression": "list",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "child.tag.rsplit('}', 1)",
+        "line": 326,
+        "expression": "child.tag.rsplit",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "int(elem.text.strip())",
+        "line": 333,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_parse_opensearch_total_results",
+        "callee": null,
+        "callsite": "elem.text.strip()",
+        "line": 333,
+        "expression": "elem.text.strip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": null,
+        "callsite": "dict(paper)",
+        "line": 389,
+        "expression": "dict",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": null,
+        "callsite": "item.pop('abstract', None)",
+        "line": 391,
+        "expression": "item.pop",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": null,
+        "callsite": "item.get('abstract')",
+        "line": 393,
+        "expression": "item.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": null,
+        "callsite": "isinstance(abstract, str)",
+        "line": 394,
+        "expression": "isinstance",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_snippet_abstract",
+        "callee": null,
+        "callsite": "len(abstract)",
+        "line": 375,
+        "expression": "len",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_snippet_abstract",
+        "callee": null,
+        "callsite": "abstract[:max_chars].rstrip()",
+        "line": 379,
+        "expression": "abstract[:max_chars].rstrip",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_apply_abstract_mode",
+        "callee": null,
+        "callsite": "projected.append(item)",
+        "line": 397,
+        "expression": "projected.append",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.info(f'Search completed: {len(results)} results returned')",
+        "line": 714,
+        "expression": "logger.info",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "len(results)",
+        "line": 714,
+        "expression": "len",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": null,
+        "callsite": "len(papers)",
+        "line": 416,
+        "expression": "len",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": null,
+        "callsite": "max(0, int(start))",
+        "line": 417,
+        "expression": "max",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": null,
+        "callsite": "int(start)",
+        "line": 417,
+        "expression": "int",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": null,
+        "callsite": "bool(has_more)",
+        "line": 433,
+        "expression": "bool",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:_build_search_response",
+        "callee": null,
+        "callsite": "response.get('has_more')",
+        "line": 434,
+        "expression": "response.get",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "types.TextContent(type='text', text=json.dumps(response_data, indent=2))",
+        "line": 723,
+        "expression": "types.TextContent",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "json.dumps(response_data, indent=2)",
+        "line": 723,
+        "expression": "json.dumps",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.warning('arXiv search rate limited after retries: %s', e)",
+        "line": 727,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 729,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.error(f'arXiv API HTTP error: {e}')",
+        "line": 734,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 739,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.warning('arXiv search rate limited after retries: %s', e)",
+        "line": 742,
+        "expression": "logger.warning",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 744,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "logger.error(f'Unexpected search error: {e}')",
+        "line": 749,
+        "expression": "logger.error",
+        "kind": "external_or_unresolved"
+      },
+      {
+        "caller": "arxiv_mcp_server.tools.search:handle_search",
+        "callee": null,
+        "callsite": "str(e)",
+        "line": 750,
+        "expression": "str",
+        "kind": "external_or_unresolved"
+      }
+    ],
+    "source_hashes": {
+      "arxiv_mcp_server/__init__.py": "ca9817eb6135f895a0449eff78af00a4902ebe0f7f98c2275cc626bde9eb803d",
+      "arxiv_mcp_server/__main__.py": "8817be1bd4860c58edd6fbf1b7bee85f34a6bf650ab333c5c490ecd793c7114f",
+      "arxiv_mcp_server/arxiv_api.py": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+      "arxiv_mcp_server/config.py": "cae51c120a58a1843d76aa0d4f4ddcd3e027110c027e1b2add44ffec7119b0fe",
+      "arxiv_mcp_server/prompts/__init__.py": "a17bb606cb104b4b7975ce13dcb3dc45337e2caceb0caa76fad0e9b47d06ff5f",
+      "arxiv_mcp_server/prompts/compare_papers_prompt.py": "41455a124dfbf32c88cfae0cab4b797c265f58c8ac7e0a95be527820d85eaf3b",
+      "arxiv_mcp_server/prompts/deep_research_analysis_prompt.py": "292d3040286b157235c38286df2d873953e4f5332ac3b4737456a496d6ca8d5b",
+      "arxiv_mcp_server/prompts/handlers.py": "d0f3e9342417743e2f14d4b8c0bb0e3b60114e3004ddb018b4fef756917b774e",
+      "arxiv_mcp_server/prompts/literature_review_prompt.py": "164d753a9d1b47c784e3cefdb93b7ba7a7e382a0a3b961c2eafc0e6425574c5d",
+      "arxiv_mcp_server/prompts/prompt_manager.py": "805de0f3b8b79e7b7186561fb786cf619b271c8c42cadeda8c84bea62b770bdc",
+      "arxiv_mcp_server/prompts/prompts.py": "831c2806bd185f9f5c50cc356d9537d7beb63402a023d8a90ae03160cc6918b3",
+      "arxiv_mcp_server/prompts/summarize_paper_prompt.py": "f17d13ca77944a368b6953a9515aba1165f461db0f6d127a089610974ebc2d17",
+      "arxiv_mcp_server/resources/__init__.py": "d10b1397c7e164ec634eb0560d0e43973959dec4dfcf9766e95facbd49f79dbe",
+      "arxiv_mcp_server/resources/papers.py": "13e460380e84e4f3a52e030ecae1581ba4aa933e9432543dfe2b9c287c07cda2",
+      "arxiv_mcp_server/server.py": "aaa8d509065564d785541b4e79c9d81ad7cc2a17c51064280b8eb078160e1d90",
+      "arxiv_mcp_server/tools/__init__.py": "5a8872d8919ba7905aee22f921f0361c5ede985665877aacc4cea85829ea598e",
+      "arxiv_mcp_server/tools/alerts.py": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "arxiv_mcp_server/tools/arxiv_ids.py": "72117414d4186d292a87b013d3c8349c94091fc25700be353074dfa70b867d1b",
+      "arxiv_mcp_server/tools/citation_graph.py": "1109b2503509d219b7050fdef3818be034c38a40afa47aadf1c0f9648c5c5aa6",
+      "arxiv_mcp_server/tools/content.py": "5844b96c38816916140ee439ff8f19b566518ba3b77360f1d1fbe67898f1a434",
+      "arxiv_mcp_server/tools/download.py": "aeee7a3d0eca9076d7b11aa1699257d498d9cddef24245cd526e6121fb414e47",
+      "arxiv_mcp_server/tools/export_citations.py": "19265a8653d624765f87e99dab10b481990644a47c58d07da3a06b71e59ac91f",
+      "arxiv_mcp_server/tools/get_abstract.py": "ec9a85a440aa2d22f119bfdb2c328d1a5f7c267e96c6eed0b9a984e76358d228",
+      "arxiv_mcp_server/tools/latex.py": "3859621266def0bef2a3825dc980a8e09885fbff288c6c2a1deb46f3e73b7a22",
+      "arxiv_mcp_server/tools/latex_archive.py": "e0e3a82773c5a1438fc589eb184dc03b12f7ebe66129743c2e051839b4b3a48f",
+      "arxiv_mcp_server/tools/latex_flatten.py": "80f78ea196905be1fd5727615d95f0c1fe69e91866455e0d9a5f8759770a4610",
+      "arxiv_mcp_server/tools/list_papers.py": "726dff69a69e256f5da48a19952d4e2199da557fc6411966d2525ba779045a68",
+      "arxiv_mcp_server/tools/paper_outline.py": "abc28899f52658e7423f8bbb9fe524242b1c948dbbe7461674aab9b26169d2ee",
+      "arxiv_mcp_server/tools/read_paper.py": "f825783a60664c6c8a248874c0f067e054aa0bdcdd402173e074af3067fb1f3e",
+      "arxiv_mcp_server/tools/search.py": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "arxiv_mcp_server/tools/semantic_search.py": "7d19df120839799ab89ecd548b648894da93587ed6050eb0806785fa750250db"
+    },
+    "revisions": [],
+    "converged": true,
+    "mode": "static_only_no_debloating",
+    "warnings": [
+      "External and unresolved calls are not expanded",
+      "Module-level context is conservatively retained",
+      "Python AST subset; no soundness/equivalence guarantee",
+      "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+      "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+    ],
+    "evidence_spans": {
+      "arxiv_mcp_server.arxiv_api:_compute_backoff_seconds": {
+        "path": "arxiv_mcp_server/arxiv_api.py",
+        "line_start": 167,
+        "line_end": 204,
+        "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+        "source": "def _compute_backoff_seconds(attempt: int, retry_after: str | None, initial_backoff: float, max_backoff: float) -> float:\n    \"\"\"Exponential backoff with jitter, with Retry-After as floor.\n\n    Args:\n        attempt: Zero-based retry attempt number.\n        retry_after: Optional Retry-After header value (int or HTTP-date).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n\n    Returns:\n        Computed backoff delay in seconds with jitter (0.5-1.5x) applied.\n        Retry-After (if provided) is used as a strict floor before and after jitter,\n        and is NOT capped to max_backoff.\n    \"\"\"\n    delay = min(initial_backoff * 2 ** attempt, max_backoff)\n    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n    if parsed_retry_after is not None:\n        delay = max(delay, parsed_retry_after)\n    jittered = delay * (0.5 + random.random())\n    if parsed_retry_after is not None:\n        jittered = max(jittered, parsed_retry_after)\n    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n        return jittered\n    return min(jittered, max_backoff)"
+      },
+      "arxiv_mcp_server.arxiv_api:_parse_retry_after_seconds": {
+        "path": "arxiv_mcp_server/arxiv_api.py",
+        "line_start": 139,
+        "line_end": 164,
+        "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+        "source": "def _parse_retry_after_seconds(retry_after: str | None) -> float | None:\n    \"\"\"Parse Retry-After header into seconds.\n\n    Supports both delay-seconds (integer) and HTTP-date formats.\n    Returns None if unparseable or not provided.\n    \"\"\"\n    if not retry_after:\n        return None\n    try:\n        return float(retry_after)\n    except ValueError:\n        pass\n    try:\n        from email.utils import parsedate_to_datetime\n        import datetime\n        retry_dt = parsedate_to_datetime(retry_after)\n        now = datetime.datetime.now(datetime.timezone.utc)\n        delta = (retry_dt - now).total_seconds()\n        return max(0.0, delta)\n    except Exception:\n        logger.warning(f'Could not parse Retry-After header: {retry_after}')\n        return None"
+      },
+      "arxiv_mcp_server.arxiv_api:retry_with_backoff": {
+        "path": "arxiv_mcp_server/arxiv_api.py",
+        "line_start": 207,
+        "line_end": 496,
+        "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+        "source": "async def retry_with_backoff(operation: Callable[[], Awaitable[T]], *, max_retries: int=3, initial_backoff: float=2.0, max_backoff: float=60.0, max_total_time: float | None=None, operation_name: str='operation') -> T:\n    \"\"\"Execute an async operation with exponential backoff on retryable errors.\n\n    Retries on:\n    - httpx.TimeoutException\n    - httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError\n    - httpx.HTTPStatusError with status 429, 503, 406\n\n    Note: HTTP 406 uses minimal retries (ARXIV_HTTP_406_MAX_RETRIES = 1)\n    because arXiv's 406 is IP-level burst throttling and retrying inside\n    the window extends the block (#277).\n\n    Args:\n        operation: Async callable to execute.\n        max_retries: Maximum number of retry attempts (for 429/503).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n        max_total_time: Optional maximum total time in seconds (raises on exceed).\n        operation_name: Name for logging.\n\n    Returns:\n        Result of the operation.\n\n    Raises:\n        Original exception after exhausting retries, wrapped with context.\n    \"\"\"\n    from .config import Settings\n    settings = Settings()\n    start_time = time.monotonic()\n    last_exception: Exception | None = None\n    retry_after: str | None = None\n    for attempt in range(max_retries + 1):\n        if max_total_time is not None:\n            elapsed = time.monotonic() - start_time\n            if elapsed >= max_total_time:\n                attempts_word = 'attempt' if attempt == 0 else 'attempts'\n                logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)\n                if last_exception:\n                    raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.') from last_exception\n                raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')\n        try:\n            if max_total_time is not None:\n                remaining = max_total_time - (time.monotonic() - start_time)\n                if remaining <= 0:\n                    raise asyncio.TimeoutError('Budget exhausted before attempt')\n                logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)\n                return await asyncio.wait_for(operation(), timeout=remaining)\n            return await operation()\n        except asyncio.TimeoutError as e:\n            if max_total_time is not None:\n                elapsed = time.monotonic() - start_time\n                logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)\n                if last_exception and isinstance(last_exception, httpx.HTTPStatusError):\n                    status_code = last_exception.response.status_code\n                    if status_code in (429, 503, 406):\n                        retry_after = 60.0 if status_code != 406 else 600.0\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after) from e\n                raise ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n            raise\n        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining:\n                        logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)\n                        raise ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)\n                raise ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.') from e\n        except httpx.TimeoutException as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining or remaining <= 0.1:\n                        logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)\n                        raise ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)\n                raise ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n        except httpx.HTTPStatusError as e:\n            if e.response is not None and e.response.status_code in (429, 503, 406):\n                last_exception = e\n                max_retries_for_status = settings.ARXIV_HTTP_406_MAX_RETRIES if e.response.status_code == 406 else max_retries\n                retry_after = e.response.headers.get('Retry-After')\n                if attempt < max_retries_for_status:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n                        if parsed_retry_after is None:\n                            parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                        logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                    wait = _compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)\n                    if max_total_time is not None:\n                        remaining = max_total_time - (time.monotonic() - start_time)\n                        if wait >= remaining:\n                            if parsed_retry_after is None:\n                                parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                            if parsed_retry_after is None:\n                                parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                            logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)\n                            raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                        wait = min(wait, remaining * 0.9)\n                    logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)\n                    await asyncio.sleep(wait)\n                else:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is None:\n                        parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                    logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)\n                    raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n            else:\n                raise\n        except (ArxivTimeoutError, ArxivConnectionError, ArxivRateLimitError):\n            raise\n        except Exception:\n            raise\n    if last_exception:\n        raise last_exception\n    raise RuntimeError(f'{operation_name} failed after exhausting retries')"
+      },
+      "arxiv_mcp_server.tools.search:_apply_abstract_mode": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 382,
+        "line_end": 398,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _apply_abstract_mode(papers: List[Dict[str, Any]], abstract_mode: str) -> List[Dict[str, Any]]:\n    \"\"\"Project paper dicts according to abstract_mode without mutating inputs.\"\"\"\n    mode = _normalize_abstract_mode(abstract_mode)\n    projected: List[Dict[str, Any]] = []\n    for paper in papers:\n        item = dict(paper)\n        if mode == 'none':\n            item.pop('abstract', None)\n        elif mode == 'snippet':\n            abstract = item.get('abstract')\n            if isinstance(abstract, str):\n                item['abstract'] = _snippet_abstract(abstract)\n        projected.append(item)\n    return projected"
+      },
+      "arxiv_mcp_server.tools.search:_build_search_response": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 401,
+        "line_end": 438,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _build_search_response(papers: List[Dict[str, Any]], *, total_results: Optional[int]=None, has_more: Optional[bool]=None, start: int=0, abstract_mode: str=DEFAULT_ABSTRACT_MODE) -> Dict[str, Any]:\n    \"\"\"Assemble search JSON. Never report page size as total_results.\n\n    Pagination mirrors read_paper / content helpers: ``start`` is the\n    zero-based offset for this page and ``next_start`` is set when more\n    results remain (otherwise None). ``abstract_mode`` is echoed so\n    clients can continue pagination with the same projection.\n    \"\"\"\n    returned = len(papers)\n    start = max(0, int(start))\n    mode = _normalize_abstract_mode(abstract_mode)\n    response: Dict[str, Any] = {'returned': returned, 'start': start, 'abstract_mode': mode, 'papers': papers}\n    if mode != 'none':\n        response['content_warning'] = CONTENT_WARNING\n    if total_results is not None:\n        response['total_results'] = total_results\n        if has_more is None:\n            has_more = total_results > start + returned\n    if has_more is not None:\n        response['has_more'] = bool(has_more)\n    if response.get('has_more'):\n        response['next_start'] = start + returned\n    else:\n        response['next_start'] = None\n    return response"
+      },
+      "arxiv_mcp_server.tools.search:_error_response": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 60,
+        "line_end": 62,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _error_response(message: str) -> List[types.TextContent]:\n    \"\"\"Structured error payload used by search_papers failure paths.\"\"\"\n    return _status_response('error', message)"
+      },
+      "arxiv_mcp_server.tools.search:_format_submitted_date_filter": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 183,
+        "line_end": 204,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _format_submitted_date_filter(date_from: Optional[str], date_to: Optional[str]) -> str:\n    \"\"\"Build an arXiv submittedDate range using spaces around TO.\"\"\"\n    try:\n        if date_from:\n            start_date = parser.parse(date_from).strftime('%Y%m%d0000')\n        else:\n            start_date = '199107010000'\n        if date_to:\n            end_date = parser.parse(date_to).strftime('%Y%m%d2359')\n        else:\n            end_date = datetime.now().strftime('%Y%m%d2359')\n    except (ValueError, TypeError) as e:\n        logger.error(f'Error parsing dates: {e}')\n        raise ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')\n    return f'submittedDate:[{start_date} TO {end_date}]'"
+      },
+      "arxiv_mcp_server.tools.search:_normalize_abstract_mode": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 338,
+        "line_end": 352,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _normalize_abstract_mode(value: Any) -> str:\n    \"\"\"Return a valid abstract_mode or raise ValueError.\"\"\"\n    if value is None:\n        return DEFAULT_ABSTRACT_MODE\n    if not isinstance(value, str):\n        raise ValueError(f'abstract_mode must be one of: none, snippet, full (got {type(value).__name__})')\n    mode = value.strip().lower()\n    if mode not in ABSTRACT_MODES:\n        raise ValueError(f'abstract_mode must be one of: none, snippet, full (got {value!r})')\n    return mode"
+      },
+      "arxiv_mcp_server.tools.search:_normalize_sort_by": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 355,
+        "line_end": 370,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _normalize_sort_by(value: Any) -> str:\n    \"\"\"Return a valid sort_by or raise ValueError.\n\n    Only the documented values ``relevance`` and ``date`` are accepted.\n    Aliases such as ``submittedDate`` are intentionally rejected (HOLD).\n    \"\"\"\n    if value is None:\n        return 'relevance'\n    if not isinstance(value, str):\n        allowed = ', '.join(SORT_BY_VALUES)\n        raise ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')\n    sort_by = value.strip().lower()\n    if sort_by not in SORT_BY_VALUES:\n        allowed = ', '.join(SORT_BY_VALUES)\n        raise ValueError(f'Invalid sort_by value {value!r}. Allowed values: {allowed}')\n    return sort_by"
+      },
+      "arxiv_mcp_server.tools.search:_optimize_query": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 621,
+        "line_end": 645,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _optimize_query(query: str) -> str:\n    \"\"\"Minimal query optimization - preserve user intent while fixing obvious issues.\"\"\"\n    if any((field in query for field in ['ti:', 'au:', 'abs:', 'cat:', 'AND', 'OR', 'ANDNOT'])):\n        logger.debug('Field-specific or boolean query detected - no optimization')\n        return query\n    if query.startswith('\"') and query.endswith('\"'):\n        logger.debug('Pre-quoted query detected - no optimization')\n        return query\n    terms = query.split()\n    if len(terms) > 10:\n        logger.warning(f'Very long query ({len(terms)} terms) - consider using quotes for phrases or field-specific searches')\n    return query"
+      },
+      "arxiv_mcp_server.tools.search:_parse_arxiv_atom_response": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 441,
+        "line_end": 528,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _parse_arxiv_atom_response(xml_text: str) -> List[Dict[str, Any]]:\n    \"\"\"Parse arXiv Atom XML response into paper dictionaries.\"\"\"\n    results = []\n    try:\n        root = ET.fromstring(xml_text)\n        for entry in root.findall('atom:entry', ARXIV_NS):\n            id_elem = entry.find('atom:id', ARXIV_NS)\n            if id_elem is None or id_elem.text is None:\n                continue\n            paper_id = id_elem.text.split('/abs/')[-1]\n            short_id = paper_id.split('v')[0] if 'v' in paper_id else paper_id\n            title_elem = entry.find('atom:title', ARXIV_NS)\n            title = title_elem.text.strip().replace('\\n', ' ') if title_elem is not None and title_elem.text else ''\n            authors = []\n            for author in entry.findall('atom:author', ARXIV_NS):\n                name_elem = author.find('atom:name', ARXIV_NS)\n                if name_elem is not None and name_elem.text:\n                    authors.append(name_elem.text)\n            summary_elem = entry.find('atom:summary', ARXIV_NS)\n            abstract = summary_elem.text.strip().replace('\\n', ' ') if summary_elem is not None and summary_elem.text else ''\n            categories = []\n            for cat in entry.findall('arxiv:primary_category', ARXIV_NS):\n                term = cat.get('term')\n                if term:\n                    categories.append(term)\n            for cat in entry.findall('atom:category', ARXIV_NS):\n                term = cat.get('term')\n                if term and term not in categories:\n                    categories.append(term)\n            published_elem = entry.find('atom:published', ARXIV_NS)\n            published = published_elem.text if published_elem is not None and published_elem.text else ''\n            pdf_url = None\n            for link in entry.findall('atom:link', ARXIV_NS):\n                if link.get('title') == 'pdf':\n                    pdf_url = link.get('href')\n                    break\n            if not pdf_url:\n                pdf_url = f'http://arxiv.org/pdf/{paper_id}'\n            results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})\n    except ET.ParseError as e:\n        logger.error(f'Failed to parse arXiv XML response: {e}')\n        raise ValueError(f'Failed to parse arXiv API response: {e}')\n    return results"
+      },
+      "arxiv_mcp_server.tools.search:_parse_opensearch_total_results": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 315,
+        "line_end": 335,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _parse_opensearch_total_results(xml_text: str) -> Optional[int]:\n    \"\"\"Return arXiv OpenSearch totalResults, or None if the feed omits it.\"\"\"\n    try:\n        root = ET.fromstring(xml_text)\n    except ET.ParseError:\n        return None\n    elem = root.find('opensearch:totalResults', ARXIV_NS)\n    if elem is None:\n        for child in list(root):\n            tag = child.tag.rsplit('}', 1)[-1]\n            if tag == 'totalResults':\n                elem = child\n                break\n    if elem is None or elem.text is None:\n        return None\n    try:\n        return int(elem.text.strip())\n    except ValueError:\n        return None"
+      },
+      "arxiv_mcp_server.tools.search:_rate_limited_get": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 83,
+        "line_end": 110,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "async def _rate_limited_get(client: httpx.AsyncClient, url: str) -> httpx.Response:\n    \"\"\"Make an HTTP request through the process-wide arXiv request gate with retry.\n\n    Retries HTTP 429/503/406 and timeouts/connection errors with exponential backoff.\n    Uses the unified retry_with_backoff infrastructure from arxiv_api.\n    Rate limiter lock is acquired per attempt, not held through sleeps.\n    \"\"\"\n\n    async def single_request() -> httpx.Response:\n        \"\"\"Single request wrapped with rate limiting.\"\"\"\n\n        async def request() -> httpx.Response:\n            response = await client.get(url, headers=ARXIV_HEADERS)\n            response.raise_for_status()\n            return response\n        return await ARXIV_RATE_LIMITER.run_async(request)\n    return await retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')"
+      },
+      "arxiv_mcp_server.tools.search:_rate_limited_response": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 65,
+        "line_end": 80,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _rate_limited_response(message: str | None=None, *, retry_after_seconds: float | None=None, status_code: int=429) -> List[types.TextContent]:\n    \"\"\"Soft rate-limit result so callers can continue without a bare Error: stall.\"\"\"\n    extra: Dict[str, Any] = {'http_status': status_code}\n    if retry_after_seconds is None:\n        retry_after_seconds = _DEFAULT_RETRY_AFTER_SECONDS\n    extra['retry_after_seconds'] = retry_after_seconds\n    return _status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)"
+      },
+      "arxiv_mcp_server.tools.search:_raw_arxiv_search": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 269,
+        "line_end": 312,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "async def _raw_arxiv_search(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> tuple[List[Dict[str, Any]], Optional[int]]:\n    \"\"\"\n    Perform arXiv search using raw HTTP requests.\n\n    This bypasses the arxiv Python package to avoid URL encoding issues\n    with date filters. The arxiv package encodes '+' as '%2B' which breaks\n    the submittedDate:[YYYYMMDD TO YYYYMMDD] syntax.\n\n    Returns (papers, total_results) where total_results is the OpenSearch\n    corpus hit count from the Atom feed, not the page size.\n    \"\"\"\n    url = build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)\n    logger.debug(f'Raw API URL: {url}')\n    timeout = httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)\n    async with httpx.AsyncClient(timeout=timeout) as client:\n        response = await _rate_limited_get(client, url)\n    papers = _parse_arxiv_atom_response(response.text)\n    return (papers, _parse_opensearch_total_results(response.text))"
+      },
+      "arxiv_mcp_server.tools.search:_scope_user_query": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 167,
+        "line_end": 180,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _scope_user_query(query: str) -> str:\n    \"\"\"Group a user query and keep unprefixed terms in title/abstract.\n\n    Bare tokens are mapped by arXiv to ``all:``, which includes authors. A\n    short ``OR`` term such as ``MoE`` then matches author-name fragments\n    (for example ``Moe Jafari`` or ``Mo Zhou``). Under date sort that\n    collapses to \"newest papers in these categories.\"\n    \"\"\"\n    query = query.strip()\n    if not query:\n        return query\n    if _user_query_has_field_prefix(query):\n        return f'({query})'\n    return f'(ti:({query}) OR abs:({query}))'"
+      },
+      "arxiv_mcp_server.tools.search:_snippet_abstract": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 373,
+        "line_end": 379,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _snippet_abstract(abstract: str, max_chars: int=ABSTRACT_SNIPPET_CHARS) -> str:\n    \"\"\"Return a deterministic bounded abstract snippet, marked when truncated.\"\"\"\n    if len(abstract) <= max_chars:\n        return abstract\n    return abstract[:max_chars].rstrip() + _ABSTRACT_TRUNCATION_MARK"
+      },
+      "arxiv_mcp_server.tools.search:_status_response": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 51,
+        "line_end": 57,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _status_response(status: str, message: str, **extra: Any) -> List[types.TextContent]:\n    \"\"\"Return a structured {status, message} tool payload.\"\"\"\n    payload: Dict[str, Any] = {'status': status, 'message': message}\n    payload.update(extra)\n    return [types.TextContent(type='text', text=json.dumps(payload, indent=2))]"
+      },
+      "arxiv_mcp_server.tools.search:_user_query_has_field_prefix": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 161,
+        "line_end": 164,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _user_query_has_field_prefix(query: str) -> bool:\n    \"\"\"Return True if the user already targeted an arXiv search field.\"\"\"\n    lowered = query.lower()\n    return any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))"
+      },
+      "arxiv_mcp_server.tools.search:_validate_categories": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 608,
+        "line_end": 618,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def _validate_categories(categories: List[str]) -> bool:\n    \"\"\"Validate that all provided categories are valid arXiv categories.\"\"\"\n    for category in categories:\n        if '.' in category:\n            prefix = category.split('.')[0]\n        else:\n            prefix = category\n        if prefix not in VALID_CATEGORIES:\n            logger.warning(f'Unknown category prefix: {prefix}')\n            return False\n    return True"
+      },
+      "arxiv_mcp_server.tools.search:build_arxiv_search_query": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 207,
+        "line_end": 231,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def build_arxiv_search_query(query: str, date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None) -> str:\n    \"\"\"Return the unencoded arXiv search_query string.\"\"\"\n    query_parts: list[str] = []\n    if query.strip():\n        query_parts.append(_scope_user_query(query))\n    if categories:\n        category_filter = ' OR '.join((f'cat:{cat}' for cat in categories))\n        query_parts.append(f'({category_filter})')\n    if date_from or date_to:\n        date_filter = _format_submitted_date_filter(date_from, date_to)\n        query_parts.append(date_filter)\n        logger.debug(f'Added date filter: {date_filter}')\n    if not query_parts:\n        raise ValueError('No search criteria provided')\n    return ' AND '.join(query_parts)"
+      },
+      "arxiv_mcp_server.tools.search:build_arxiv_search_url": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 234,
+        "line_end": 266,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "def build_arxiv_search_url(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> str:\n    \"\"\"Build a raw arXiv API URL with a percent-encoded search_query.\"\"\"\n    final_query = build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)\n    logger.debug(f'Raw API query: {final_query}')\n    sort_map = {'relevance': 'relevance', 'date': 'submittedDate'}\n    order = sort_order if sort_order in ('ascending', 'descending') else 'descending'\n    encoded_query = quote(final_query, safe='')\n    start = max(0, int(start))\n    base_params = f\"start={start}&max_results={max_results}&sortBy={sort_map.get(sort_by, 'relevance')}&sortOrder={order}\"\n    return f'{ARXIV_API_URL}?search_query={encoded_query}&{base_params}'"
+      },
+      "arxiv_mcp_server.tools.search:handle_search": {
+        "path": "arxiv_mcp_server/tools/search.py",
+        "line_start": 648,
+        "line_end": 750,
+        "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+        "source": "async def handle_search(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Handle paper search requests via the arXiv Atom API.\n\n    Always uses raw HTTP so OpenSearch ``totalResults`` (corpus hit count)\n    is available for every query — including those without date filters\n    (see #189). Raw requests also avoid the arxiv package URL-encoding\n    bug that breaks ``submittedDate`` ranges.\n    \"\"\"\n    try:\n        max_results = min(int(arguments.get('max_results', DEFAULT_MAX_RESULTS)), settings.MAX_RESULTS)\n        start_arg = arguments.get('start', 0)\n        try:\n            start = max(0, int(start_arg))\n        except (TypeError, ValueError):\n            start = 0\n        try:\n            abstract_mode = _normalize_abstract_mode(arguments.get('abstract_mode', DEFAULT_ABSTRACT_MODE))\n        except ValueError as e:\n            return _error_response(str(e))\n        base_query = arguments['query']\n        date_from_arg = arguments.get('date_from')\n        date_to_arg = arguments.get('date_to')\n        categories = arguments.get('categories')\n        try:\n            sort_by_arg = _normalize_sort_by(arguments.get('sort_by', 'relevance'))\n        except ValueError as e:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': str(e)}))]\n        logger.debug('Starting search with query: %r, max_results: %s, start: %s, abstract_mode: %s', base_query, max_results, start, abstract_mode)\n        if categories and (not _validate_categories(categories)):\n            return _error_response('Invalid category provided. Please check arXiv category names.')\n        try:\n            optimized_query = _optimize_query(base_query) if base_query.strip() else ''\n            results, total_results = await _raw_arxiv_search(query=optimized_query, max_results=max_results, sort_by=sort_by_arg, date_from=date_from_arg, date_to=date_to_arg, categories=categories, start=start)\n            results = _apply_abstract_mode(results, abstract_mode)\n            logger.info(f'Search completed: {len(results)} results returned')\n            response_data = _build_search_response(results, total_results=total_results, start=start, abstract_mode=abstract_mode)\n            return [types.TextContent(type='text', text=json.dumps(response_data, indent=2))]\n        except ArxivRateLimitError as e:\n            logger.warning('arXiv search rate limited after retries: %s', e)\n            return _rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)\n        except httpx.HTTPStatusError as e:\n            logger.error(f'arXiv API HTTP error: {e}')\n            status = e.response.status_code if e.response is not None else 'unknown'\n            return _error_response(f'arXiv API HTTP error (HTTP {status})')\n        except ValueError as e:\n            return _error_response(str(e))\n    except ArxivRateLimitError as e:\n        logger.warning('arXiv search rate limited after retries: %s', e)\n        return _rate_limited_response(str(e), retry_after_seconds=e.retry_after_seconds, status_code=e.status_code)\n    except Exception as e:\n        logger.error(f'Unexpected search error: {e}')\n        return _error_response(str(e))"
+      }
+    },
+    "resolver": "python_ast_conservative_v2",
+    "resolution_confidence": "partial",
+    "transformation_validation": "no_executable_transformation",
+    "context_selection": [
+      {
+        "module": "arxiv_mcp_server.arxiv_api",
+        "referenced_names": [
+          "ArxivConnectionError",
+          "ArxivRateLimitError",
+          "ArxivTimeoutError",
+          "Awaitable",
+          "Callable",
+          "Exception",
+          "RuntimeError",
+          "Settings",
+          "T",
+          "TypeVar",
+          "ValueError",
+          "_compute_backoff_seconds",
+          "_parse_retry_after_seconds",
+          "asyncio",
+          "attempt",
+          "attempts_word",
+          "datetime",
+          "delay",
+          "delta",
+          "e",
+          "elapsed",
+          "float",
+          "httpx",
+          "initial_backoff",
+          "int",
+          "isinstance",
+          "jittered",
+          "last_exception",
+          "logger",
+          "logging",
+          "max",
+          "max_backoff",
+          "max_retries",
+          "max_retries_for_status",
+          "max_total_time",
+          "min",
+          "now",
+          "operation",
+          "operation_name",
+          "parsed_retry_after",
+          "parsedate_to_datetime",
+          "random",
+          "range",
+          "remaining",
+          "retry_after",
+          "retry_dt",
+          "settings",
+          "start_time",
+          "status_code",
+          "str",
+          "time",
+          "wait"
+        ],
+        "omitted": [
+          {
+            "kind": "Assign",
+            "line": 103,
+            "reason": "unreferenced_module_initialization_not_tool_call_path"
+          }
+        ],
+        "scope": "reasoning context only; module-initialization equivalence is not certified"
+      },
+      {
+        "module": "arxiv_mcp_server.tools.search",
+        "referenced_names": [
+          "ABSTRACT_MODES",
+          "ABSTRACT_SNIPPET_CHARS",
+          "ARXIV_API_URL",
+          "ARXIV_HEADERS",
+          "ARXIV_NS",
+          "ARXIV_RATE_LIMITER",
+          "Any",
+          "ArxivRateLimitError",
+          "CONTENT_WARNING",
+          "DEFAULT_ABSTRACT_MODE",
+          "DEFAULT_MAX_RESULTS",
+          "Dict",
+          "ET",
+          "Exception",
+          "List",
+          "Optional",
+          "RATE_LIMIT_MESSAGE",
+          "SORT_BY_VALUES",
+          "Settings",
+          "TypeError",
+          "VALID_CATEGORIES",
+          "ValueError",
+          "_ABSTRACT_TRUNCATION_MARK",
+          "_DEFAULT_RETRY_AFTER_SECONDS",
+          "_USER_QUERY_FIELD_PREFIXES",
+          "_apply_abstract_mode",
+          "_build_search_response",
+          "_error_response",
+          "_format_submitted_date_filter",
+          "_normalize_abstract_mode",
+          "_normalize_sort_by",
+          "_optimize_query",
+          "_parse_arxiv_atom_response",
+          "_parse_opensearch_total_results",
+          "_rate_limited_get",
+          "_rate_limited_response",
+          "_raw_arxiv_search",
+          "_scope_user_query",
+          "_snippet_abstract",
+          "_status_response",
+          "_user_query_has_field_prefix",
+          "_validate_categories",
+          "abstract",
+          "abstract_mode",
+          "allowed",
+          "any",
+          "arguments",
+          "author",
+          "authors",
+          "base_params",
+          "base_query",
+          "bool",
+          "build_arxiv_search_query",
+          "build_arxiv_search_url",
+          "cat",
+          "categories",
+          "category",
+          "category_filter",
+          "child",
+          "client",
+          "date_filter",
+          "date_from",
+          "date_from_arg",
+          "date_to",
+          "date_to_arg",
+          "datetime",
+          "dict",
+          "e",
+          "elem",
+          "encoded_query",
+          "end_date",
+          "entry",
+          "extra",
+          "field",
+          "final_query",
+          "float",
+          "has_more",
+          "httpx",
+          "id_elem",
+          "int",
+          "isinstance",
+          "item",
+          "json",
+          "len",
+          "link",
+          "list",
+          "logger",
+          "logging",
+          "lowered",
+          "max",
+          "max_chars",
+          "max_results",
+          "message",
+          "min",
+          "mode",
+          "name_elem",
+          "optimized_query",
+          "order",
+          "paper",
+          "paper_id",
+          "papers",
+          "parser",
+          "payload",
+          "pdf_url",
+          "prefix",
+          "projected",
+          "published",
+          "published_elem",
+          "query",
+          "query_parts",
+          "quote",
+          "request",
+          "response",
+          "response_data",
+          "results",
+          "retry_after_seconds",
+          "retry_with_backoff",
+          "returned",
+          "root",
+          "settings",
+          "short_id",
+          "single_request",
+          "sort_by",
+          "sort_by_arg",
+          "sort_map",
+          "sort_order",
+          "start",
+          "start_arg",
+          "start_date",
+          "status",
+          "status_code",
+          "str",
+          "summary_elem",
+          "tag",
+          "term",
+          "terms",
+          "timeout",
+          "title",
+          "title_elem",
+          "total_results",
+          "tuple",
+          "type",
+          "types",
+          "url",
+          "value",
+          "xml_text"
+        ],
+        "omitted": [
+          {
+            "kind": "Assign",
+            "line": 42,
+            "reason": "unreferenced_module_initialization_not_tool_call_path"
+          },
+          {
+            "kind": "Assign",
+            "line": 44,
+            "reason": "unreferenced_module_initialization_not_tool_call_path"
+          },
+          {
+            "kind": "Assign",
+            "line": 531,
+            "reason": "unreferenced_module_initialization_not_tool_call_path"
+          }
+        ],
+        "scope": "reasoning context only; module-initialization equivalence is not certified"
+      }
+    ]
+  },
+  "recorded_at": "2026-11-09T10:11:52.422899+00:00"
+}

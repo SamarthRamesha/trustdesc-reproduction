@@ -1,0 +1,14 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "fixed_agent_fixture_evaluation_v2",
+    "generator": "qwen3-mlx-4b",
+    "variant": "full",
+    "task": "synthetic-007",
+    "agent": "508fa0412d974d3eb648b054d90690cf5c252bff4ffce50db42d8ae04e40f660"
+  },
+  "status": "failed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:32:44.975509+00:00",
+  "result_sha256": "dc840e8d6569ca9c646600f515ab9c635fafc28fc66ba7f5e9684e1b7b38882b"
+}

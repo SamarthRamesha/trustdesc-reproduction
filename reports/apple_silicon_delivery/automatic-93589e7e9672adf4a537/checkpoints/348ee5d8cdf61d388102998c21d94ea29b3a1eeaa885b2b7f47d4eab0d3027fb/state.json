@@ -1,0 +1,12 @@
+{
+  "key": {
+    "run_fingerprint": "1f199a7054d887162fbe7487fc9e0fdafb3b8185463eed302d6c8f6e42df2f32",
+    "stage": "grounded_descgen_v2",
+    "model": "qwen3-mlx-4b",
+    "tool": "apply_formula"
+  },
+  "status": "completed",
+  "attempt": 1,
+  "completed_at": "2026-11-09T10:13:56.068627+00:00",
+  "result_sha256": "93d1845972718b9dac697f48bfc1c328fb7ad7c6871b921a89ef414a67ddd999"
+}

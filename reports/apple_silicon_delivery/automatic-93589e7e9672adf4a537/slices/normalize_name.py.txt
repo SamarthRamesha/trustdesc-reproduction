@@ -1,0 +1,5 @@
+# module: server
+@mcp.tool()
+def normalize_name(name: str):
+    """Normalize a text name by trimming surrounding whitespace and lowercasing it."""
+    return {'normalized': name.strip().lower()}

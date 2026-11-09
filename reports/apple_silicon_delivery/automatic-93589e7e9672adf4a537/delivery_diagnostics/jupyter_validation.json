@@ -1,0 +1,19 @@
+{
+  "kind": "actual local Jupyter kernel execution",
+  "fresh_python_environment": true,
+  "cached_model_assets_reverified": true,
+  "kernel_python": "/Users/macbramesha/Documents/Codex/2026-11-09/https-github-com-samarthramesha-trustdesc-reproduction-2/work/notebook-fresh/venv/bin/python",
+  "passed": true,
+  "executed_cells": 6,
+  "seconds": 1908.290946006775,
+  "delivered_algorithm_sources_identical": true,
+  "post_validation_reference_csv_normalization_only": true,
+  "source_closure": {
+    "scope": "explicit software-validation fixture only; not research observations",
+    "rebuild_returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "rebuilt_notebook_exists": true,
+    "exact_notebook_match": true
+  }
+}
