@@ -14,7 +14,7 @@ def build(revision):
     paths=subprocess.check_output(['git','ls-files'],cwd=ROOT,text=True).splitlines()
     # Do not hash the notebook into itself. History/reports stay in the snapshot;
     # every runtime module/config/test used is independently checked before import.
-    selected=[p for p in paths if p.startswith(('src/','configs/','tests/','data/manifests/','notebooks/colab/')) or p in ['pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md','docs/PAPER_ANALYSIS.md','reports/published_results.csv']]
+    selected=[p for p in paths if p.startswith(('src/','configs/','tests/','data/manifests/','notebooks/colab/')) or p in ['scripts/run_automatic_reproduction.py','pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md','docs/PAPER_ANALYSIS.md','reports/published_results.csv']]
     hashes={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in selected}
     cells=[]
     def md(id,text):cells.append({'cell_type':'markdown','id':id,'metadata':{},'source':textwrap.dedent(text).strip().splitlines(True)})
@@ -115,6 +115,8 @@ def build(revision):
     code('dependencies','''
     INSTALL_ERRORS = []
     os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    os.environ["USE_TF"] = "0"
+    os.environ["USE_FLAX"] = "0"
     startup_disk = shutil.disk_usage(BASE).free
     print(f"Startup disk available: {startup_disk / 1024**3:.1f} GiB")
     if startup_disk < 8 * 1024**3:
@@ -140,8 +142,12 @@ def build(revision):
             print("CUDA GPU unavailable; selecting CPU-compatible installation")
         # Library imports happen only after installation. Existing Colab torch
         # is replaced only when the exact selected pin is missing.
-        if (installed("torch") or "").split("+")[0] != "2.9.0":
-            install_logged(["torch==2.9.0", *([] if cuda_host else ["--index-url", "https://download.pytorch.org/whl/cpu"])], "torch-install")
+        torch_family = {"torch":"2.9.0", "torchvision":"0.24.0", "torchaudio":"2.9.0"}
+        if any((installed(name) or "").split("+")[0] != pin for name,pin in torch_family.items()):
+            # Keep Colab's preinstalled vision/audio extensions ABI-compatible
+            # even though this text-only model does not use their functionality.
+            index = "https://download.pytorch.org/whl/cu126" if cuda_host else "https://download.pytorch.org/whl/cpu"
+            install_logged(["torch==2.9.0", "torchvision==0.24.0", "torchaudio==2.9.0", "--index-url", index], "torch-install")
         wanted = {"transformers":"4.57.1", "huggingface-hub":"0.36.0", "safetensors":"0.6.2", "tokenizers":"0.22.1", "numpy":"2.2.6"}
         if any(installed(name) != pin for name,pin in wanted.items()):
             install_logged(["-r", str(PROJECT / "requirements-colab.txt")], "inference-install")

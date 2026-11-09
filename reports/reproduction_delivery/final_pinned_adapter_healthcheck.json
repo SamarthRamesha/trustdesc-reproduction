@@ -1,0 +1,90 @@
+{
+  "real_inference": true,
+  "device": "cpu",
+  "response": {
+    "ready": true
+  },
+  "model": {
+    "model_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+    "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+    "device": "cpu",
+    "torch": "2.9.0",
+    "transformers": "4.57.1",
+    "assets": {
+      "config.json": {
+        "sha256": "b1e58593cd31852f7da5c2fc31ddf6135b9c066c0fd9177a4bbe95717083adff",
+        "bytes": 659,
+        "publisher_hash_verified": true
+      },
+      "generation_config.json": {
+        "sha256": "fdaccbcb02f3e1e7914ccb0f69ebe899071ffd27cf825166d823163e156870f2",
+        "bytes": 243,
+        "publisher_hash_verified": true
+      },
+      "merges.txt": {
+        "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "bytes": 1671839,
+        "publisher_hash_verified": true
+      },
+      "model.safetensors": {
+        "sha256": "f9523886352217ded3aeeef552b381af79d568c6d49a4b9e423288cea56b0a44",
+        "bytes": 988097824,
+        "publisher_hash_verified": true
+      },
+      "tokenizer.json": {
+        "sha256": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "bytes": 7031645,
+        "publisher_hash_verified": true
+      },
+      "tokenizer_config.json": {
+        "sha256": "959e7f1d9a1b7641a6d6ce05ca97b75c7894fcb66cbe5a040406458fb1128ee4",
+        "bytes": 7305,
+        "publisher_hash_verified": true
+      },
+      "vocab.json": {
+        "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+        "bytes": 2776833,
+        "publisher_hash_verified": true
+      }
+    },
+    "precision": "float32",
+    "integrity": "immutable HF commit metadata over TLS; LFS SHA-256 or Git blob SHA-1 verified before loading; metadata cached locally; no separate signed publisher manifest",
+    "paper_equivalence": false,
+    "api_cost_usd": 0.0,
+    "compute_cost_usd": null
+  },
+  "torchvision": "0.24.0",
+  "torchaudio": "2.9.0",
+  "audit": [
+    {
+      "stage": "adapter_healthcheck",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Return only the JSON object {\"ready\":true}."
+        },
+        {
+          "role": "user",
+          "content": "{}"
+        }
+      ],
+      "request_hash": "2f6e2e439b9a085b8b01d8bbb5e1d5d83ca806bf8fa0c839e618b357fcd35b16",
+      "input_tokens": 24,
+      "output_tokens": 6,
+      "model": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+      "cost_usd": 0.0,
+      "compute_cost_usd": null,
+      "status": "completed",
+      "temperature": 0.2,
+      "max_generation_seconds": 90,
+      "raw_content": "{\"ready\":true}",
+      "seed": 795749997,
+      "response": {
+        "ready": true
+      },
+      "seconds": 0.6492986250086688
+    }
+  ],
+  "actual_Colab_T4_run": false
+}

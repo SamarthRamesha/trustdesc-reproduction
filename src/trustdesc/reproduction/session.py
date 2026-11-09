@@ -75,9 +75,13 @@ class Session:
 
     def _record_source(self):
         selected=[]
-        for prefix in ['src','configs','tests']:
+        for prefix in ['src','configs','tests','data/manifests']:
             selected.extend(p for p in (self.project/prefix).rglob('*') if p.is_file() and p.suffix in {'.py','.json','.jsonl','.txt'})
         selected += [self.project/p for p in ['pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md']]
+        runner = self.project/'scripts/run_automatic_reproduction.py'
+        if runner.exists():selected.append(runner)
+        portable = self.project/'PORTABLE_MANIFEST.json'
+        if portable.exists():selected.append(portable)
         for path in selected:
             self.store.text(Path('reproduction_source')/path.relative_to(self.project),path.read_text())
         freeze=subprocess.run([sys.executable,'-m','pip','freeze'],capture_output=True,text=True,timeout=30)

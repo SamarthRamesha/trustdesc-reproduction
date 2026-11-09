@@ -252,6 +252,8 @@ class ReproductionTests(unittest.TestCase):
             self.assertIsNone(z.testzip())
             self.assertIn('run/PHASE3_HANDOVER.md',z.namelist())
             self.assertTrue(any('reproduction_source/src/' in n for n in z.namelist()))
+            self.assertIn('run/reproduction_source/data/manifests/acquired_sources.json',z.namelist())
+            self.assertIn('run/reproduction_source/scripts/run_automatic_reproduction.py',z.namelist())
         before=len(list((session.run_root/'calls').rglob('*.json')))
         resumed=Session(PROJECT,self.root/'session',network=False,model=SoftwareValidationModel())
         resumed.run_all()
