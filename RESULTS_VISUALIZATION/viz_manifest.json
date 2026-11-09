@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-09T14:24:22.028022+00:00",
+  "generated_utc": "2026-11-09T14:27:56.641209+00:00",
   "charts": [
     {
       "file": "descgen_by_server.svg",
@@ -16,8 +16,8 @@
         },
         {
           "server": "imagesorcery-mcp",
-          "generated": 0,
-          "attempted": 1
+          "generated": 1,
+          "attempted": 3
         },
         {
           "server": "mysql_mcp_server",

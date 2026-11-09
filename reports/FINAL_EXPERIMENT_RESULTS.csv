@@ -25,3 +25,5 @@ yfinance-mcp,yfinance-mcp::yfinance_get_analyst_estimates,registration_pattern,9
 yfinance-mcp,yfinance-mcp::yfinance_get_fund_data,registration_pattern,11,51,failed,180.84,ModelError
 yfinance-mcp,yfinance-mcp::yfinance_get_upgrades_downgrades,registration_pattern,3,20,failed,248.9,ModelError
 imagesorcery-mcp,imagesorcery-mcp::blur,registration_pattern,1,33,failed,127.07,ModelError
+imagesorcery-mcp,imagesorcery-mcp::change_color,registration_pattern,1,21,failed,148.2,ModelError
+imagesorcery-mcp,imagesorcery-mcp::config,registration_pattern,1,27,generated,131.95,

@@ -1,6 +1,6 @@
 # Metrics report
 
-Generated 2026-11-09T14:24:22.028022+00:00.
+Generated 2026-11-09T14:27:56.641209+00:00.
 
 ## Scope
 
@@ -33,18 +33,18 @@ Model: `mlx-community/Qwen3-4B-Instruct-2507-4bit` at revision `50d427756c6b1b2f
 
 | Metric | Value |
 |---|---|
-| Tools attempted | 26 |
-| Valid structured descriptions | 9 |
-| Rejected by the validator | 17 |
-| Valid-structure rate | 34.6% |
-| Median seconds per tool | 131.33 |
+| Tools attempted | 28 |
+| Valid structured descriptions | 10 |
+| Rejected by the validator | 18 |
+| Valid-structure rate | 35.7% |
+| Median seconds per tool | 133.77 |
 | Max seconds per tool | 248.9 |
 
 | Server | Generated / attempted |
 |---|---|
 | arxiv-mcp-server | 3 / 4 |
 | excel-mcp-server | 3 / 5 |
-| imagesorcery-mcp | 0 / 1 |
+| imagesorcery-mcp | 1 / 3 |
 | mysql_mcp_server | 1 / 1 |
 | paper-search-mcp | 0 / 5 |
 | wikipedia-mcp | 0 / 5 |

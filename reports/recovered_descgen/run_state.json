@@ -2697,6 +2697,338 @@
       "error_type": "ModelError",
       "error": "DescGen validation failed twice: ModelError: ModelError: Generation deadline reached; partial response rejected\nTraceback (most recent call last):\n  File \"/Users/macbramesha/.config/freebuff-desktop/local-projects/67df7954-841e-4034-be87-5ea8c73d55df/_repo/src/trustdesc/reproduction/backends.py\", line 123, in _worker\n    result = model.complete(*request)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/macbramesha/.config/freebuff-desktop/local-projects/67df7954-841e-4034-be87-5ea8c73d55df/_repo/src/trustdesc/reproduction/backends.py\", line 84, in complete\n    raise ModelError('Generation deadline reached; partial response rejected')\ntrustdesc.common.models.ModelError: Generation deadline reached; partial response rejected\n | ValidationError: Identifier normalization collision; preserve evidence and review",
       "traceback": "Traceback (most recent call last):\n  File \"/Users/macbramesha/.config/freebuff-desktop/local-projects/67df7954-841e-4034-be87-5ea8c73d55df/_repo/scripts/run_recovered_descgen.py\", line 112, in main\n    raise ModelError('DescGen validation failed twice: ' + ' | '.join(errors))\ntrustdesc.common.models.ModelError: DescGen validation failed twice: ModelError: ModelError: Generation deadline reached; partial response rejected\nTraceback (most recent call last):\n  File \"/Users/macbramesha/.config/freebuff-desktop/local-projects/67df7954-841e-4034-be87-5ea8c73d55df/_repo/src/trustdesc/reproduction/backends.py\", line 123, in _worker\n    result = model.complete(*request)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/macbramesha/.config/freebuff-desktop/local-projects/67df7954-841e-4034-be87-5ea8c73d55df/_repo/src/trustdesc/reproduction/backends.py\", line 84, in complete\n    raise ModelError('Generation deadline reached; partial response rejected')\ntrustdesc.common.models.ModelError: Generation deadline reached; partial response rejected\n | ValidationError: Identifier normalization collision; preserve evidence and review\n"
+    },
+    {
+      "id": "imagesorcery-mcp::config",
+      "server": "imagesorcery-mcp",
+      "tool": "config",
+      "slice_sha256": "50cf12956a5d1ed7cd7355258554e9dc776a2a7edd3e7da6260be5fc7eb2380d",
+      "started_utc": "2026-11-09T14:25:26.685883+00:00",
+      "slice_file": "data/recovered_slices/imagesorcery-mcp__config.json",
+      "status": "generated",
+      "seconds": 131.95,
+      "description": {
+        "summary": "A configuration management tool that allows users to retrieve, update, or reset configuration values in a nested key structure using dot notation. It supports runtime and persistent updates, validates input actions and keys, and provides error handling for invalid operations or missing keys.",
+        "functionalities": [
+          "Retrieve configuration values using a specified key (supports dot notation for nested keys)",
+          "Set a configuration value for a specified key (with optional persistence to file)",
+          "Reset runtime configuration overrides to default values",
+          "Validate input actions ('get', 'set', 'reset') and enforce strict formatting",
+          "Provide detailed error messages for invalid actions, missing keys, or missing values",
+          "Log successful operations and errors for debugging and auditing"
+        ],
+        "input_schema": {
+          "$schema": "https://json-schema.org/draft/2024-10/schema",
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "description": "Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides",
+              "pattern": "^(get|set|reset)$",
+              "enum": [
+                "get",
+                "set",
+                "reset"
+              ]
+            },
+            "key": {
+              "type": "string",
+              "description": "Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config."
+            },
+            "value": {
+              "type": "any",
+              "description": "Value to set (only used with action='set')"
+            },
+            "persist": {
+              "type": "boolean",
+              "description": "Whether to persist changes to config file (only used with action='set')"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "claims": [
+          {
+            "id": "c1",
+            "text": "A configuration management tool that allows users to retrieve, update, or reset configuration values in a nested key structure using dot notation. It supports runtime and persistent updates, validates input actions and keys, and provides error handling for invalid operations or missing keys.",
+            "target": [
+              "summary"
+            ]
+          },
+          {
+            "id": "c2",
+            "text": "Retrieve configuration values using a specified key (supports dot notation for nested keys)",
+            "target": [
+              "functionalities",
+              0
+            ]
+          },
+          {
+            "id": "c3",
+            "text": "Set a configuration value for a specified key (with optional persistence to file)",
+            "target": [
+              "functionalities",
+              1
+            ]
+          },
+          {
+            "id": "c4",
+            "text": "Reset runtime configuration overrides to default values",
+            "target": [
+              "functionalities",
+              2
+            ]
+          },
+          {
+            "id": "c5",
+            "text": "Validate input actions ('get', 'set', 'reset') and enforce strict formatting",
+            "target": [
+              "functionalities",
+              3
+            ]
+          },
+          {
+            "id": "c6",
+            "text": "Provide detailed error messages for invalid actions, missing keys, or missing values",
+            "target": [
+              "functionalities",
+              4
+            ]
+          },
+          {
+            "id": "c7",
+            "text": "Log successful operations and errors for debugging and auditing",
+            "target": [
+              "functionalities",
+              5
+            ]
+          },
+          {
+            "id": "c8",
+            "text": "Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides",
+            "target": [
+              "input_schema",
+              "properties",
+              "action",
+              "description"
+            ]
+          },
+          {
+            "id": "c9",
+            "text": "Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.",
+            "target": [
+              "input_schema",
+              "properties",
+              "key",
+              "description"
+            ]
+          },
+          {
+            "id": "c10",
+            "text": "Value to set (only used with action='set')",
+            "target": [
+              "input_schema",
+              "properties",
+              "value",
+              "description"
+            ]
+          },
+          {
+            "id": "c11",
+            "text": "Whether to persist changes to config file (only used with action='set')",
+            "target": [
+              "input_schema",
+              "properties",
+              "persist",
+              "description"
+            ]
+          }
+        ]
+      },
+      "claims": 11,
+      "source_evidence": [
+        {
+          "claim_id": "c1",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The function supports retrieval, update, and reset of configuration values in a nested key structure using dot notation. It handles both runtime and persistent updates through the 'persist' parameter in the 'set' action. Input actions ('get', 'set', 'reset') are validated via pattern matching in the action field, and error handling is implemented through try-except blocks that return structured error messages for missing keys, invalid actions, or malformed inputs.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c2",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The function supports retrieving configuration values using dot notation for nested keys. When a key with a dot (e.g., 'detection.confidence_threshold') is provided, the code splits the key and traverses the nested dictionary structure, raising a KeyError if any part is missing, thus validating the dot-notation support and key existence.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c3",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The 'set' action updates a configuration value for a specified key. The function validates that a value is provided and updates the configuration using the `update_config` method, with optional persistence to file via the `persist` parameter, directly supporting the 'set' functionality with persistence control.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c4",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The 'reset' action is explicitly handled in the function when action is 'reset', which calls `config_manager.reset_runtime_overrides()`, resetting runtime overrides to default values as specified in the claim.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c5",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The function enforces strict formatting for the action field using a regex pattern `^(get|set|reset)$` in the input schema, ensuring only valid actions ('get', 'set', 'reset') are accepted. Invalid actions trigger a ValueError, and the function validates key and value presence in the 'set' action, enforcing input constraints.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c6",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The function provides detailed error messages for invalid operations (e.g., invalid action), missing keys (via KeyError), or missing values (via ValueError). These are returned in structured responses with descriptive messages, such as 'Configuration key not found' or 'Value is required for set action'.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c7",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "Successful operations and errors are logged using `logger.info()` and `logger.error()`, providing audit trails for debugging and operational monitoring. For example, successful retrievals and updates are logged with relevant details, and errors include stack traces for full traceability.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c8",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The function defines the action field with a description explicitly stating 'Action to perform: get to view config, set to update config, reset to reset runtime overrides', matching the provided description in the claim exactly.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c9",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The key field supports dot notation for nested keys (e.g., 'detection.confidence_threshold') and allows an empty key to retrieve the entire configuration. The function splits the key on '.' and traverses nested dictionaries, confirming support for both nested and root-level keys.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c10",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The value field is only used in the 'set' action and is validated to be provided when action is 'set'. The function raises a ValueError if value is missing, ensuring strict input validation as required by the claim.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        },
+        {
+          "claim_id": "c11",
+          "references": [
+            {
+              "function": "tools.config:register_tool.config",
+              "quote": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}",
+              "path": "tools/config.py",
+              "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+              "line_start": 52,
+              "line_end": 203
+            }
+          ],
+          "rationale": "The 'persist' parameter is explicitly used in the 'set' action to determine whether changes are saved to the config file. It is passed to the `update_config` method and is included in the response, confirming its use and documentation as specified in the claim.",
+          "confidence": "model_attributed_source_and_finite_tests_required"
+        }
+      ],
+      "implementation_interface": {
+        "type": "object",
+        "properties": {
+          "action": {},
+          "key": {},
+          "value": {},
+          "persist": {}
+        },
+        "required": [],
+        "has_variadic": false,
+        "positional_only": [],
+        "certification": "static_signature_only; types/constraints/return behavior not proven"
+      },
+      "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+      "prior_attempt_errors": [],
+      "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement"
     }
   ],
   "failures": [

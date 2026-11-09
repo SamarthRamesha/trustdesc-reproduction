@@ -1,6 +1,6 @@
 # Project state
 
-Updated 2026-11-09T14:24:22.101360+00:00.
+Updated 2026-11-09T14:27:56.676171+00:00.
 
 ## Current milestone
 
@@ -10,7 +10,7 @@ Recovered real MCP source integrated; SliceMin and real-model DescGen executed; 
 
 - 12/12 paper servers cloned at pinned commits with licenses and tree hashes.
 - 30/30 Python tools sliced with resolved entries.
-- 9 valid local-model descriptions from 26 attempts; all failures preserved with diagnostics.
+- 10 valid local-model descriptions from 28 attempts; all failures preserved with diagnostics.
 - Pilot on 3 tools across original/full/lite; DynVer execution documented as blocked.
 - 161 software tests pass; earlier evidence preserved unchanged.
 

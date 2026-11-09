@@ -1,6 +1,6 @@
 # Failure analysis
 
-Generated 2026-11-09T14:24:22.028022+00:00.
+Generated 2026-11-09T14:27:56.641209+00:00.
 
 Failures are reported as observed. None were retried into a different semantic path, and no scripted description was substituted for model output.
 
@@ -9,7 +9,7 @@ Failures are reported as observed. None were retried into a different semantic p
 | Failure type | Count | Cause |
 |---|---|---|
 | `ValidationError` | 0 | the generated JSON did not satisfy the claim-coverage rule (every summary, functionality and schema description needs exactly one matching claim) |
-| `ModelError` | 17 | output was not the required single JSON object, or the generation deadline/length limit was hit |
+| `ModelError` | 18 | output was not the required single JSON object, or the generation deadline/length limit was hit |
 | other | 0 | worker or slice lookup issue; see per-tool records |
 
 Raw rejected outputs are preserved in `reports/recovered_descgen/model_calls.json` and `run_state.json`, so the rejection can be audited rather than trusted.

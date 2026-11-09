@@ -1,10 +1,10 @@
 # Final experiment analysis
 
-Generated 2026-11-09T14:24:22.101360+00:00.
+Generated 2026-11-09T14:27:56.676171+00:00.
 
 ## Bottom line
 
-The independent pipeline ran end to end on real recovered MCP source. SliceMin sliced **30/30** Python tools from the 12 servers named in paper Table 1, and the pinned local model produced **9** structurally valid descriptions out of 26 attempted in this pass.
+The independent pipeline ran end to end on real recovered MCP source. SliceMin sliced **30/30** Python tools from the 12 servers named in paper Table 1, and the pinned local model produced **10** structurally valid descriptions out of 28 attempted in this pass.
 
 It did **not** reproduce the paper's benchmark. That is a data-availability limit, not an engineering one: the authors never released the 52-tool list, 208 tasks, prompts, labels or traces, and their anonymous artifact now returns HTTP 410 `repository_expired`.
 
@@ -15,14 +15,14 @@ It did **not** reproduce the paper's benchmark. That is a data-availability limi
 | Paper servers with recovered public source | 12/12 |
 | Python tools selected and sliced | 30 |
 | Tool slots in unsupported languages (JS/TS) | 22 |
-| DescGen attempted / valid | 26 / 9 |
-| Valid-structure rate | 34.6% |
+| DescGen attempted / valid | 28 / 10 |
+| Valid-structure rate | 35.7% |
 | Bounded pilot tools with three conditions | 3 |
 | Task success rate | not computed (no tasks, no labels) |
 
 | Failure type | Count |
 |---|---|
-| `ModelError` | 17 |
+| `ModelError` | 18 |
 
 ## Bounded pilot
 
