@@ -1,0 +1,98 @@
+[
+  {
+    "name": "zhiqiangwang4/MCPTox-Benchmark/README.md",
+    "repository": "zhiqiangwang4/MCPTox-Benchmark",
+    "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/README.md",
+    "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+    "sha256": "e248937f34abe5a7789cccf8be3046e05266c88cc6fefc51a5e7dc3301b95007",
+    "bytes": 9,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_reference",
+    "redistribute": false,
+    "format": "text"
+  },
+  {
+    "name": "zhiqiangwang4/MCPTox-Benchmark/pure_tool.json",
+    "repository": "zhiqiangwang4/MCPTox-Benchmark",
+    "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/pure_tool.json",
+    "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+    "sha256": "54b1eb0e9d7b2f18465266aa9d9dfda828cd558b1269b74731ec2c5d8579e617",
+    "bytes": 316620,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_external_dataset",
+    "redistribute": false,
+    "format": "json"
+  },
+  {
+    "name": "zhiqiangwang4/MCPTox-Benchmark/response_all.json",
+    "repository": "zhiqiangwang4/MCPTox-Benchmark",
+    "url": "https://raw.githubusercontent.com/zhiqiangwang4/MCPTox-Benchmark/f85189f9ad12504c197c7f920ab818a40657b1fa/response_all.json",
+    "version": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+    "sha256": "79a90049be931c59e71446d6180b1d7f0d196d123d08a59bc155d142b5041c03",
+    "bytes": 20666873,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_external_dataset",
+    "redistribute": false,
+    "format": "json"
+  },
+  {
+    "name": "AIS2Lab/MCPSecBench/README.md",
+    "repository": "AIS2Lab/MCPSecBench",
+    "url": "https://raw.githubusercontent.com/AIS2Lab/MCPSecBench/7612c5a3e811dcf01f64e4f2bb324591a2feaaf4/README.md",
+    "version": "7612c5a3e811dcf01f64e4f2bb324591a2feaaf4",
+    "sha256": "32f6ee7912336989b70aca77153c8810cd37e48d1575e0afda2e1f00ccb9453c",
+    "bytes": 6669,
+    "license": "MIT",
+    "classification": "public_reference",
+    "redistribute": true,
+    "format": "text"
+  },
+  {
+    "name": "Snakinya/MCPCorpus/README.md",
+    "repository": "Snakinya/MCPCorpus",
+    "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/README.md",
+    "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+    "sha256": "535f0032923287421da403f6c505e46818e675bc57fd53be58f331ee58ed424f",
+    "bytes": 2405,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_reference",
+    "redistribute": false,
+    "format": "text"
+  },
+  {
+    "name": "Snakinya/MCPCorpus/Website/mcpso_clients_cleaned.json",
+    "repository": "Snakinya/MCPCorpus",
+    "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/Website/mcpso_clients_cleaned.json",
+    "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+    "sha256": "1ce39bc223072efc14b25bc974367afbf0b1e42ded22a3e3bd35c26ca0b02399",
+    "bytes": 284046,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_external_dataset",
+    "redistribute": false,
+    "format": "json"
+  },
+  {
+    "name": "AIS2Lab/MCPSecBench/data/data.json",
+    "repository": "AIS2Lab/MCPSecBench",
+    "url": "https://raw.githubusercontent.com/AIS2Lab/MCPSecBench/7612c5a3e811dcf01f64e4f2bb324591a2feaaf4/data/data.json",
+    "version": "7612c5a3e811dcf01f64e4f2bb324591a2feaaf4",
+    "sha256": "037b3824147d3c0b674af66fd27095e51a2379a4bf91b65861315de594e6ae48",
+    "bytes": 4156,
+    "license": "MIT",
+    "classification": "public_external_dataset",
+    "redistribute": true,
+    "format": "json"
+  },
+  {
+    "name": "Snakinya/MCPCorpus/Website/mcpso_servers_cleaned.json",
+    "repository": "Snakinya/MCPCorpus",
+    "url": "https://raw.githubusercontent.com/Snakinya/MCPCorpus/295fe37cd972ea9aa1b48578b2d7bcc40a72ee12/Website/mcpso_servers_cleaned.json",
+    "version": "295fe37cd972ea9aa1b48578b2d7bcc40a72ee12",
+    "sha256": "cc14fc4fe5c68b73e77cbaa3e64fc2b58616a8e61d0e96d92b8fd861702b9e20",
+    "bytes": 13158383,
+    "license": "not specified; reference only, no redistribution",
+    "classification": "public_external_dataset",
+    "redistribute": false,
+    "format": "json"
+  }
+]

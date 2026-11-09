@@ -1,3 +1,5 @@
+> **Current entry point (2026-11-09):** [root automatic notebook](../TRUSTDESC_REPRODUCTION.ipynb) supersedes the historical upload/configuration workflow below. See [current validation and limitations](VALIDATION_AND_LIMITATIONS.md). The historical evidence is preserved.
+
 # Methodology and fidelity boundaries
 
 Scientific basis: supplied paper §§4–5, pp.6–13; see PAPER_ANALYSIS for version and exact procedure. This document describes **our implementation**, including differences.

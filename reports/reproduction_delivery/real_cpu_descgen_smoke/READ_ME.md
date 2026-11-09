@@ -1,0 +1,3 @@
+# Real CPU DescGen checks
+
+This directory preserves multiple exploratory attempts, including the failure.json from an earlier rejected response. It must not be read as every attempt passing. Earlier attempts used the host preinstalled torch 2.12.0 / transformers 5.9.0. The final successful three calls used the clean pinned environment (torch 2.9.0 / transformers 4.57.1), the immutable Qwen 0.5B revision in model_manifest.json, CPU float32, no remote code and no paid API. result.json is the successful final output. The final three call files by modification time in the original run are identified below; the other calls are retained as exploratory failures/diagnostics. No T4/Colab inference or original benchmark result is implied.

@@ -1,3 +1,5 @@
+> **Current entry point (2026-11-09):** [root automatic notebook](../TRUSTDESC_REPRODUCTION.ipynb) supersedes the historical upload/configuration workflow below. See [current validation and limitations](VALIDATION_AND_LIMITATIONS.md). The historical evidence is preserved.
+
 # Execution isolation assessment
 
 At inspection Docker, Podman and Colima were absent from PATH. macOS `sandbox-exec` exists, but mere availability does not validate an isolation profile. No third-party server/setup script was executed. No VM/container was installed, image pulled, or security setting changed.

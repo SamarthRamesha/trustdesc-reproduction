@@ -1,3 +1,5 @@
+> **Current entry point (2026-11-09):** [root automatic notebook](../TRUSTDESC_REPRODUCTION.ipynb) supersedes the historical upload/configuration workflow below. See [current validation and limitations](VALIDATION_AND_LIMITATIONS.md). The historical evidence is preserved.
+
 # Part 2 operator guide: one complete Colab workflow
 
 Open **`notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb`**. This is the primary notebook. The older `phase1_handover.ipynb` is retained as historical software-validation evidence. Local preparation ends with this package; the next actions are in Colab, followed by export for Part 3.

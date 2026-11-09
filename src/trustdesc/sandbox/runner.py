@@ -45,7 +45,7 @@ class ControlledAgent:
         try:
             for step in range(self.max_steps):
                 tools = SCHEMAS if self.tool_descriptions is None else {
-                    name: {'input_schema': SCHEMAS[name], 'description': desc}
+                    name: {'input_schema': desc.get('input_schema', SCHEMAS[name]) if isinstance(desc, dict) else SCHEMAS[name], 'description': desc}
                     for name, desc in self.tool_descriptions.items()}
                 action = self.model.complete('agent', AGENT,
                                              {'task': task, 'tools': tools, 'observations': events, 'step': step})
@@ -55,7 +55,8 @@ class ControlledAgent:
                     return {'backend': 'synthetic_allowlist', 'status': 'completed', 'events': events,
                             'answer': action['answer'], 'seconds': time.perf_counter() - start}
                 require_fields(action, {'action', 'tool', 'arguments'}, 'call action')
-                if action['action'] != 'call' or action['tool'] not in SCHEMAS:
+                allowed = SCHEMAS if self.tool_descriptions is None else self.tool_descriptions
+                if action['action'] != 'call' or action['tool'] not in allowed:
                     raise SandboxError('Agent requested an unregistered tool')
                 event = {'index': step, 'tool': action['tool'], 'arguments': action['arguments']}
                 try:

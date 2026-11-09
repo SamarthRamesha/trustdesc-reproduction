@@ -1,0 +1,109 @@
+{
+  "description": {
+    "summary": "Normalizes the input name by removing leading and trailing whitespace and converting it to lowercase.",
+    "functionalities": [
+      "strip",
+      "lowercase"
+    ],
+    "input_schema": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Normalizes the input name by removing leading and trailing whitespace and converting it to lowercase.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "strip",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "lowercase",
+        "target": [
+          "functionalities",
+          1
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "@tool\ndef normalize_name(name: string):\n    return {'normalized': name.strip().lowercase()}",
+    "truncations": {},
+    "semantic_renames": {
+      "lower": "lowercase",
+      "name": "name",
+      "normalize_name": "normalize_name",
+      "str": "string",
+      "strip": "strip",
+      "tool": "tool"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+  "model_mode": "real_local_transformers_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "server:normalize_name",
+          "hash_span": "6f8d5e597499c97c84167c7a83c6ef0a9baf8575295e1000e1cfa669d9e629f1",
+          "quote": "@tool\ndef normalize_name(name: str):\n    return {'normalized': name.strip().lower()}",
+          "path": "server.py",
+          "file_sha256": "6f8d5e597499c97c84167c7a83c6ef0a9baf8575295e1000e1cfa669d9e629f1",
+          "line_start": 2,
+          "line_end": 3
+        }
+      ],
+      "rationale": "The function `server:normalize_name` is used to normalize the input name by removing leading and trailing whitespace and converting it to lowercase.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [],
+      "rationale": "The function `strip` is used to remove leading and trailing whitespace.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [],
+      "rationale": "The function `lowercase` is used to convert the input name to lowercase.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

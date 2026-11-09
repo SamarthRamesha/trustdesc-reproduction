@@ -1,3 +1,5 @@
+> **Current entry point (2026-11-09):** [root automatic notebook](../TRUSTDESC_REPRODUCTION.ipynb) supersedes the historical upload/configuration workflow below. See [current validation and limitations](VALIDATION_AND_LIMITATIONS.md). The historical evidence is preserved.
+
 # Colab handover — final MacBook preparation complete
 
 Open **[TRUSTDESC_FULL_REPRODUCTION.ipynb](../notebooks/colab/TRUSTDESC_FULL_REPRODUCTION.ipynb)**. It is the single primary Part 2 entry point. Use the final **TRUSTDESC_COLAB_READY.zip** plus its own SHA-256 companion, or clone the private repository's validated `main`. The older notebook/archive remain historical evidence and should not be substituted when resuming a new-workflow run.

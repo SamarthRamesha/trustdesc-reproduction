@@ -1,3 +1,5 @@
+> **Current entry point (2026-11-09):** [root automatic notebook](../TRUSTDESC_REPRODUCTION.ipynb) supersedes the historical upload/configuration workflow below. See [current validation and limitations](VALIDATION_AND_LIMITATIONS.md). The historical evidence is preserved.
+
 # Central research and engineering handover
 
 ## Final MacBook preparation: Part 2 entry point

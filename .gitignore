@@ -30,3 +30,8 @@ htmlcov/
 *.whl
 *.tar.gz
 *.log
+
+# Automatic notebook runtime artifacts
+trustdesc_automatic/
+model_cache/
+phase3_handover.zip*

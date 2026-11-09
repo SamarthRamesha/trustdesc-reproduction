@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trustdesc-phase1"
-version = "0.1.0"
-description = "Evidence-tracked, bounded reimplementation of TRUSTDESC"
+version = "0.2.0"
+description = "Automatic evidence-tracked independent TRUSTDESC reproduction"
 requires-python = ">=3.11"
 dependencies = []
 readme = "README.md"
