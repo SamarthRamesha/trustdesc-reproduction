@@ -53,6 +53,9 @@ class AutomaticWorkflow(Workflow):
             rows = results[cfg['id']] = {}
             for tid, tool in self.tools.items():
                 def operation(cfg=cfg, tool=tool, tid=tid):
+                    if tool.get('generation_policy')=='static_reference_only':
+                        return {'status':'not_requested_reference_only',
+                                'reason':'Pinned public static reference, outside the active task benchmark; not counted as generated or verified'}
                     if static[tid]['status'] != 'completed':
                         return {'status': 'blocked', 'reason': 'SliceMin unavailable'}
                     model = self.pool.get(cfg, 'descgen', tool)

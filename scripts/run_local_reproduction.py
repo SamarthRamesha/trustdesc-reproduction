@@ -57,9 +57,11 @@ def main():
                                        '--workspace',str(args.workspace/'public-example'),
                                        '--cache',str(session.workspace/'cache/models')],cwd=ROOT,stdout=stream,stderr=subprocess.STDOUT)
             session.store.text('supplementary/public-example-log.txt',public_log.read_text())
-            public_status={'status':'completed' if public.returncode==0 else 'failed','returncode':public.returncode,
+            public_status={'status':'experiment_finished' if public.returncode==0 else 'failed','returncode':public.returncode,
                            'scope':'public SDK function body; separate from authored benchmark and original MCP transport'}
             for run in sorted((args.workspace/'public-example').glob('public-example-*')):
+                results_file=run/'results.json'
+                if results_file.exists():public_status['conditions']=json.loads(results_file.read_text()).get('conditions')
                 index=run/'OUTPUT_INDEX.json'
                 if index.exists():
                     for name in json.loads(index.read_text()):

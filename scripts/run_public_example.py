@@ -122,11 +122,19 @@ def main():
                 records.append({'condition':condition,'task':name,'arguments':arguments,'expected':expected,'trace':trace,
                                 'status':trace['status'],'success':success,'scope':SCOPE,'oracle':'project-authored exact arithmetic observation'})
                 store.write('task_results.json',records)
-        store.write('results.json',{'scope':SCOPE,'records':records,'paper_TSR':None,'peak_worker_rss_bytes':model.peak_worker_rss_bytes,
+        conditions=[]
+        for condition in ['original','lite','full']:
+            group=[r for r in records if r['condition']==condition]
+            observed=[r for r in group if type(r.get('success')) is bool]
+            successes=sum(r['success'] for r in observed)
+            conditions.append({'condition':condition,'expected':len(group),'observed':len(observed),
+                               'successes':successes if observed else None,
+                               'source_body_oracle_rate_percent':100*successes/len(group) if group and len(observed)==len(group) else None})
+        store.write('results.json',{'scope':SCOPE,'records':records,'conditions':conditions,'paper_TSR':None,'peak_worker_rss_bytes':model.peak_worker_rss_bytes,
                                    'fixed_task_agent':config,'original_benchmark':False})
         store.write('artifact_hashes.json',{name:hashlib.sha256((run/name).read_bytes()).hexdigest()
                     for name in store.read('OUTPUT_INDEX.json') if name!='OUTPUT_INDEX.json'})
-        print(json.dumps({'run':str(run),'scope':SCOPE,'condition_successes':{c:sum(r.get('success') is True for r in records if r['condition']==c) for c in ['original','lite','full']}},indent=2),flush=True)
+        print(json.dumps({'run':str(run),'scope':SCOPE,'conditions':conditions},indent=2),flush=True)
     finally:model.close()
 
 

@@ -87,7 +87,10 @@ def verify(description, model, runner):
             decisions.append({'claim_id': cid, 'verdict': 'inconclusive',
                               'reason': f"No completed tool evidence: {trace['status']}"})
             continue
-        judged = model.complete('judge', JUDGE, {'claim': claim, 'task': task['task'], 'execution': trace})
+        # Agent final prose can invent output keys or expected observations.
+        # The judge receives actual calls/results/errors, never that prose.
+        observed={k:copy.deepcopy(v) for k,v in trace.items() if k!='answer'}
+        judged = model.complete('judge', JUDGE, {'claim': claim, 'task': task['task'], 'execution': observed})
         require_fields(judged, {'verdict', 'reason'}, 'judge')
         if judged['verdict'] not in {'supported', 'refuted', 'inconclusive'}:
             raise ValidationError('Invalid judge verdict')

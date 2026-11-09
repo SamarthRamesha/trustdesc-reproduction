@@ -107,6 +107,14 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(trace['events'][0]['error_type'],'ValueError')
         self.assertEqual(trace['events'][0]['error'],'Formula must start with =')
 
+    def test_structured_final_answer_does_not_discard_real_tool_evidence(self):
+        m=ReplayModel([record('agent',{'action':'call','tool':'normalize_name','arguments':{'name':' Alice '}}),
+                       record('agent',{'action':'finish','answer':{'normalized_name':'alice'}})])
+        trace=ControlledAgent(m,max_steps=2).run('Normalize the input and provide JSON.')
+        self.assertEqual(trace['status'],'completed')
+        self.assertTrue(trace['answer_format_normalized'])
+        self.assertEqual(trace['events'][0]['result'],{'normalized':'alice'})
+
     def test_agent_failure(self):
         self.assertEqual(ControlledAgent(ReplayModel([])).run('test')['status'],'agent_error')
 

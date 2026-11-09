@@ -65,6 +65,7 @@ def add_public_source(bundle,roots,project,workspace,*,archive=None):
     tool={'id':'arxiv-current-search','name':'search_papers','source_ref':'arxiv-current',
           'entry':'arxiv_mcp_server.tools.search:handle_search','language':'python','backend':'disabled',
           'origin':'external_current_snapshot','license':'Apache-2.0','source_provenance':spec,
+          'generation_policy':'static_reference_only',
           'original_description':{'summary':description or 'Original description could not be statically extracted; not invented.',
                                   'functionalities':[],'input_schema':{'type':'object','properties':{}}},
           'metadata_gap':'Input schema not reconstructed; external execution disabled.'}

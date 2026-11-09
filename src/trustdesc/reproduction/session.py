@@ -87,10 +87,11 @@ class Session:
     def _record_source(self):
         selected=[]
         for prefix in ['src','configs','tests','data/manifests','data/public_example','scripts','docs']:
-            selected.extend(p for p in (self.project/prefix).rglob('*') if p.is_file() and p.suffix in {'.py','.json','.jsonl','.txt'})
+            selected.extend(p for p in (self.project/prefix).rglob('*') if p.is_file() and p.suffix in {'.py','.json','.jsonl','.txt','.md'})
         public_license=self.project/'data/public_example/LICENSE'
         if public_license.exists():selected.append(public_license)
-        selected += [self.project/p for p in ['pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md']]
+        selected += [self.project/p for p in ['pyproject.toml','requirements-colab.txt','LICENSE','NOTICE.md','README.md','PROJECT_STATE.md','reports/published_results.csv'] if (self.project/p).exists()]
+        selected += [p for p in self.project.glob('requirements*.txt') if p.is_file()]
         selected += [p for p in [self.project/'requirements-apple.txt',self.project/'requirements-apple-lock.txt',self.project/'TRUSTDESC_REPRODUCTION.ipynb'] if p.exists()]
         runner = self.project/'scripts/run_automatic_reproduction.py'
         if runner.exists():selected.append(runner)

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import time
+import traceback
 from typing import Protocol
 
-from trustdesc.common.io import ValidationError, nonempty, require_fields
+from trustdesc.common.io import ValidationError, nonempty, require_fields, canonical
 from trustdesc.common.models import ModelError
 from trustdesc.descgen.prompts import AGENT
 from .fixture_tools import SCHEMAS, invoke
@@ -51,9 +52,13 @@ class ControlledAgent:
                                              {'task': task, 'tools': tools, 'observations': events, 'step': step})
                 if action.get('action') == 'finish':
                     require_fields(action, {'action', 'answer'}, 'finish action')
-                    nonempty(action['answer'], 'answer')
+                    answer=action['answer']
+                    normalized=isinstance(answer,(dict,list))
+                    if normalized:answer=canonical(answer)
+                    nonempty(answer, 'answer')
                     return {'backend': 'synthetic_allowlist', 'status': 'completed', 'events': events,
-                            'answer': action['answer'], 'seconds': time.perf_counter() - start}
+                            'answer': answer, 'answer_format_normalized':normalized,
+                            'seconds': time.perf_counter() - start}
                 require_fields(action, {'action', 'tool', 'arguments'}, 'call action')
                 allowed = SCHEMAS if self.tool_descriptions is None else self.tool_descriptions
                 if action['action'] != 'call' or action['tool'] not in allowed:
@@ -68,7 +73,7 @@ class ControlledAgent:
             return {'backend': 'synthetic_allowlist', 'status': 'blocked', 'events': events, 'reason': str(exc)}
         except (ValidationError, ModelError, TypeError, AttributeError) as exc:
             return {'backend': 'synthetic_allowlist', 'status': 'agent_error', 'events': events,
-                    'reason': type(exc).__name__}
+                    'reason': type(exc).__name__,'diagnostic':str(exc),'traceback':traceback.format_exc()}
         return {'backend': 'synthetic_allowlist', 'status': 'step_limit', 'events': events,
                 'reason': 'Maximum agent steps reached'}
 

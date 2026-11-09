@@ -25,7 +25,7 @@ Native MLX pipeline executed; validate the repaired pipeline and complete notebo
 - Native hardware was validated with an authorized external-sandbox probe: Apple M3, 16 GiB; MLX GPU available. No unresolved native startup blocker.
 
 ## Last successful test
-151 unit/integration tests pass. 23 Python-only Codex startup checks pass (10 inherited environment, 10 clean, 3 Seatbelt); all four isolation canaries pass. See reports/apple_recovery/startup_investigation/.
+154 unit/integration tests pass. 23 Python-only Codex startup checks pass (10 inherited environment, 10 clean, 3 Seatbelt); all four isolation canaries pass. See reports/apple_recovery/startup_investigation/.
 
 ## Last successful experiment
 Native run automatic-bfb7f182699c8cdf5b15: real MLX Qwen3-4B, SliceMin and grounded DescGen for two authored tools, iterative DynVer, 24 matched attempts. Original/lite/full each 6/8 (75%) exact authored objectives. No original-paper TSR. Public arXiv DescGen exceeded the initial 8192-token cap; retained as failed. See work/native-experiment and reports staged for delivery. Native archive/member validation passed.
@@ -52,3 +52,10 @@ The user confirmed the native Terminal result on 2026-11-09. Proceed with MLX im
 - First native run preserved; exception type now retained in tool traces after diagnosing an erroneous judge refutation.
 - Primary local notebook embeds source, automatically creates/installs a fresh venv, and emits handover/report links. Fresh environment preflight passed; full inference validation pending.
 - Pinned MIT public example source-body smoke: 4/4 sandboxed arithmetic cases pass. Separate real-model public study currently running from an immutable local source snapshot.
+
+## Current validation checkpoint
+- Implementation committed locally as 85ba522; not pushed yet.
+- Actual Jupyter first validation preserved under work/jupyter-validation-initial-format-failure; stopped deliberately after reproducing source-evidence array protocol failure. All checkpoints remain.
+- Narrow repair wraps model-generated evidence/task arrays in their required object key without changing contents; full downstream validators still run. Regression passes.
+- Repaired actual Jupyter validation is running: automatic-dec1cc22bc9bf57176ee, fresh Python 3.11 environment, one qualified Qwen3-4B model at a time. Both authored DescGen/source-grounding stages have passed, including the recorded container normalization.
+- Next: finish Jupyter execution and public supplement; verify all member hashes and notebook/source identity; generate final delivery report/archive; commit evidence and push main.
