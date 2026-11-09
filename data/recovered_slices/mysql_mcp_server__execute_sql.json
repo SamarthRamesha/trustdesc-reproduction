@@ -1,0 +1,108 @@
+{
+  "tool": "execute_sql",
+  "entry": "server:run_query",
+  "entry_method": "dispatch_callee_pattern",
+  "source": "# module: server\nimport asyncio\nimport logging\nimport os\nimport sys\nimport re\nimport socket\nimport time\nimport subprocess\nimport traceback\nfrom contextlib import contextmanager\nfrom typing import List, Optional, Tuple, Any\nimport anyio\nfrom mysql.connector import connect, Error\nfrom mcp.server import Server\nfrom mcp.types import Resource, Tool, TextContent, ToolAnnotations, ResourceTemplate, Prompt, PromptArgument, PromptMessage, GetPromptResult\nfrom pydantic import AnyUrl\nfrom dotenv import load_dotenv\nlogger = logging.getLogger('mysql_mcp_server')\n\nasync def run_query(query: str) -> list[TextContent]:\n    \"\"\"\n    A helper function that handles the execution of a SQL query,\n    formatting the results based on the query type (SHOW, DESCRIBE, SELECT, or DML).\n    Uses anyio.to_thread.run_sync to prevent blocking the async event loop.\n    \"\"\"\n\n    def _sync_run():\n        with maybe_ssh_tunnel() as (host, port):\n            config = get_db_config(host, port)\n            try:\n                with connect(**config) as conn:\n                    with conn.cursor() as cursor:\n                        cursor.execute(query)\n                        query_upper = query.strip().upper()\n                        if query_upper.startswith('SHOW TABLES'):\n                            tables = cursor.fetchall()\n                            db_name = config.get('database', 'all databases')\n                            result = [f'Tables_in_{db_name}']\n                            result.extend([table[0] for table in tables])\n                            return [TextContent(type='text', text='\\n'.join(result))]\n                        elif any((query_upper.startswith(p) for p in ['DESCRIBE ', 'DESC ', 'SHOW COLUMNS FROM ', 'SHOW FIELDS FROM '])):\n                            columns = [desc[0] for desc in cursor.description]\n                            rows = cursor.fetchall()\n                            results = [','.join(columns)]\n                            for row in rows:\n                                results.append(','.join((str(v) if v is not None else 'NULL' for v in row)))\n                            return [TextContent(type='text', text='\\n'.join(results))]\n                        elif cursor.description is not None:\n                            columns = [desc[0] for desc in cursor.description]\n                            rows = cursor.fetchall()\n                            if not rows:\n                                return [TextContent(type='text', text='Query executed successfully. No results returned.')]\n                            result = [','.join(('' if v is None else str(v) for v in row)) for row in rows]\n                            return [TextContent(type='text', text='\\n'.join([','.join(columns)] + result))]\n                        else:\n                            conn.commit()\n                            return [TextContent(type='text', text=f'Query executed successfully. Rows affected: {cursor.rowcount}')]\n            except Error as e:\n                error_msg = getattr(e, 'msg', None) or str(e) or 'Unknown MySQL error'\n                logger.error(f'Error executing SQL: {error_msg}')\n                return [TextContent(type='text', text=f'Error executing query: {error_msg}')]\n    return await anyio.to_thread.run_sync(_sync_run)",
+  "initial_functions": [
+    "server:run_query"
+  ],
+  "functions": [
+    "server:run_query"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "server:run_query",
+      "callee": null,
+      "callsite": "anyio.to_thread.run_sync(_sync_run)",
+      "line": 553,
+      "expression": "anyio.to_thread.run_sync",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "56cd9932d940bde12c554f8297146a7469e8c61ce4453e1506619ec1f711b3ba",
+    "__main__.py": "0ed448b645a8891ea09ee025c558e7db3480050e373b651106cdb4c02377d7cf",
+    "server.py": "6b20045b737413f447c6b019f94fe429367a82c566d8eb1e82b1c942af65fdfc"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:run_query": {
+      "path": "server.py",
+      "line_start": 499,
+      "line_end": 553,
+      "file_sha256": "6b20045b737413f447c6b019f94fe429367a82c566d8eb1e82b1c942af65fdfc",
+      "source": "async def run_query(query: str) -> list[TextContent]:\n    \"\"\"\n    A helper function that handles the execution of a SQL query,\n    formatting the results based on the query type (SHOW, DESCRIBE, SELECT, or DML).\n    Uses anyio.to_thread.run_sync to prevent blocking the async event loop.\n    \"\"\"\n\n    def _sync_run():\n        with maybe_ssh_tunnel() as (host, port):\n            config = get_db_config(host, port)\n            try:\n                with connect(**config) as conn:\n                    with conn.cursor() as cursor:\n                        cursor.execute(query)\n                        query_upper = query.strip().upper()\n                        if query_upper.startswith('SHOW TABLES'):\n                            tables = cursor.fetchall()\n                            db_name = config.get('database', 'all databases')\n                            result = [f'Tables_in_{db_name}']\n                            result.extend([table[0] for table in tables])\n                            return [TextContent(type='text', text='\\n'.join(result))]\n                        elif any((query_upper.startswith(p) for p in ['DESCRIBE ', 'DESC ', 'SHOW COLUMNS FROM ', 'SHOW FIELDS FROM '])):\n                            columns = [desc[0] for desc in cursor.description]\n                            rows = cursor.fetchall()\n                            results = [','.join(columns)]\n                            for row in rows:\n                                results.append(','.join((str(v) if v is not None else 'NULL' for v in row)))\n                            return [TextContent(type='text', text='\\n'.join(results))]\n                        elif cursor.description is not None:\n                            columns = [desc[0] for desc in cursor.description]\n                            rows = cursor.fetchall()\n                            if not rows:\n                                return [TextContent(type='text', text='Query executed successfully. No results returned.')]\n                            result = [','.join(('' if v is None else str(v) for v in row)) for row in rows]\n                            return [TextContent(type='text', text='\\n'.join([','.join(columns)] + result))]\n                        else:\n                            conn.commit()\n                            return [TextContent(type='text', text=f'Query executed successfully. Rows affected: {cursor.rowcount}')]\n            except Error as e:\n                error_msg = getattr(e, 'msg', None) or str(e) or 'Unknown MySQL error'\n                logger.error(f'Error executing SQL: {error_msg}')\n                return [TextContent(type='text', text=f'Error executing query: {error_msg}')]\n    return await anyio.to_thread.run_sync(_sync_run)"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "Error",
+        "TextContent",
+        "_sync_run",
+        "any",
+        "anyio",
+        "columns",
+        "config",
+        "conn",
+        "connect",
+        "cursor",
+        "db_name",
+        "desc",
+        "e",
+        "error_msg",
+        "get_db_config",
+        "getattr",
+        "host",
+        "list",
+        "logger",
+        "logging",
+        "maybe_ssh_tunnel",
+        "p",
+        "port",
+        "query",
+        "query_upper",
+        "result",
+        "results",
+        "row",
+        "rows",
+        "str",
+        "table",
+        "tables",
+        "v"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 35,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 191,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 658,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

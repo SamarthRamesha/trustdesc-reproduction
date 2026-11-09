@@ -1,0 +1,305 @@
+{
+  "description": {
+    "summary": "A tool that deletes a note from a specific cell in a worksheet within a workbook. It requires the workbook path, sheet name, and cell reference to locate and remove the note, then returns a confirmation message indicating the deletion.",
+    "functionalities": [
+      "Deletes a note from a specified cell in a worksheet",
+      "Operates on a given workbook path and sheet name to identify the target location",
+      "Uses the cell reference to precisely locate the note to be removed",
+      "Returns a formatted confirmation message indicating the deletion"
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2024-10-31/schema",
+      "properties": {
+        "cell": {
+          "description": "The cell reference (e.g., 'A1') where the note is located and will be deleted.",
+          "type": "string"
+        },
+        "path": {
+          "description": "The file path to the workbook containing the sheet and note to be deleted.",
+          "type": "string"
+        },
+        "sheet": {
+          "description": "The name of the worksheet (sheet) within the workbook where the note is located.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sheet",
+        "cell"
+      ],
+      "type": "object"
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that deletes a note from a specific cell in a worksheet within a workbook. It requires the workbook path, sheet name, and cell reference to locate and remove the note, then returns a confirmation message indicating the deletion.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Deletes a note from a specified cell in a worksheet",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Operates on a given workbook path and sheet name to identify the target location",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Uses the cell reference to precisely locate the note to be removed",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "Returns a formatted confirmation message indicating the deletion",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "The cell reference (e.g., 'A1') where the note is located and will be deleted.",
+        "target": [
+          "input_schema",
+          "properties",
+          "cell",
+          "description"
+        ]
+      },
+      {
+        "id": "c7",
+        "text": "The file path to the workbook containing the sheet and note to be deleted.",
+        "target": [
+          "input_schema",
+          "properties",
+          "path",
+          "description"
+        ]
+      },
+      {
+        "id": "c8",
+        "text": "The name of the worksheet (sheet) within the workbook where the note is located.",
+        "target": [
+          "input_schema",
+          "properties",
+          "sheet",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "from typing import Annotated\nfrom pydantic import Field\nfrom excel_mcp.operations import names, notes\nfrom excel_mcp.server.params import CellRef, SheetName, WorkbookPath\nfrom excel_mcp.server.registry import ToolRegistry\nfrom excel_mcp.server.results import Changed\nfrom excel_mcp.workspace import Workspace, get_sheet",
+    "truncations": {},
+    "semantic_renames": {
+      "Annotated": "Annotated",
+      "CellRef": "CellRef",
+      "Changed": "Changed",
+      "Field": "Field",
+      "SheetName": "SheetName",
+      "ToolRegistry": "ToolRegistry",
+      "WorkbookPath": "WorkbookPath",
+      "Workspace": "Workspace",
+      "get_sheet": "get_sheet",
+      "names": "names",
+      "notes": "notes"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function `server.annotation_tools:register.delete_note` handles the deletion of a note from a specific cell in a worksheet, requiring the workbook path, sheet name, and cell reference as inputs, and returns a confirmation message indicating the deletion, matching the described tool behavior.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function directly implements the action of deleting a note from a specified cell in a worksheet, as described in the claim text, through its `delete_note` operation.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function accepts a `path` parameter (workbook path) and a `sheet` parameter (sheet name), which are used to identify and operate on the target worksheet, aligning with the claim's description of operating on a given workbook and sheet.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function uses the `cell` parameter (CellRef) to precisely locate the note to be removed, as specified in the claim, by passing it to the `notes.delete_note` operation within the worksheet context.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function returns a formatted confirmation message in the form `f'Deleted the note on {sheet}!{cell}'`, which directly matches the claim's description of returning a formatted confirmation indicating the deletion.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function defines a `cell` parameter of type `CellRef` (e.g., 'A1') in its input schema, which is used to specify the location of the note to be deleted, matching the claim's description of the cell reference property.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c7",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function accepts a `path` parameter representing the workbook file path, which is used to access the workbook and its sheets, directly supporting the claim's description of the workbook path input.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c8",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.delete_note",
+          "quote": "@tools.destroyer('Delete note')\ndef delete_note(path: WorkbookPath, sheet: SheetName, cell: CellRef) -> str:\n    \"\"\"Remove the note from a cell.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.delete_note(get_sheet(workbook, sheet), cell)\n    return f'Deleted the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 65,
+          "line_end": 69
+        }
+      ],
+      "rationale": "The function takes a `sheet` parameter (type `SheetName`) to identify the worksheet within the workbook where the note is located, matching the claim's description of the sheet name input.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "path": {},
+      "sheet": {},
+      "cell": {}
+    },
+    "required": [
+      "path",
+      "sheet",
+      "cell"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "server.annotation_tools:register.delete_note",
+        "expression": "return f'Deleted the note on {sheet}!{cell}.'",
+        "path": "server/annotation_tools.py",
+        "function_line_start": 65,
+        "function_line_end": 69,
+        "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "server.annotation_tools:register.delete_note",
+        "call": "tools.destroyer",
+        "expression": "tools.destroyer('Delete note')"
+      },
+      {
+        "function": "server.annotation_tools:register.delete_note",
+        "call": "workspace.edit",
+        "expression": "workspace.edit(path)"
+      },
+      {
+        "function": "server.annotation_tools:register.delete_note",
+        "call": "notes.delete_note",
+        "expression": "notes.delete_note(get_sheet(workbook, sheet), cell)"
+      },
+      {
+        "function": "server.annotation_tools:register.delete_note",
+        "call": "get_sheet",
+        "expression": "get_sheet(workbook, sheet)"
+      }
+    ],
+    "source_identity": "42d8710bc6c752a9fcadff49211c04ee6621b61c4aeac9daf0a0a921551ff803",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

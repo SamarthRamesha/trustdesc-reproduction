@@ -1,0 +1,112 @@
+{
+  "tool": "test_wikipedia_connectivity",
+  "entry": "server:create_server.test_wikipedia_connectivity",
+  "entry_method": "explicit_operator_override",
+  "source": "# module: server\nimport logging\nfrom typing import Annotated, Any, Literal, Optional, cast\nfrom fastmcp import FastMCP\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom starlette.datastructures import Headers\nfrom starlette.middleware import Middleware as ASGIMiddleware\nfrom starlette.responses import JSONResponse\nfrom starlette.types import ASGIApp, Receive, Scope, Send\nfrom wikipedia_mcp.auth_config import AuthConfig\nfrom wikipedia_mcp.schemas import ArticleResponse, ConnectivityResponse, CoordinatesResponse, KeyFactsResponse, LinksResponse, QuerySummaryResponse, RelatedTopicsResponse, SearchWikipediaResponse, SectionSummaryResponse, SectionsResponse, SummaryResponse, model_output_schema\nfrom wikipedia_mcp.wikipedia_client import WikipediaClient",
+  "initial_functions": [
+    "server:create_server.test_wikipedia_connectivity"
+  ],
+  "functions": [
+    "server:create_server.test_wikipedia_connectivity"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "logger.info('Tool: Testing Wikipedia connectivity')",
+      "line": 237,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "wikipedia_client.test_connectivity()",
+      "line": 238,
+      "expression": "wikipedia_client.test_connectivity",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "diagnostics.get('status')",
+      "line": 241,
+      "expression": "diagnostics.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "isinstance(diagnostics['response_time_ms'], (int, float))",
+      "line": 243,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "round(float(diagnostics['response_time_ms']), 3)",
+      "line": 245,
+      "expression": "round",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.test_wikipedia_connectivity",
+      "callee": null,
+      "callsite": "float(diagnostics['response_time_ms'])",
+      "line": 245,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "66f262fe8ff6d7f5d9e96fc43a29135d9d213b2debe875920e4615d276bb503a",
+    "__main__.py": "8a80e3a5be68124f86ee4e0790c572bbb0c481c80738e9984d9286360fd94a82",
+    "auth_config.py": "de8e46e5cc81bcec079f99ca4b683724b75b1e1dc3c9ea27cef7d171075d7fd8",
+    "schemas.py": "f15454e8228d4214961d7e1351b3be74025dae18432ecd0526fdff35a7c02625",
+    "server.py": "5542367a91ad803a736676c89e15f7d88681380ef81835044c22115b3518df7c",
+    "wikipedia_client.py": "e524e126c2dfef0649d9ac9f24546eeb110c5de9d286509dabb0424cd7f352a7"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:create_server.test_wikipedia_connectivity": {
+      "path": "server.py",
+      "line_start": 229,
+      "line_end": 246,
+      "file_sha256": "5542367a91ad803a736676c89e15f7d88681380ef81835044c22115b3518df7c",
+      "source": "@register_tool('test_wikipedia_connectivity', model_output_schema(ConnectivityResponse))\ndef test_wikipedia_connectivity():\n    \"\"\"\n        Provide diagnostics for Wikipedia API connectivity.\n\n        Returns the base API URL, language, site information, and response\n        time in milliseconds. If connectivity fails, status will be 'failed'\n        with error details.\n        \"\"\"\n    logger.info('Tool: Testing Wikipedia connectivity')\n    diagnostics = wikipedia_client.test_connectivity()\n    if diagnostics.get('status') == 'success' and 'response_time_ms' in diagnostics and isinstance(diagnostics['response_time_ms'], (int, float)):\n        diagnostics['response_time_ms'] = round(float(diagnostics['response_time_ms']), 3)\n    return diagnostics"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 37,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 39,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

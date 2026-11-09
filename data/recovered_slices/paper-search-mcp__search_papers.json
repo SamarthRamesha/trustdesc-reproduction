@@ -1,0 +1,2188 @@
+{
+  "tool": "search_papers",
+  "entry": "server:search_papers",
+  "entry_method": "registration_pattern",
+  "source": "# module: config\nfrom __future__ import annotations\nimport logging\nimport os\nfrom pathlib import Path\nfrom typing import Optional\nlogger = logging.getLogger(__name__)\n_ENV_LOADED = False\nENV_PREFIX = 'PAPER_SEARCH_MCP_'\n\ndef _candidate_env_files() -> list[Path]:\n    explicit_path = os.getenv(f'{ENV_PREFIX}ENV_FILE', '').strip()\n    if explicit_path:\n        return [Path(explicit_path).expanduser()]\n    user_config_env = Path.home() / '.config' / 'paper-search-mcp' / '.env'\n    return [user_config_env]\n\ndef _strip_quotes(value: str) -> str:\n    if len(value) >= 2 and value[0] == value[-1] and (value[0] in (\"'\", '\"')):\n        return value[1:-1]\n    return value\n\ndef _load_env_from_file(env_file: Path) -> None:\n    for raw_line in env_file.read_text(encoding='utf-8').splitlines():\n        line = raw_line.strip()\n        if not line or line.startswith('#'):\n            continue\n        if line.startswith('export '):\n            line = line[7:].strip()\n        if '=' not in line:\n            continue\n        key, value = line.split('=', 1)\n        key = key.strip()\n        if not key:\n            continue\n        value = _strip_quotes(value.strip())\n        os.environ.setdefault(key, value)\n\ndef load_env_file(force: bool=False) -> None:\n    global _ENV_LOADED\n    if _ENV_LOADED and (not force):\n        return\n    for env_file in _candidate_env_files():\n        if not env_file.exists() or not env_file.is_file():\n            continue\n        try:\n            _load_env_from_file(env_file)\n            logger.debug('Loaded environment values from %s', env_file)\n            break\n        except Exception as exc:\n            logger.warning('Failed to load environment file %s: %s', env_file, exc)\n    _ENV_LOADED = True\n\ndef get_env(name: str, default: Optional[str]='') -> str:\n    load_env_file()\n    normalized = name.strip()\n    if not normalized:\n        return '' if default is None else str(default)\n    keys = [f'{ENV_PREFIX}{normalized}', normalized]\n    for key in keys:\n        if key in os.environ:\n            return os.environ.get(key, '')\n    return '' if default is None else str(default)\n\n# module: search_cache\nfrom contextlib import contextmanager\nfrom dataclasses import dataclass\nimport hashlib\nimport json\nimport logging\nimport os\nfrom pathlib import Path\nimport sqlite3\nimport time\nfrom .config import get_env\n_SCHEMA_VERSION = 1\n_MAX_KEY_BYTES = 16384\n_PUBLIC_CONNECTORS = {'arxiv', 'pubmed', 'biorxiv', 'medrxiv', 'google_scholar', 'iacr', 'semantic', 'crossref', 'openalex', 'pmc', 'core', 'europepmc', 'dblp', 'openaire', 'citeseerx', 'doaj', 'base_search', 'zenodo', 'hal', 'ssrn', 'unpaywall', 'acm'}\n\ndef _ambient_netrc_possible():\n    \"\"\"Bypass ambient Requests auth without reading credential file contents.\n\n    Several connectors use module-level Requests calls, so inspecting a\n    connector's explicit key/session alone cannot establish anonymous access.\n    A present netrc file is conservatively sufficient to disable caching.\n    \"\"\"\n    configured = os.environ.get('NETRC')\n    locations = (configured,) if configured is not None else ('~/.netrc', '~/_netrc')\n    try:\n        return any((os.path.exists(os.path.expanduser(path)) for path in locations))\n    except (OSError, RuntimeError):\n        return True\n\ndef _public_cache_eligible(searcher):\n    module = type(searcher).__module__\n    built_in = any((module == f'paper_search_mcp.academic_platforms.{name}' for name in _PUBLIC_CONNECTORS))\n    if not built_in and getattr(type(searcher), 'search_cache_public', False) is not True:\n        return False\n    if _ambient_netrc_possible():\n        return False\n    if module == 'paper_search_mcp.academic_platforms.semantic' and get_env('SEMANTIC_SCHOLAR_API_KEY', ''):\n        return False\n    for name, value in vars(searcher).items():\n        lowered = name.lower().lstrip('_')\n        if value and (lowered in {'api_key', 'access_token', 'token', 'password', 'username', 'client_secret', 'api_token', 'inst_token', 'insttoken', 'proxy_url'} or lowered.endswith(('_api_key', '_access_token', '_password'))):\n            return False\n    session = getattr(searcher, 'session', None)\n    if session is not None:\n        if getattr(session, 'auth', None):\n            return False\n        if any((str(key).lower() in {'authorization', 'x-api-key', 'api-key'} and value for key, value in session.headers.items())):\n            return False\n        if any((cookie.name != 'CONSENT' for cookie in getattr(session, 'cookies', []))):\n            return False\n    return True\n\ndef _json(value):\n    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)\n\ndef search_key(searcher, query, max_results, options):\n    \"\"\"Canonical keys do not concatenate ambiguous delimiters or case-fold queries.\n\n    The complete query/options key is stored only in the opt-in database. Secret\n    configuration is represented by a digest, never the raw value. JSON types\n    (including strings versus numbers) remain distinct.\n    \"\"\"\n    if not _public_cache_eligible(searcher):\n        return None\n    config = {name: getattr(searcher, name, None) for name in ('api_key', 'email', 'proxy_url', 'base_url', 'endpoint')}\n    resolver = getattr(searcher, 'resolver', None)\n    if resolver is not None:\n        config['resolver_email'] = getattr(resolver, 'email', None)\n    session = getattr(searcher, 'session', None)\n    if session is not None:\n        config['headers'] = {str(k).lower(): v for k, v in session.headers.items() if str(k).lower() in {'authorization', 'x-api-key', 'api-key'}}\n    config['environment'] = {key: value for key, value in os.environ.items() if key.startswith('PAPER_SEARCH_MCP_') and 'SEARCH_CACHE' not in key or key in {'SEMANTIC_SCHOLAR_API_KEY', 'OPENALEX_API_KEY', 'OPENALEX_EMAIL', 'CORE_API_KEY', 'UNPAYWALL_EMAIL', 'DOAJ_API_KEY', 'ZENODO_ACCESS_TOKEN', 'GOOGLE_SCHOLAR_PROXY_URL', 'OPENAIRE_API_KEY', 'CITESEERX_API_KEY', 'IEEE_API_KEY'}}\n    config['endpoints'] = {name: getattr(searcher, name) for name in dir(type(searcher)) if name.isupper() and name.endswith(('URL', 'ENDPOINT')) and isinstance(getattr(searcher, name), str)}\n    try:\n        fingerprint = hashlib.sha256(_json(config).encode('utf-8')).hexdigest()\n        key = _json({'version': _SCHEMA_VERSION, 'source': f'{type(searcher).__module__}.{type(searcher).__qualname__}', 'configuration': fingerprint, 'query': query, 'max_results': max_results, 'options': options})\n    except (TypeError, ValueError):\n        return None\n    return key if len(key.encode('utf-8')) <= _MAX_KEY_BYTES else None\n\n# module: server\nimport argparse\nimport asyncio\nimport io\nimport logging\nimport os\nimport re\nimport tempfile\nimport threading\nimport time\nimport unicodedata\nfrom collections.abc import Awaitable\nfrom concurrent.futures import Future, ThreadPoolExecutor\nfrom threading import BoundedSemaphore\nfrom typing import Annotated, Any, Dict, List, Optional\nfrom pydantic import Field\nfrom urllib.parse import unquote\nimport httpx\nfrom mcp.server.fastmcp import FastMCP\nfrom .academic_platforms.arxiv import ArxivSearcher\nfrom .academic_platforms.base_search import BASESearcher\nfrom .academic_platforms.biorxiv import BioRxivSearcher\nfrom .academic_platforms.citeseerx import CiteSeerXSearcher\nfrom .academic_platforms.core import CORESearcher\nfrom .academic_platforms.crossref import CrossRefSearcher\nfrom .academic_platforms.dblp import DBLPSearcher\nfrom .academic_platforms.doaj import DOAJSearcher\nfrom .academic_platforms.europepmc import EuropePMCSearcher\nfrom .academic_platforms.google_scholar import GoogleScholarSearchError, GoogleScholarSearcher\nfrom .academic_platforms.hal import HALSearcher\nfrom .academic_platforms.iacr import IACRSearcher\nfrom .academic_platforms.medrxiv import MedRxivSearcher\nfrom .academic_platforms.openaire import OpenAiresearcher\nfrom .academic_platforms.openalex import OpenAlexSearcher\nfrom .academic_platforms.pmc import PMCSearcher\nfrom .academic_platforms.pubmed import PubMedSearcher\nfrom .academic_platforms.sci_hub import SciHubFetcher\nfrom .academic_platforms.semantic import SemanticSearcher\nfrom .academic_platforms.ssrn import SSRNSearcher\nfrom .academic_platforms.openreview import OpenReviewSearcher\nfrom .academic_platforms.unpaywall import UnpaywallResolver, UnpaywallSearcher\nfrom .academic_platforms.zenodo import ZenodoSearcher\nfrom .config import get_env, load_env_file\nfrom .search_cache import SearchCache, search_key\nmcp = FastMCP('paper_search_server')\nlogger = logging.getLogger(__name__)\nGOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS = 20.0\nSEARCH_PAPERS_SOURCE_TIMEOUT_SECONDS = 45.0\nSEARCH_EXECUTOR_MAX_WORKERS = 32\n_SEARCH_EXECUTOR = _BoundedSearchExecutor(SEARCH_EXECUTOR_MAX_WORKERS)\n_SEARCH_CACHE = SearchCache.from_env()\narxiv_searcher = ArxivSearcher()\npubmed_searcher = PubMedSearcher()\nbiorxiv_searcher = BioRxivSearcher()\nmedrxiv_searcher = MedRxivSearcher()\ngoogle_scholar_searcher = GoogleScholarSearcher()\niacr_searcher = IACRSearcher()\nsemantic_searcher = SemanticSearcher()\ncrossref_searcher = CrossRefSearcher()\nopenalex_searcher = OpenAlexSearcher()\npmc_searcher = PMCSearcher()\ncore_searcher = CORESearcher()\neuropepmc_searcher = EuropePMCSearcher()\ndblp_searcher = DBLPSearcher()\nopenaire_searcher = OpenAiresearcher()\nciteseerx_searcher = CiteSeerXSearcher()\ndoaj_searcher = DOAJSearcher()\nbase_searcher = BASESearcher()\nunpaywall_resolver = UnpaywallResolver()\nunpaywall_searcher = UnpaywallSearcher(resolver=unpaywall_resolver)\nzenodo_searcher = ZenodoSearcher()\nhal_searcher = HALSearcher()\nssrn_searcher = SSRNSearcher()\nopenreview_searcher = OpenReviewSearcher()\n\nasync def async_search(searcher, query: str, max_results: int, **kwargs) -> List[Dict]:\n    cache = _SEARCH_CACHE\n    key = search_key(searcher, query, max_results, kwargs) if cache.settings.enabled else None\n    generation = None\n    if key is not None:\n        cached, generation = await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.lookup, key))\n        if cached is not None:\n            return cached\n    search_future = _SEARCH_EXECUTOR.submit(searcher.search, query, max_results=max_results, **kwargs)\n    papers = await asyncio.wrap_future(search_future)\n    result = [paper.to_dict() for paper in papers]\n    if key is not None and generation is not None and result:\n        try:\n            await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.put, key, result, generation))\n        except SearchExecutorSaturatedError:\n            pass\n    return result\n\nasync def _run_search_with_timeout(source_name: str, search_task: Awaitable[List[Dict]], timeout_seconds: Optional[float]=None) -> List[Dict]:\n    \"\"\"Run one source without allowing it to stall a multi-source request.\"\"\"\n    if timeout_seconds is None:\n        timeout_seconds = SEARCH_PAPERS_SOURCE_TIMEOUT_SECONDS\n    try:\n        return await asyncio.wait_for(search_task, timeout=timeout_seconds)\n    except asyncio.TimeoutError as exc:\n        raise TimeoutError(f\"search for source '{source_name}' timed out after {timeout_seconds:g} seconds\") from exc\nALL_SOURCES = ['arxiv', 'pubmed', 'biorxiv', 'medrxiv', 'google_scholar', 'iacr', 'semantic', 'crossref', 'openalex', 'pmc', 'core', 'europepmc', 'dblp', 'openaire', 'citeseerx', 'doaj', 'base', 'zenodo', 'hal', 'ssrn', 'openreview', 'unpaywall']\n_ieee_api_key = get_env('IEEE_API_KEY', '')\nif _ieee_api_key:\n    from .academic_platforms.ieee import IEEESearcher\n    ieee_searcher = IEEESearcher()\n    ALL_SOURCES.append('ieee')\n    logger.info('IEEE Xplore enabled via configured environment key.')\nelse:\n    ieee_searcher = None\nfrom .academic_platforms.acm import ACMSearcher\nacm_searcher = ACMSearcher()\nEXPLICIT_ONLY_SOURCES = ['wos', 'scopus']\n\ndef _parse_sources(sources: str) -> List[str]:\n    if not sources or sources.strip().lower() == 'all':\n        return ALL_SOURCES\n    normalized = [part.strip().lower() for part in sources.split(',') if part.strip()]\n    return [source for source in normalized if source in ALL_SOURCES + EXPLICIT_ONLY_SOURCES]\n\ndef _invalid_sources(sources: str) -> List[str]:\n    \"\"\"Return distinct requested source names that are unknown or unavailable.\"\"\"\n    if not sources or sources.strip().lower() == 'all':\n        return []\n    normalized = [part.strip().lower() for part in sources.split(',') if part.strip()]\n    return list(dict.fromkeys((source for source in normalized if source not in ALL_SOURCES + EXPLICIT_ONLY_SOURCES)))\n\ndef _paper_unique_key(paper: Dict[str, Any]) -> str:\n    doi = (paper.get('doi') or '').strip().lower()\n    if doi:\n        return f'doi:{doi}'\n    title = (paper.get('title') or '').strip().lower()\n    authors = (paper.get('authors') or '').strip().lower()\n    if title:\n        return f'title:{title}|authors:{authors}'\n    paper_id = (paper.get('paper_id') or '').strip().lower()\n    return f'id:{paper_id}'\n\ndef _dedupe_papers(papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n    deduped: List[Dict[str, Any]] = []\n    seen: set[str] = set()\n    for paper in papers:\n        key = _paper_unique_key(paper)\n        if key in seen:\n            continue\n        seen.add(key)\n        deduped.append(paper)\n    return deduped\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_papers(query: str, max_results_per_source: int=5, sources: str='all', year: str='') -> Dict[str, Any]:\n    \"\"\"Unified top-level search across all configured academic platforms.\n\n    Args:\n        query: Search query string.\n        max_results_per_source: Max results to fetch from each selected source.\n        sources: Comma-separated source names or 'all'.\n            Available: arxiv,pubmed,biorxiv,medrxiv,google_scholar,iacr,semantic,crossref,openalex,pmc,core,europepmc,dblp,openaire,citeseerx,doaj,base,zenodo,hal,ssrn,openreview,unpaywall\n        year: Optional year filter for Semantic Scholar only.\n    Returns:\n        Aggregated dictionary with per-source stats, errors, and deduplicated papers.\n    \"\"\"\n    selected_sources = _parse_sources(sources)\n    invalid_sources = _invalid_sources(sources)\n    errors: Dict[str, str] = {source: 'Unknown or unavailable source.' for source in invalid_sources}\n    if not selected_sources:\n        errors['sources'] = 'No valid sources selected.'\n        return {'query': query, 'sources_requested': sources, 'sources_used': [], 'source_results': {}, 'errors': errors, 'papers': [], 'total': 0}\n    task_map = {}\n    for source in selected_sources:\n        if source == 'arxiv':\n            task_map[source] = search_arxiv(query, max_results_per_source)\n        elif source == 'pubmed':\n            task_map[source] = search_pubmed(query, max_results_per_source)\n        elif source == 'biorxiv':\n            task_map[source] = search_biorxiv(query, max_results_per_source)\n        elif source == 'medrxiv':\n            task_map[source] = search_medrxiv(query, max_results_per_source)\n        elif source == 'google_scholar':\n            task_map[source] = search_google_scholar(query, max_results_per_source)\n        elif source == 'iacr':\n            task_map[source] = search_iacr(query, max_results_per_source, fetch_details=False)\n        elif source == 'semantic':\n            task_map[source] = search_semantic(query, year=year, max_results=max_results_per_source)\n        elif source == 'crossref':\n            task_map[source] = search_crossref(query, max_results=max_results_per_source)\n        elif source == 'openalex':\n            task_map[source] = search_openalex(query, max_results_per_source)\n        elif source == 'pmc':\n            task_map[source] = search_pmc(query, max_results_per_source)\n        elif source == 'core':\n            task_map[source] = search_core(query, max_results_per_source)\n        elif source == 'europepmc':\n            task_map[source] = search_europepmc(query, max_results_per_source)\n        elif source == 'dblp':\n            task_map[source] = search_dblp(query, max_results_per_source)\n        elif source == 'openaire':\n            task_map[source] = search_openaire(query, max_results_per_source)\n        elif source == 'citeseerx':\n            task_map[source] = search_citeseerx(query, max_results_per_source)\n        elif source == 'doaj':\n            task_map[source] = search_doaj(query, max_results_per_source)\n        elif source == 'base':\n            task_map[source] = search_base(query, max_results_per_source)\n        elif source == 'zenodo':\n            task_map[source] = search_zenodo(query, max_results_per_source)\n        elif source == 'hal':\n            task_map[source] = search_hal(query, max_results_per_source)\n        elif source == 'openreview':\n            task_map[source] = search_openreview(query, max_results_per_source)\n        elif source == 'ssrn':\n            task_map[source] = search_ssrn(query, max_results_per_source)\n        elif source == 'unpaywall':\n            task_map[source] = search_unpaywall(query, max_results_per_source)\n        elif source == 'ieee':\n            if ieee_searcher is not None:\n                task_map[source] = async_search(ieee_searcher, query, max_results_per_source)\n        elif source == 'scopus':\n            task_map[source] = search_scopus(query, max_results_per_source)\n        elif source == 'wos':\n            task_map[source] = search_wos(query, max_results_per_source)\n        elif source == 'acm':\n            if acm_searcher is not None:\n                task_map[source] = async_search(acm_searcher, query, max_results_per_source)\n    source_names = list(task_map.keys())\n    source_outputs = await asyncio.gather(*(_run_search_with_timeout(source_name, search_task) for source_name, search_task in task_map.items()), return_exceptions=True)\n    source_results: Dict[str, int] = {}\n    merged_papers: List[Dict[str, Any]] = []\n    for source_name, output in zip(source_names, source_outputs):\n        if isinstance(output, Exception):\n            errors[source_name] = str(output)\n            source_results[source_name] = 0\n            continue\n        source_results[source_name] = len(output)\n        for paper in output:\n            if not paper.get('source'):\n                paper['source'] = source_name\n            merged_papers.append(paper)\n    deduped_papers = _dedupe_papers(merged_papers)\n    return {'query': query, 'sources_requested': sources, 'sources_used': source_names, 'source_results': source_results, 'errors': errors, 'papers': deduped_papers, 'total': len(deduped_papers), 'raw_total': len(merged_papers)}\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_wos(query: str, max_results: int=10, db: str='WOS') -> List[Dict]:\n    \"\"\"Explicit Web of Science Starter metadata search; never part of 'all'.\n\n    Requires a runtime WOS_API_KEY (PAPER_SEARCH_MCP_ prefix supported).\n    Native WoS query syntax, max_results 0..100 (at most two requests).\n    No PDF, abstract, or full-text capability. API errors are not empty results.\n    \"\"\"\n    from .academic_platforms.wos import WebOfScienceSearcher\n    return await async_search(WebOfScienceSearcher(), query, max_results, db=db)\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_scopus(query: str, max_results: int=10, view: str='STANDARD', sort: str='relevance', field: str='', date: str='') -> List[Dict]:\n    \"\"\"Explicit Scopus metadata search, never part of 'all'.\n\n    Requires runtime SCOPUS_API_KEY (PAPER_SEARCH_MCP_ prefix supported).\n    max_results 0..100; at most four pages. COMPLETE requires extra entitlement.\n    sort: relevance, coverDate, citedby-count, creator; date: YYYY or YYYY-YYYY.\n    Field: TITLE, ABS, KEY, AUTH, AFFILORG, or empty for native query syntax.\n    \"\"\"\n    from .academic_platforms.scopus import ScopusSearcher\n    return await async_search(ScopusSearcher(), query, max_results, view=view, sort=sort, field=field, date=date)\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_arxiv(query: str, max_results: int=10, sort_by: str='relevance', sort_order: str='descending') -> List[Dict]:\n    \"\"\"Search academic papers from arXiv.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        sort_by: Sort criterion \u2014 'relevance', 'submittedDate', or 'lastUpdatedDate' (default: 'relevance').\n        sort_order: Sort direction \u2014 'descending' or 'ascending' (default: 'descending').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(arxiv_searcher, query, max_results, sort_by=sort_by, sort_order=sort_order)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_pubmed(query: str, max_results: int=10, sort: str='relevance') -> List[Dict]:\n    \"\"\"Search academic papers from PubMed.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        sort: Sort order \u2014 'relevance' or 'pub_date' (default: 'relevance').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(pubmed_searcher, query, max_results, sort=sort)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_biorxiv(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from bioRxiv.\n\n    Note: bioRxiv does not provide full-text keyword search. The query may be a DOI,\n    a date range such as '2024-01-01/2024-01-31', a category such as\n    'bioinformatics', or an empty string for recent papers.\n\n    Args:\n        query: DOI, date range, category name, or an empty string for recent papers.\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(biorxiv_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_medrxiv(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from medRxiv.\n\n    Note: medRxiv API filters by category name within the last 30 days, not full-text\n    keyword search. Use a category keyword such as 'infectious_diseases',\n    'cardiovascular_medicine', 'oncology', etc.\n\n    Args:\n        query: Category name to filter by (e.g., 'infectious_diseases', 'oncology').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(medrxiv_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_google_scholar(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Google Scholar.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    try:\n        papers = await _run_search_with_timeout('google_scholar', async_search(google_scholar_searcher, query, max_results, timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS - 1.0), timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS)\n    except TimeoutError as exc:\n        raise GoogleScholarSearchError(f'Google Scholar search timed out after {GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS:g}s. ' + GoogleScholarSearcher.FALLBACK_HINT) from exc\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_iacr(query: str, max_results: int=10, fetch_details: bool=True) -> List[Dict]:\n    \"\"\"Search academic papers from IACR ePrint Archive.\n\n    Args:\n        query: Search query string (e.g., 'cryptography', 'secret sharing').\n        max_results: Maximum number of papers to return (default: 10).\n        fetch_details: Whether to fetch detailed information for each paper (default: True).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await asyncio.to_thread(iacr_searcher.search, query, max_results, fetch_details)\n    return [paper.to_dict() for paper in papers] if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_semantic(query: str, year: str='', max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Semantic Scholar.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        year: Optional year filter (e.g., '2019', '2016-2020', '2010-', '-2015').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    kwargs = {}\n    if year:\n        kwargs['year'] = year\n    papers = await async_search(semantic_searcher, query, max_results, **kwargs)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_crossref(query: str, max_results: int=10, filter: str='', sort: str='', order: str='') -> List[Dict]:\n    \"\"\"Search academic papers from CrossRef database.\n    \n    CrossRef is a scholarly infrastructure organization that provides \n    persistent identifiers (DOIs) for scholarly content and metadata.\n    It's one of the largest citation databases covering millions of \n    academic papers, journals, books, and other scholarly content.\n\n    Args:\n        query: Search query string (e.g., 'machine learning', 'climate change').\n        max_results: Maximum number of papers to return (default: 10, max: 1000).\n        filter: CrossRef filter string (e.g., 'has-full-text:true,from-pub-date:2020').\n        sort: Sort field ('relevance', 'published', 'updated', 'deposited', etc.).\n        order: Sort order ('asc' or 'desc').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    extra = {key: value for key, value in {'filter': filter, 'sort': sort, 'order': order}.items() if value}\n    papers = await async_search(crossref_searcher, query, max_results, **extra)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openalex(query: str, max_results: int=10, filter: str='') -> List[Dict]:\n    \"\"\"Search academic papers from OpenAlex.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        filter: OpenAlex filter string.\n            Examples:\n            - 'open_access.is_oa:true,from_publication_date:2024-01-01'\n            - 'publication_year:2024,type:article'\n            - 'primary_location.source.id:S137773608' for Nature\n            See https://help.openalex.org/api/filtering/\n            for the full list of supported work filters.\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    filter_value = (filter or '').strip()\n    extra = {'filter': filter_value} if filter_value else {}\n    papers = await async_search(openalex_searcher, query, max_results, **extra)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_pmc(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from PubMed Central (PMC).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(pmc_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_core(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from CORE.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(core_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_europepmc(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Europe PMC.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(europepmc_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_dblp(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from dblp computer science bibliography.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(dblp_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openaire(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from OpenAIRE European Open Access infrastructure.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(openaire_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_citeseerx(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from CiteSeerX digital library.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(citeseerx_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_doaj(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from DOAJ (Directory of Open Access Journals).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(doaj_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_base(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from BASE (Bielefeld Academic Search Engine).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(base_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_zenodo(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Zenodo open repository.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(zenodo_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_hal(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from HAL open archive.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(hal_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openreview(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search public OpenReview API v2 papers anonymously (0..1000 results).\n\n    Reviews, replies, private notes and API v1-only records are excluded.\n    Up to 1000 hits are scanned in 100-record pages; errors are reported.\n    \"\"\"\n    return await async_search(openreview_searcher, query, max_results)\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_ssrn(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search SSRN-indexed metadata through OpenAlex.\n\n    Uses bounded cursor pagination (0..1000 results), with explicit API errors.\n    Direct public SSRN download/read is separate and best-effort.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(ssrn_searcher, query, max_results)\n    return papers if papers else []\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_unpaywall(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Lookup a DOI via Unpaywall and return OA metadata.\n\n    Unpaywall is DOI-centric and does not support generic keyword search.\n    This tool extracts the first DOI from `query` and returns at most one record.\n\n    Args:\n        query: DOI string or text containing a DOI.\n        max_results: Kept for API consistency; Unpaywall returns max 1 record.\n    Returns:\n        List with one paper metadata dict when DOI is resolvable, else empty list.\n    \"\"\"\n    papers = await async_search(unpaywall_searcher, query, max_results)\n    return papers if papers else []",
+  "initial_functions": [
+    "config:_candidate_env_files",
+    "config:_load_env_from_file",
+    "config:_strip_quotes",
+    "config:get_env",
+    "config:load_env_file",
+    "search_cache:_ambient_netrc_possible",
+    "search_cache:_json",
+    "search_cache:_public_cache_eligible",
+    "search_cache:search_key",
+    "server:_dedupe_papers",
+    "server:_invalid_sources",
+    "server:_paper_unique_key",
+    "server:_parse_sources",
+    "server:_run_search_with_timeout",
+    "server:async_search",
+    "server:search_arxiv",
+    "server:search_base",
+    "server:search_biorxiv",
+    "server:search_citeseerx",
+    "server:search_core",
+    "server:search_crossref",
+    "server:search_dblp",
+    "server:search_doaj",
+    "server:search_europepmc",
+    "server:search_google_scholar",
+    "server:search_hal",
+    "server:search_iacr",
+    "server:search_medrxiv",
+    "server:search_openaire",
+    "server:search_openalex",
+    "server:search_openreview",
+    "server:search_papers",
+    "server:search_pmc",
+    "server:search_pubmed",
+    "server:search_scopus",
+    "server:search_semantic",
+    "server:search_ssrn",
+    "server:search_unpaywall",
+    "server:search_wos",
+    "server:search_zenodo"
+  ],
+  "functions": [
+    "config:_candidate_env_files",
+    "config:_load_env_from_file",
+    "config:_strip_quotes",
+    "config:get_env",
+    "config:load_env_file",
+    "search_cache:_ambient_netrc_possible",
+    "search_cache:_json",
+    "search_cache:_public_cache_eligible",
+    "search_cache:search_key",
+    "server:_dedupe_papers",
+    "server:_invalid_sources",
+    "server:_paper_unique_key",
+    "server:_parse_sources",
+    "server:_run_search_with_timeout",
+    "server:async_search",
+    "server:search_arxiv",
+    "server:search_base",
+    "server:search_biorxiv",
+    "server:search_citeseerx",
+    "server:search_core",
+    "server:search_crossref",
+    "server:search_dblp",
+    "server:search_doaj",
+    "server:search_europepmc",
+    "server:search_google_scholar",
+    "server:search_hal",
+    "server:search_iacr",
+    "server:search_medrxiv",
+    "server:search_openaire",
+    "server:search_openalex",
+    "server:search_openreview",
+    "server:search_papers",
+    "server:search_pmc",
+    "server:search_pubmed",
+    "server:search_scopus",
+    "server:search_semantic",
+    "server:search_ssrn",
+    "server:search_unpaywall",
+    "server:search_wos",
+    "server:search_zenodo"
+  ],
+  "edges": [
+    {
+      "caller": "server:search_papers",
+      "callee": "server:_parse_sources",
+      "callsite": "_parse_sources(sources)",
+      "line": 595
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:_invalid_sources",
+      "callsite": "_invalid_sources(sources)",
+      "line": 596
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_arxiv",
+      "callsite": "search_arxiv(query, max_results_per_source)",
+      "line": 616
+    },
+    {
+      "caller": "server:search_arxiv",
+      "callee": "server:async_search",
+      "callsite": "async_search(arxiv_searcher, query, max_results, sort_by=sort_by, sort_order=sort_order)",
+      "line": 760
+    },
+    {
+      "caller": "server:async_search",
+      "callee": "search_cache:search_key",
+      "callsite": "search_key(searcher, query, max_results, kwargs)",
+      "line": 125
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": "search_cache:_public_cache_eligible",
+      "callsite": "_public_cache_eligible(searcher)",
+      "line": 86
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": "search_cache:_ambient_netrc_possible",
+      "callsite": "_ambient_netrc_possible()",
+      "line": 51
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": "config:get_env",
+      "callsite": "get_env('SEMANTIC_SCHOLAR_API_KEY', '')",
+      "line": 53
+    },
+    {
+      "caller": "config:get_env",
+      "callee": "config:load_env_file",
+      "callsite": "load_env_file()",
+      "line": 71
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": "config:_candidate_env_files",
+      "callsite": "_candidate_env_files()",
+      "line": 56
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": "config:_load_env_from_file",
+      "callsite": "_load_env_from_file(env_file)",
+      "line": 61
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": "config:_strip_quotes",
+      "callsite": "_strip_quotes(value.strip())",
+      "line": 46
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": "search_cache:_json",
+      "callsite": "_json(config)",
+      "line": 115
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": "search_cache:_json",
+      "callsite": "_json({'version': _SCHEMA_VERSION, 'source': f'{type(searcher).__module__}.{type(searcher).__qualname__}', 'configuration': fingerprint, 'query': query, 'max_results': max_results, 'options': options})",
+      "line": 116
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_pubmed",
+      "callsite": "search_pubmed(query, max_results_per_source)",
+      "line": 618
+    },
+    {
+      "caller": "server:search_pubmed",
+      "callee": "server:async_search",
+      "callsite": "async_search(pubmed_searcher, query, max_results, sort=sort)",
+      "line": 775
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_biorxiv",
+      "callsite": "search_biorxiv(query, max_results_per_source)",
+      "line": 620
+    },
+    {
+      "caller": "server:search_biorxiv",
+      "callee": "server:async_search",
+      "callsite": "async_search(biorxiv_searcher, query, max_results)",
+      "line": 793
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_medrxiv",
+      "callsite": "search_medrxiv(query, max_results_per_source)",
+      "line": 622
+    },
+    {
+      "caller": "server:search_medrxiv",
+      "callee": "server:async_search",
+      "callsite": "async_search(medrxiv_searcher, query, max_results)",
+      "line": 811
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_google_scholar",
+      "callsite": "search_google_scholar(query, max_results_per_source)",
+      "line": 624
+    },
+    {
+      "caller": "server:search_google_scholar",
+      "callee": "server:_run_search_with_timeout",
+      "callsite": "_run_search_with_timeout('google_scholar', async_search(google_scholar_searcher, query, max_results, timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS - 1.0), timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS)",
+      "line": 826
+    },
+    {
+      "caller": "server:search_google_scholar",
+      "callee": "server:async_search",
+      "callsite": "async_search(google_scholar_searcher, query, max_results, timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS - 1.0)",
+      "line": 828
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_iacr",
+      "callsite": "search_iacr(query, max_results_per_source, fetch_details=False)",
+      "line": 626
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_semantic",
+      "callsite": "search_semantic(query, year=year, max_results=max_results_per_source)",
+      "line": 628
+    },
+    {
+      "caller": "server:search_semantic",
+      "callee": "server:async_search",
+      "callsite": "async_search(semantic_searcher, query, max_results, **kwargs)",
+      "line": 1024
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_crossref",
+      "callsite": "search_crossref(query, max_results=max_results_per_source)",
+      "line": 630
+    },
+    {
+      "caller": "server:search_crossref",
+      "callee": "server:async_search",
+      "callsite": "async_search(crossref_searcher, query, max_results, **extra)",
+      "line": 1103
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_openalex",
+      "callsite": "search_openalex(query, max_results_per_source)",
+      "line": 632
+    },
+    {
+      "caller": "server:search_openalex",
+      "callee": "server:async_search",
+      "callsite": "async_search(openalex_searcher, query, max_results, **extra)",
+      "line": 1323
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_pmc",
+      "callsite": "search_pmc(query, max_results_per_source)",
+      "line": 634
+    },
+    {
+      "caller": "server:search_pmc",
+      "callee": "server:async_search",
+      "callsite": "async_search(pmc_searcher, query, max_results)",
+      "line": 1423
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_core",
+      "callsite": "search_core(query, max_results_per_source)",
+      "line": 636
+    },
+    {
+      "caller": "server:search_core",
+      "callee": "server:async_search",
+      "callsite": "async_search(core_searcher, query, max_results)",
+      "line": 1437
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_europepmc",
+      "callsite": "search_europepmc(query, max_results_per_source)",
+      "line": 638
+    },
+    {
+      "caller": "server:search_europepmc",
+      "callee": "server:async_search",
+      "callsite": "async_search(europepmc_searcher, query, max_results)",
+      "line": 1451
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_dblp",
+      "callsite": "search_dblp(query, max_results_per_source)",
+      "line": 640
+    },
+    {
+      "caller": "server:search_dblp",
+      "callee": "server:async_search",
+      "callsite": "async_search(dblp_searcher, query, max_results)",
+      "line": 1465
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_openaire",
+      "callsite": "search_openaire(query, max_results_per_source)",
+      "line": 642
+    },
+    {
+      "caller": "server:search_openaire",
+      "callee": "server:async_search",
+      "callsite": "async_search(openaire_searcher, query, max_results)",
+      "line": 1479
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_citeseerx",
+      "callsite": "search_citeseerx(query, max_results_per_source)",
+      "line": 644
+    },
+    {
+      "caller": "server:search_citeseerx",
+      "callee": "server:async_search",
+      "callsite": "async_search(citeseerx_searcher, query, max_results)",
+      "line": 1493
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_doaj",
+      "callsite": "search_doaj(query, max_results_per_source)",
+      "line": 646
+    },
+    {
+      "caller": "server:search_doaj",
+      "callee": "server:async_search",
+      "callsite": "async_search(doaj_searcher, query, max_results)",
+      "line": 1507
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_base",
+      "callsite": "search_base(query, max_results_per_source)",
+      "line": 648
+    },
+    {
+      "caller": "server:search_base",
+      "callee": "server:async_search",
+      "callsite": "async_search(base_searcher, query, max_results)",
+      "line": 1521
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_zenodo",
+      "callsite": "search_zenodo(query, max_results_per_source)",
+      "line": 650
+    },
+    {
+      "caller": "server:search_zenodo",
+      "callee": "server:async_search",
+      "callsite": "async_search(zenodo_searcher, query, max_results)",
+      "line": 1535
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_hal",
+      "callsite": "search_hal(query, max_results_per_source)",
+      "line": 652
+    },
+    {
+      "caller": "server:search_hal",
+      "callee": "server:async_search",
+      "callsite": "async_search(hal_searcher, query, max_results)",
+      "line": 1549
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_openreview",
+      "callsite": "search_openreview(query, max_results_per_source)",
+      "line": 654
+    },
+    {
+      "caller": "server:search_openreview",
+      "callee": "server:async_search",
+      "callsite": "async_search(openreview_searcher, query, max_results)",
+      "line": 1560
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_ssrn",
+      "callsite": "search_ssrn(query, max_results_per_source)",
+      "line": 656
+    },
+    {
+      "caller": "server:search_ssrn",
+      "callee": "server:async_search",
+      "callsite": "async_search(ssrn_searcher, query, max_results)",
+      "line": 1592
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_unpaywall",
+      "callsite": "search_unpaywall(query, max_results_per_source)",
+      "line": 658
+    },
+    {
+      "caller": "server:search_unpaywall",
+      "callee": "server:async_search",
+      "callsite": "async_search(unpaywall_searcher, query, max_results)",
+      "line": 1609
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:async_search",
+      "callsite": "async_search(ieee_searcher, query, max_results_per_source)",
+      "line": 661
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_scopus",
+      "callsite": "search_scopus(query, max_results_per_source)",
+      "line": 663
+    },
+    {
+      "caller": "server:search_scopus",
+      "callee": "server:async_search",
+      "callsite": "async_search(ScopusSearcher(), query, max_results, view=view, sort=sort, field=field, date=date)",
+      "line": 731
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:search_wos",
+      "callsite": "search_wos(query, max_results_per_source)",
+      "line": 665
+    },
+    {
+      "caller": "server:search_wos",
+      "callee": "server:async_search",
+      "callsite": "async_search(WebOfScienceSearcher(), query, max_results, db=db)",
+      "line": 717
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:async_search",
+      "callsite": "async_search(acm_searcher, query, max_results_per_source)",
+      "line": 668
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:_run_search_with_timeout",
+      "callsite": "_run_search_with_timeout(source_name, search_task)",
+      "line": 673
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": "server:_dedupe_papers",
+      "callsite": "_dedupe_papers(merged_papers)",
+      "line": 694
+    },
+    {
+      "caller": "server:_dedupe_papers",
+      "callee": "server:_paper_unique_key",
+      "callsite": "_paper_unique_key(paper)",
+      "line": 278
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "sources.strip().lower()",
+      "line": 243,
+      "expression": "sources.strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "sources.strip()",
+      "line": 243,
+      "expression": "sources.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "part.strip().lower()",
+      "line": 246,
+      "expression": "part.strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "part.strip()",
+      "line": 246,
+      "expression": "part.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "sources.split(',')",
+      "line": 246,
+      "expression": "sources.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_parse_sources",
+      "callee": null,
+      "callsite": "part.strip()",
+      "line": 246,
+      "expression": "part.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "sources.strip().lower()",
+      "line": 252,
+      "expression": "sources.strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "sources.strip()",
+      "line": 252,
+      "expression": "sources.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "part.strip().lower()",
+      "line": 255,
+      "expression": "part.strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "part.strip()",
+      "line": 255,
+      "expression": "part.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "sources.split(',')",
+      "line": 255,
+      "expression": "sources.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "part.strip()",
+      "line": 255,
+      "expression": "part.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "list(dict.fromkeys((source for source in normalized if source not in ALL_SOURCES + EXPLICIT_ONLY_SOURCES)))",
+      "line": 256,
+      "expression": "list",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_invalid_sources",
+      "callee": null,
+      "callsite": "dict.fromkeys((source for source in normalized if source not in ALL_SOURCES + EXPLICIT_ONLY_SOURCES))",
+      "line": 256,
+      "expression": "dict.fromkeys",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "type(searcher)",
+      "line": 46,
+      "expression": "type",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "any((module == f'paper_search_mcp.academic_platforms.{name}' for name in _PUBLIC_CONNECTORS))",
+      "line": 47,
+      "expression": "any",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "getattr(type(searcher), 'search_cache_public', False)",
+      "line": 49,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "type(searcher)",
+      "line": 49,
+      "expression": "type",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_ambient_netrc_possible",
+      "callee": null,
+      "callsite": "os.environ.get('NETRC')",
+      "line": 37,
+      "expression": "os.environ.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_ambient_netrc_possible",
+      "callee": null,
+      "callsite": "any((os.path.exists(os.path.expanduser(path)) for path in locations))",
+      "line": 40,
+      "expression": "any",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_ambient_netrc_possible",
+      "callee": null,
+      "callsite": "os.path.exists(os.path.expanduser(path))",
+      "line": 40,
+      "expression": "os.path.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_ambient_netrc_possible",
+      "callee": null,
+      "callsite": "os.path.expanduser(path)",
+      "line": 40,
+      "expression": "os.path.expanduser",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_candidate_env_files",
+      "callee": null,
+      "callsite": "os.getenv(f'{ENV_PREFIX}ENV_FILE', '').strip()",
+      "line": 15,
+      "expression": "os.getenv(f'{ENV_PREFIX}ENV_FILE', '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_candidate_env_files",
+      "callee": null,
+      "callsite": "os.getenv(f'{ENV_PREFIX}ENV_FILE', '')",
+      "line": 15,
+      "expression": "os.getenv",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_candidate_env_files",
+      "callee": null,
+      "callsite": "Path(explicit_path).expanduser()",
+      "line": 17,
+      "expression": "Path(explicit_path).expanduser",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_candidate_env_files",
+      "callee": null,
+      "callsite": "Path(explicit_path)",
+      "line": 17,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_candidate_env_files",
+      "callee": null,
+      "callsite": "Path.home()",
+      "line": 19,
+      "expression": "Path.home",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": null,
+      "callsite": "env_file.exists()",
+      "line": 57,
+      "expression": "env_file.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": null,
+      "callsite": "env_file.is_file()",
+      "line": 57,
+      "expression": "env_file.is_file",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "env_file.read_text(encoding='utf-8').splitlines()",
+      "line": 30,
+      "expression": "env_file.read_text(encoding='utf-8').splitlines",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "env_file.read_text(encoding='utf-8')",
+      "line": 30,
+      "expression": "env_file.read_text",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "raw_line.strip()",
+      "line": 31,
+      "expression": "raw_line.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "line.startswith('#')",
+      "line": 32,
+      "expression": "line.startswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "line.startswith('export ')",
+      "line": 35,
+      "expression": "line.startswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "line[7:].strip()",
+      "line": 36,
+      "expression": "line[7:].strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "line.split('=', 1)",
+      "line": 41,
+      "expression": "line.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "key.strip()",
+      "line": 42,
+      "expression": "key.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_strip_quotes",
+      "callee": null,
+      "callsite": "len(value)",
+      "line": 24,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "value.strip()",
+      "line": 46,
+      "expression": "value.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:_load_env_from_file",
+      "callee": null,
+      "callsite": "os.environ.setdefault(key, value)",
+      "line": 47,
+      "expression": "os.environ.setdefault",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": null,
+      "callsite": "logger.debug('Loaded environment values from %s', env_file)",
+      "line": 62,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:load_env_file",
+      "callee": null,
+      "callsite": "logger.warning('Failed to load environment file %s: %s', env_file, exc)",
+      "line": 65,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:get_env",
+      "callee": null,
+      "callsite": "name.strip()",
+      "line": 73,
+      "expression": "name.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:get_env",
+      "callee": null,
+      "callsite": "str(default)",
+      "line": 75,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:get_env",
+      "callee": null,
+      "callsite": "os.environ.get(key, '')",
+      "line": 80,
+      "expression": "os.environ.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "config:get_env",
+      "callee": null,
+      "callsite": "str(default)",
+      "line": 82,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "vars(searcher).items()",
+      "line": 57,
+      "expression": "vars(searcher).items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "vars(searcher)",
+      "line": 57,
+      "expression": "vars",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "name.lower().lstrip('_')",
+      "line": 58,
+      "expression": "name.lower().lstrip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "name.lower()",
+      "line": 58,
+      "expression": "name.lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "lowered.endswith(('_api_key', '_access_token', '_password'))",
+      "line": 61,
+      "expression": "lowered.endswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "getattr(searcher, 'session', None)",
+      "line": 63,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "getattr(session, 'auth', None)",
+      "line": 65,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "any((str(key).lower() in {'authorization', 'x-api-key', 'api-key'} and value for key, value in session.headers.items()))",
+      "line": 67,
+      "expression": "any",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "str(key).lower()",
+      "line": 67,
+      "expression": "str(key).lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "str(key)",
+      "line": 67,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "session.headers.items()",
+      "line": 68,
+      "expression": "session.headers.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "any((cookie.name != 'CONSENT' for cookie in getattr(session, 'cookies', [])))",
+      "line": 70,
+      "expression": "any",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_public_cache_eligible",
+      "callee": null,
+      "callsite": "getattr(session, 'cookies', [])",
+      "line": 70,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(searcher, name, None)",
+      "line": 89,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(searcher, 'resolver', None)",
+      "line": 92,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(resolver, 'email', None)",
+      "line": 94,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(searcher, 'session', None)",
+      "line": 95,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "str(k).lower()",
+      "line": 98,
+      "expression": "str(k).lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "str(k)",
+      "line": 98,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "session.headers.items()",
+      "line": 98,
+      "expression": "session.headers.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "str(k).lower()",
+      "line": 99,
+      "expression": "str(k).lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "str(k)",
+      "line": 99,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "os.environ.items()",
+      "line": 103,
+      "expression": "os.environ.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "key.startswith('PAPER_SEARCH_MCP_')",
+      "line": 104,
+      "expression": "key.startswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(searcher, name)",
+      "line": 110,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "dir(type(searcher))",
+      "line": 110,
+      "expression": "dir",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "type(searcher)",
+      "line": 110,
+      "expression": "type",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "name.isupper()",
+      "line": 111,
+      "expression": "name.isupper",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "name.endswith(('URL', 'ENDPOINT'))",
+      "line": 111,
+      "expression": "name.endswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "isinstance(getattr(searcher, name), str)",
+      "line": 112,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "getattr(searcher, name)",
+      "line": 112,
+      "expression": "getattr",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "hashlib.sha256(_json(config).encode('utf-8')).hexdigest()",
+      "line": 115,
+      "expression": "hashlib.sha256(_json(config).encode('utf-8')).hexdigest",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "hashlib.sha256(_json(config).encode('utf-8'))",
+      "line": 115,
+      "expression": "hashlib.sha256",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "_json(config).encode('utf-8')",
+      "line": 115,
+      "expression": "_json(config).encode",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:_json",
+      "callee": null,
+      "callsite": "json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)",
+      "line": 76,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "type(searcher)",
+      "line": 117,
+      "expression": "type",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "type(searcher)",
+      "line": 117,
+      "expression": "type",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "len(key.encode('utf-8'))",
+      "line": 122,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "search_cache:search_key",
+      "callee": null,
+      "callsite": "key.encode('utf-8')",
+      "line": 122,
+      "expression": "key.encode",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.lookup, key))",
+      "line": 128,
+      "expression": "asyncio.wrap_future",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "_SEARCH_EXECUTOR.submit(cache.lookup, key)",
+      "line": 129,
+      "expression": "_SEARCH_EXECUTOR.submit",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "_SEARCH_EXECUTOR.submit(searcher.search, query, max_results=max_results, **kwargs)",
+      "line": 133,
+      "expression": "_SEARCH_EXECUTOR.submit",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "asyncio.wrap_future(search_future)",
+      "line": 139,
+      "expression": "asyncio.wrap_future",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "paper.to_dict()",
+      "line": 140,
+      "expression": "paper.to_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.put, key, result, generation))",
+      "line": 145,
+      "expression": "asyncio.wrap_future",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:async_search",
+      "callee": null,
+      "callsite": "_SEARCH_EXECUTOR.submit(cache.put, key, result, generation)",
+      "line": 145,
+      "expression": "_SEARCH_EXECUTOR.submit",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_run_search_with_timeout",
+      "callee": null,
+      "callsite": "asyncio.wait_for(search_task, timeout=timeout_seconds)",
+      "line": 182,
+      "expression": "asyncio.wait_for",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_run_search_with_timeout",
+      "callee": null,
+      "callsite": "TimeoutError(f\"search for source '{source_name}' timed out after {timeout_seconds:g} seconds\")",
+      "line": 184,
+      "expression": "TimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_google_scholar",
+      "callee": null,
+      "callsite": "GoogleScholarSearchError(f'Google Scholar search timed out after {GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS:g}s. ' + GoogleScholarSearcher.FALLBACK_HINT)",
+      "line": 837,
+      "expression": "GoogleScholarSearchError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_iacr",
+      "callee": null,
+      "callsite": "asyncio.to_thread(iacr_searcher.search, query, max_results, fetch_details)",
+      "line": 857,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_iacr",
+      "callee": null,
+      "callsite": "paper.to_dict()",
+      "line": 858,
+      "expression": "paper.to_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_crossref",
+      "callee": null,
+      "callsite": "{'filter': filter, 'sort': sort, 'order': order}.items()",
+      "line": 1100,
+      "expression": "{'filter': filter, 'sort': sort, 'order': order}.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_openalex",
+      "callee": null,
+      "callsite": "(filter or '').strip()",
+      "line": 1321,
+      "expression": "(filter or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_scopus",
+      "callee": null,
+      "callsite": "ScopusSearcher()",
+      "line": 731,
+      "expression": "ScopusSearcher",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_wos",
+      "callee": null,
+      "callsite": "WebOfScienceSearcher()",
+      "line": 717,
+      "expression": "WebOfScienceSearcher",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "list(task_map.keys())",
+      "line": 670,
+      "expression": "list",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "task_map.keys()",
+      "line": 670,
+      "expression": "task_map.keys",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "asyncio.gather(*(_run_search_with_timeout(source_name, search_task) for source_name, search_task in task_map.items()), return_exceptions=True)",
+      "line": 671,
+      "expression": "asyncio.gather",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "task_map.items()",
+      "line": 674,
+      "expression": "task_map.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "zip(source_names, source_outputs)",
+      "line": 682,
+      "expression": "zip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "isinstance(output, Exception)",
+      "line": 683,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "str(output)",
+      "line": 684,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "len(output)",
+      "line": 688,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "paper.get('source')",
+      "line": 690,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "merged_papers.append(paper)",
+      "line": 692,
+      "expression": "merged_papers.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dedupe_papers",
+      "callee": null,
+      "callsite": "set()",
+      "line": 275,
+      "expression": "set",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('doi') or '').strip().lower()",
+      "line": 260,
+      "expression": "(paper.get('doi') or '').strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('doi') or '').strip()",
+      "line": 260,
+      "expression": "(paper.get('doi') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "paper.get('doi')",
+      "line": 260,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('title') or '').strip().lower()",
+      "line": 264,
+      "expression": "(paper.get('title') or '').strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('title') or '').strip()",
+      "line": 264,
+      "expression": "(paper.get('title') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "paper.get('title')",
+      "line": 264,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('authors') or '').strip().lower()",
+      "line": 265,
+      "expression": "(paper.get('authors') or '').strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('authors') or '').strip()",
+      "line": 265,
+      "expression": "(paper.get('authors') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "paper.get('authors')",
+      "line": 265,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('paper_id') or '').strip().lower()",
+      "line": 269,
+      "expression": "(paper.get('paper_id') or '').strip().lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "(paper.get('paper_id') or '').strip()",
+      "line": 269,
+      "expression": "(paper.get('paper_id') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_paper_unique_key",
+      "callee": null,
+      "callsite": "paper.get('paper_id')",
+      "line": 269,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dedupe_papers",
+      "callee": null,
+      "callsite": "seen.add(key)",
+      "line": 281,
+      "expression": "seen.add",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dedupe_papers",
+      "callee": null,
+      "callsite": "deduped.append(paper)",
+      "line": 282,
+      "expression": "deduped.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "len(deduped_papers)",
+      "line": 703,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:search_papers",
+      "callee": null,
+      "callsite": "len(merged_papers)",
+      "line": 704,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "b4aa4c17dab345cb2bdc9c52ab798d9b0258c549300f59645b4a2f9951b9927f",
+    "_section_worker.py": "cede6fc9c49230b1bb2b50efc375d29290027083b6bcdd857b31e1b340eaee99",
+    "academic_platforms/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "academic_platforms/acm.py": "455f0c25a671a4763101653b65981e6606c1dc7fd096b2b5f7604d725761185a",
+    "academic_platforms/arxiv.py": "23ff87a71a5155784844fbbff2b90ea85f2e0bc6f2565f2b9621bf41ef8d1746",
+    "academic_platforms/base.py": "ee6fcd477678f452c354662186d52ea10c0920b76f1af7e57bd4c5431b22d351",
+    "academic_platforms/base_search.py": "94208329b0c004da7196b00c83abbb1ee21ad594e3f4d40cb0e51ae4515eea76",
+    "academic_platforms/biorxiv.py": "0763f09844ea79f3451976fb70906b0999e05be7ef5cad33f0a653dca9a663f2",
+    "academic_platforms/chemrxiv.py": "894a9b9a1a129dfa616b4506f1237e7e3a4947fb01e8f3d618622b9db8bcf123",
+    "academic_platforms/citeseerx.py": "9965b06bdc0c2991363df3531f9335539e5a1b57d204540098d42e89167a68e4",
+    "academic_platforms/core.py": "659c4f35b42ea61dcd74dab2b4b0dba6a78cad47e2c389fff52c8240154fdc0d",
+    "academic_platforms/crossref.py": "f12fdd974ca2a52bc003443c30022482be00b914c4033eae9d3c68b7b445683f",
+    "academic_platforms/dblp.py": "80077956396a1c0e7ef763d58c8387f7c2c7832c2a0483d69344744d0f1ded54",
+    "academic_platforms/doaj.py": "2ab92db29a839e2623bb95a82d8e4bd7472491833ce361e7bc47f54f14bd454d",
+    "academic_platforms/europepmc.py": "70b3ef2c31c6ac2bd3ad34abb7f5fd9b2e51e480aa5cc25348a3a05fe249e25d",
+    "academic_platforms/google_scholar.py": "96ded1881062d4f309167ddd24686d3a3413631628fe4516fd37b931537d89f8",
+    "academic_platforms/hal.py": "ce36fdb4ddbf2daf99f36f8c2095e48f64ca64e321294643bacf3e0e5c80dc25",
+    "academic_platforms/iacr.py": "468fbc77d07c9c278920cd470f212fb14eebd02338f7d1e9807a1767918359e1",
+    "academic_platforms/ieee.py": "4aea2c483bfbb5e89f2e609e817d3c0cbd88d07ac3c89417e0665d4e0a725340",
+    "academic_platforms/institutional.py": "234af00e5a6293a94bd3f4e63a46d0cfc771939c538638b8c0a77b206184da74",
+    "academic_platforms/medrxiv.py": "aac136a0ba81b4011066d0ae17e863304515fcc1cf8f69628cf175356d80198e",
+    "academic_platforms/oaipmh.py": "d8bc040ec32add63c179282ccfff4836f0825573f4b40c970e6c355e6322e615",
+    "academic_platforms/openaire.py": "6569570cace47e584284fdac01a630de3f713ac34464b94a584db2616510bc5b",
+    "academic_platforms/openalex.py": "bd2583acb708758bf26ad8241e4820ee384b50d61b5b571b103261e9a8c93afe",
+    "academic_platforms/openalex_relations.py": "a6a7b49f498b1f09bec9b6e56f9ad8459a9025731e22ebf9c7aeba22620cbf10",
+    "academic_platforms/openreview.py": "92ddfa7255f1e23f379fe71d047b29f831c35f09d5db8432bcaebb628d480bc3",
+    "academic_platforms/pmc.py": "381474ccb4ad58fe2a3944848355b874eec6965346fe7919ffddac5a2dc31295",
+    "academic_platforms/public_pdf.py": "c4bd6c2fc878e07584b2e4bdbd29e926427baf45f1aef243865a681f54f62293",
+    "academic_platforms/pubmed.py": "f3e0e489cb0bd1885430359156a1828981cdb073ee299f9db801bc3e2dcc62e4",
+    "academic_platforms/sci_hub.py": "883764ea8128f5244c47aa7a79303bbf4b0fc834a460d9ae029530bbee4f3eb2",
+    "academic_platforms/scopus.py": "2cdde84123ce3fd704be3a23bc5b3111018cf7d36d10961055f97e03324b7dbd",
+    "academic_platforms/semantic.py": "df5cd68f45605b525ee2b8dcfe216b1b4e99eec221bf91c9d29de4db24697d65",
+    "academic_platforms/ssrn.py": "c9f6bb5f96a0c58368883d8a7b325b8a54afb60462b7f5b73f590cacc2422da3",
+    "academic_platforms/unpaywall.py": "ee5d849067898365d7171f54dbe7230d48c75d2ae12870db99cb137cef610666",
+    "academic_platforms/wos.py": "4d235e28dbc9e0a55a99d70b420850941d7b6f5828d8dbe948596a94c1b84b6e",
+    "academic_platforms/zenodo.py": "08a7b13d8d8186c52e1d944eb47614f83f30b0ef8bc651c82df657abcdacc8fc",
+    "cli.py": "7932791488fa53052a1e2ddaa9581bf5567d43abc266901d7da0c2941bb6e288",
+    "cli_search.py": "2b2adcc1e8f4d736d80613c1b5576e19682717d7e7a9635d2c26884437525fcb",
+    "cli_search_worker.py": "462c32438c1918aa0aa308f83068e6c210313259d8ca52338262043ec5fa6edd",
+    "config.py": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+    "http_auth.py": "4948b078d3c043dc765e76373ea3bc9abf107fbe7a7cbe87ff0a875d1743d2b5",
+    "paper.py": "24fec199640667905a51dedcd835196d70266fd994a1dc9542ac70054c509a42",
+    "search_cache.py": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+    "sections.py": "fec65dad1b8b230b1f7731ce2f11898bd61f6341c76bcca12e597ec68c0adfa1",
+    "server.py": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+    "tool_cli.py": "b001fb7166b38abed9e779febf025ab5261bd9d56dcef71a01af443101a44fab",
+    "utils.py": "858b6d1df4f523d9b606a1ff30b57e6d59c26e89a8ae4849ec25a159348d49b6"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "academic_platforms/acm.py: relative import beyond package",
+    "academic_platforms/arxiv.py: relative import beyond package",
+    "academic_platforms/base.py: relative import beyond package",
+    "academic_platforms/base_search.py: relative import beyond package",
+    "academic_platforms/biorxiv.py: relative import beyond package",
+    "academic_platforms/chemrxiv.py: relative import beyond package",
+    "academic_platforms/citeseerx.py: relative import beyond package",
+    "academic_platforms/core.py: relative import beyond package",
+    "academic_platforms/crossref.py: relative import beyond package",
+    "academic_platforms/dblp.py: relative import beyond package",
+    "academic_platforms/doaj.py: relative import beyond package",
+    "academic_platforms/europepmc.py: relative import beyond package",
+    "academic_platforms/google_scholar.py: relative import beyond package",
+    "academic_platforms/hal.py: relative import beyond package",
+    "academic_platforms/iacr.py: relative import beyond package",
+    "academic_platforms/ieee.py: relative import beyond package",
+    "academic_platforms/medrxiv.py: relative import beyond package",
+    "academic_platforms/oaipmh.py: relative import beyond package",
+    "academic_platforms/openaire.py: relative import beyond package",
+    "academic_platforms/openalex.py: relative import beyond package",
+    "academic_platforms/openreview.py: relative import beyond package",
+    "academic_platforms/pmc.py: relative import beyond package",
+    "academic_platforms/pubmed.py: relative import beyond package",
+    "academic_platforms/scopus.py: relative import beyond package",
+    "academic_platforms/semantic.py: relative import beyond package",
+    "academic_platforms/ssrn.py: relative import beyond package",
+    "academic_platforms/unpaywall.py: relative import beyond package",
+    "academic_platforms/wos.py: relative import beyond package",
+    "academic_platforms/zenodo.py: relative import beyond package",
+    "cli.py: relative import beyond package",
+    "http_auth.py: relative import beyond package",
+    "search_cache.py: relative import beyond package",
+    "sections.py: relative import beyond package",
+    "server.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "config:_candidate_env_files": {
+      "path": "config.py",
+      "line_start": 14,
+      "line_end": 20,
+      "file_sha256": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+      "source": "def _candidate_env_files() -> list[Path]:\n    explicit_path = os.getenv(f'{ENV_PREFIX}ENV_FILE', '').strip()\n    if explicit_path:\n        return [Path(explicit_path).expanduser()]\n    user_config_env = Path.home() / '.config' / 'paper-search-mcp' / '.env'\n    return [user_config_env]"
+    },
+    "config:_load_env_from_file": {
+      "path": "config.py",
+      "line_start": 29,
+      "line_end": 47,
+      "file_sha256": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+      "source": "def _load_env_from_file(env_file: Path) -> None:\n    for raw_line in env_file.read_text(encoding='utf-8').splitlines():\n        line = raw_line.strip()\n        if not line or line.startswith('#'):\n            continue\n        if line.startswith('export '):\n            line = line[7:].strip()\n        if '=' not in line:\n            continue\n        key, value = line.split('=', 1)\n        key = key.strip()\n        if not key:\n            continue\n        value = _strip_quotes(value.strip())\n        os.environ.setdefault(key, value)"
+    },
+    "config:_strip_quotes": {
+      "path": "config.py",
+      "line_start": 23,
+      "line_end": 26,
+      "file_sha256": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+      "source": "def _strip_quotes(value: str) -> str:\n    if len(value) >= 2 and value[0] == value[-1] and (value[0] in (\"'\", '\"')):\n        return value[1:-1]\n    return value"
+    },
+    "config:get_env": {
+      "path": "config.py",
+      "line_start": 70,
+      "line_end": 82,
+      "file_sha256": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+      "source": "def get_env(name: str, default: Optional[str]='') -> str:\n    load_env_file()\n    normalized = name.strip()\n    if not normalized:\n        return '' if default is None else str(default)\n    keys = [f'{ENV_PREFIX}{normalized}', normalized]\n    for key in keys:\n        if key in os.environ:\n            return os.environ.get(key, '')\n    return '' if default is None else str(default)"
+    },
+    "config:load_env_file": {
+      "path": "config.py",
+      "line_start": 50,
+      "line_end": 67,
+      "file_sha256": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+      "source": "def load_env_file(force: bool=False) -> None:\n    global _ENV_LOADED\n    if _ENV_LOADED and (not force):\n        return\n    for env_file in _candidate_env_files():\n        if not env_file.exists() or not env_file.is_file():\n            continue\n        try:\n            _load_env_from_file(env_file)\n            logger.debug('Loaded environment values from %s', env_file)\n            break\n        except Exception as exc:\n            logger.warning('Failed to load environment file %s: %s', env_file, exc)\n    _ENV_LOADED = True"
+    },
+    "search_cache:_ambient_netrc_possible": {
+      "path": "search_cache.py",
+      "line_start": 30,
+      "line_end": 42,
+      "file_sha256": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+      "source": "def _ambient_netrc_possible():\n    \"\"\"Bypass ambient Requests auth without reading credential file contents.\n\n    Several connectors use module-level Requests calls, so inspecting a\n    connector's explicit key/session alone cannot establish anonymous access.\n    A present netrc file is conservatively sufficient to disable caching.\n    \"\"\"\n    configured = os.environ.get('NETRC')\n    locations = (configured,) if configured is not None else ('~/.netrc', '~/_netrc')\n    try:\n        return any((os.path.exists(os.path.expanduser(path)) for path in locations))\n    except (OSError, RuntimeError):\n        return True"
+    },
+    "search_cache:_json": {
+      "path": "search_cache.py",
+      "line_start": 75,
+      "line_end": 76,
+      "file_sha256": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+      "source": "def _json(value):\n    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)"
+    },
+    "search_cache:_public_cache_eligible": {
+      "path": "search_cache.py",
+      "line_start": 45,
+      "line_end": 72,
+      "file_sha256": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+      "source": "def _public_cache_eligible(searcher):\n    module = type(searcher).__module__\n    built_in = any((module == f'paper_search_mcp.academic_platforms.{name}' for name in _PUBLIC_CONNECTORS))\n    if not built_in and getattr(type(searcher), 'search_cache_public', False) is not True:\n        return False\n    if _ambient_netrc_possible():\n        return False\n    if module == 'paper_search_mcp.academic_platforms.semantic' and get_env('SEMANTIC_SCHOLAR_API_KEY', ''):\n        return False\n    for name, value in vars(searcher).items():\n        lowered = name.lower().lstrip('_')\n        if value and (lowered in {'api_key', 'access_token', 'token', 'password', 'username', 'client_secret', 'api_token', 'inst_token', 'insttoken', 'proxy_url'} or lowered.endswith(('_api_key', '_access_token', '_password'))):\n            return False\n    session = getattr(searcher, 'session', None)\n    if session is not None:\n        if getattr(session, 'auth', None):\n            return False\n        if any((str(key).lower() in {'authorization', 'x-api-key', 'api-key'} and value for key, value in session.headers.items())):\n            return False\n        if any((cookie.name != 'CONSENT' for cookie in getattr(session, 'cookies', []))):\n            return False\n    return True"
+    },
+    "search_cache:search_key": {
+      "path": "search_cache.py",
+      "line_start": 79,
+      "line_end": 122,
+      "file_sha256": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+      "source": "def search_key(searcher, query, max_results, options):\n    \"\"\"Canonical keys do not concatenate ambiguous delimiters or case-fold queries.\n\n    The complete query/options key is stored only in the opt-in database. Secret\n    configuration is represented by a digest, never the raw value. JSON types\n    (including strings versus numbers) remain distinct.\n    \"\"\"\n    if not _public_cache_eligible(searcher):\n        return None\n    config = {name: getattr(searcher, name, None) for name in ('api_key', 'email', 'proxy_url', 'base_url', 'endpoint')}\n    resolver = getattr(searcher, 'resolver', None)\n    if resolver is not None:\n        config['resolver_email'] = getattr(resolver, 'email', None)\n    session = getattr(searcher, 'session', None)\n    if session is not None:\n        config['headers'] = {str(k).lower(): v for k, v in session.headers.items() if str(k).lower() in {'authorization', 'x-api-key', 'api-key'}}\n    config['environment'] = {key: value for key, value in os.environ.items() if key.startswith('PAPER_SEARCH_MCP_') and 'SEARCH_CACHE' not in key or key in {'SEMANTIC_SCHOLAR_API_KEY', 'OPENALEX_API_KEY', 'OPENALEX_EMAIL', 'CORE_API_KEY', 'UNPAYWALL_EMAIL', 'DOAJ_API_KEY', 'ZENODO_ACCESS_TOKEN', 'GOOGLE_SCHOLAR_PROXY_URL', 'OPENAIRE_API_KEY', 'CITESEERX_API_KEY', 'IEEE_API_KEY'}}\n    config['endpoints'] = {name: getattr(searcher, name) for name in dir(type(searcher)) if name.isupper() and name.endswith(('URL', 'ENDPOINT')) and isinstance(getattr(searcher, name), str)}\n    try:\n        fingerprint = hashlib.sha256(_json(config).encode('utf-8')).hexdigest()\n        key = _json({'version': _SCHEMA_VERSION, 'source': f'{type(searcher).__module__}.{type(searcher).__qualname__}', 'configuration': fingerprint, 'query': query, 'max_results': max_results, 'options': options})\n    except (TypeError, ValueError):\n        return None\n    return key if len(key.encode('utf-8')) <= _MAX_KEY_BYTES else None"
+    },
+    "server:_dedupe_papers": {
+      "path": "server.py",
+      "line_start": 273,
+      "line_end": 284,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "def _dedupe_papers(papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n    deduped: List[Dict[str, Any]] = []\n    seen: set[str] = set()\n    for paper in papers:\n        key = _paper_unique_key(paper)\n        if key in seen:\n            continue\n        seen.add(key)\n        deduped.append(paper)\n    return deduped"
+    },
+    "server:_invalid_sources": {
+      "path": "server.py",
+      "line_start": 250,
+      "line_end": 256,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "def _invalid_sources(sources: str) -> List[str]:\n    \"\"\"Return distinct requested source names that are unknown or unavailable.\"\"\"\n    if not sources or sources.strip().lower() == 'all':\n        return []\n    normalized = [part.strip().lower() for part in sources.split(',') if part.strip()]\n    return list(dict.fromkeys((source for source in normalized if source not in ALL_SOURCES + EXPLICIT_ONLY_SOURCES)))"
+    },
+    "server:_paper_unique_key": {
+      "path": "server.py",
+      "line_start": 259,
+      "line_end": 270,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "def _paper_unique_key(paper: Dict[str, Any]) -> str:\n    doi = (paper.get('doi') or '').strip().lower()\n    if doi:\n        return f'doi:{doi}'\n    title = (paper.get('title') or '').strip().lower()\n    authors = (paper.get('authors') or '').strip().lower()\n    if title:\n        return f'title:{title}|authors:{authors}'\n    paper_id = (paper.get('paper_id') or '').strip().lower()\n    return f'id:{paper_id}'"
+    },
+    "server:_parse_sources": {
+      "path": "server.py",
+      "line_start": 242,
+      "line_end": 247,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "def _parse_sources(sources: str) -> List[str]:\n    if not sources or sources.strip().lower() == 'all':\n        return ALL_SOURCES\n    normalized = [part.strip().lower() for part in sources.split(',') if part.strip()]\n    return [source for source in normalized if source in ALL_SOURCES + EXPLICIT_ONLY_SOURCES]"
+    },
+    "server:_run_search_with_timeout": {
+      "path": "server.py",
+      "line_start": 172,
+      "line_end": 186,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "async def _run_search_with_timeout(source_name: str, search_task: Awaitable[List[Dict]], timeout_seconds: Optional[float]=None) -> List[Dict]:\n    \"\"\"Run one source without allowing it to stall a multi-source request.\"\"\"\n    if timeout_seconds is None:\n        timeout_seconds = SEARCH_PAPERS_SOURCE_TIMEOUT_SECONDS\n    try:\n        return await asyncio.wait_for(search_task, timeout=timeout_seconds)\n    except asyncio.TimeoutError as exc:\n        raise TimeoutError(f\"search for source '{source_name}' timed out after {timeout_seconds:g} seconds\") from exc"
+    },
+    "server:async_search": {
+      "path": "server.py",
+      "line_start": 123,
+      "line_end": 148,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "async def async_search(searcher, query: str, max_results: int, **kwargs) -> List[Dict]:\n    cache = _SEARCH_CACHE\n    key = search_key(searcher, query, max_results, kwargs) if cache.settings.enabled else None\n    generation = None\n    if key is not None:\n        cached, generation = await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.lookup, key))\n        if cached is not None:\n            return cached\n    search_future = _SEARCH_EXECUTOR.submit(searcher.search, query, max_results=max_results, **kwargs)\n    papers = await asyncio.wrap_future(search_future)\n    result = [paper.to_dict() for paper in papers]\n    if key is not None and generation is not None and result:\n        try:\n            await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(cache.put, key, result, generation))\n        except SearchExecutorSaturatedError:\n            pass\n    return result"
+    },
+    "server:search_arxiv": {
+      "path": "server.py",
+      "line_start": 749,
+      "line_end": 761,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_arxiv(query: str, max_results: int=10, sort_by: str='relevance', sort_order: str='descending') -> List[Dict]:\n    \"\"\"Search academic papers from arXiv.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        sort_by: Sort criterion \u2014 'relevance', 'submittedDate', or 'lastUpdatedDate' (default: 'relevance').\n        sort_order: Sort direction \u2014 'descending' or 'ascending' (default: 'descending').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(arxiv_searcher, query, max_results, sort_by=sort_by, sort_order=sort_order)\n    return papers if papers else []"
+    },
+    "server:search_base": {
+      "path": "server.py",
+      "line_start": 1512,
+      "line_end": 1522,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_base(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from BASE (Bielefeld Academic Search Engine).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(base_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_biorxiv": {
+      "path": "server.py",
+      "line_start": 780,
+      "line_end": 794,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_biorxiv(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from bioRxiv.\n\n    Note: bioRxiv does not provide full-text keyword search. The query may be a DOI,\n    a date range such as '2024-01-01/2024-01-31', a category such as\n    'bioinformatics', or an empty string for recent papers.\n\n    Args:\n        query: DOI, date range, category name, or an empty string for recent papers.\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(biorxiv_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_citeseerx": {
+      "path": "server.py",
+      "line_start": 1484,
+      "line_end": 1494,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_citeseerx(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from CiteSeerX digital library.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(citeseerx_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_core": {
+      "path": "server.py",
+      "line_start": 1428,
+      "line_end": 1438,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_core(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from CORE.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(core_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_crossref": {
+      "path": "server.py",
+      "line_start": 1075,
+      "line_end": 1104,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_crossref(query: str, max_results: int=10, filter: str='', sort: str='', order: str='') -> List[Dict]:\n    \"\"\"Search academic papers from CrossRef database.\n    \n    CrossRef is a scholarly infrastructure organization that provides \n    persistent identifiers (DOIs) for scholarly content and metadata.\n    It's one of the largest citation databases covering millions of \n    academic papers, journals, books, and other scholarly content.\n\n    Args:\n        query: Search query string (e.g., 'machine learning', 'climate change').\n        max_results: Maximum number of papers to return (default: 10, max: 1000).\n        filter: CrossRef filter string (e.g., 'has-full-text:true,from-pub-date:2020').\n        sort: Sort field ('relevance', 'published', 'updated', 'deposited', etc.).\n        order: Sort order ('asc' or 'desc').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    extra = {key: value for key, value in {'filter': filter, 'sort': sort, 'order': order}.items() if value}\n    papers = await async_search(crossref_searcher, query, max_results, **extra)\n    return papers if papers else []"
+    },
+    "server:search_dblp": {
+      "path": "server.py",
+      "line_start": 1456,
+      "line_end": 1466,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_dblp(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from dblp computer science bibliography.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(dblp_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_doaj": {
+      "path": "server.py",
+      "line_start": 1498,
+      "line_end": 1508,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_doaj(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from DOAJ (Directory of Open Access Journals).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(doaj_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_europepmc": {
+      "path": "server.py",
+      "line_start": 1442,
+      "line_end": 1452,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_europepmc(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Europe PMC.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(europepmc_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_google_scholar": {
+      "path": "server.py",
+      "line_start": 816,
+      "line_end": 841,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_google_scholar(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Google Scholar.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    try:\n        papers = await _run_search_with_timeout('google_scholar', async_search(google_scholar_searcher, query, max_results, timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS - 1.0), timeout_seconds=GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS)\n    except TimeoutError as exc:\n        raise GoogleScholarSearchError(f'Google Scholar search timed out after {GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS:g}s. ' + GoogleScholarSearcher.FALLBACK_HINT) from exc\n    return papers if papers else []"
+    },
+    "server:search_hal": {
+      "path": "server.py",
+      "line_start": 1540,
+      "line_end": 1550,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_hal(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from HAL open archive.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(hal_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_iacr": {
+      "path": "server.py",
+      "line_start": 845,
+      "line_end": 858,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_iacr(query: str, max_results: int=10, fetch_details: bool=True) -> List[Dict]:\n    \"\"\"Search academic papers from IACR ePrint Archive.\n\n    Args:\n        query: Search query string (e.g., 'cryptography', 'secret sharing').\n        max_results: Maximum number of papers to return (default: 10).\n        fetch_details: Whether to fetch detailed information for each paper (default: True).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await asyncio.to_thread(iacr_searcher.search, query, max_results, fetch_details)\n    return [paper.to_dict() for paper in papers] if papers else []"
+    },
+    "server:search_medrxiv": {
+      "path": "server.py",
+      "line_start": 798,
+      "line_end": 812,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_medrxiv(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from medRxiv.\n\n    Note: medRxiv API filters by category name within the last 30 days, not full-text\n    keyword search. Use a category keyword such as 'infectious_diseases',\n    'cardiovascular_medicine', 'oncology', etc.\n\n    Args:\n        query: Category name to filter by (e.g., 'infectious_diseases', 'oncology').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(medrxiv_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_openaire": {
+      "path": "server.py",
+      "line_start": 1470,
+      "line_end": 1480,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openaire(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from OpenAIRE European Open Access infrastructure.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(openaire_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_openalex": {
+      "path": "server.py",
+      "line_start": 1301,
+      "line_end": 1324,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openalex(query: str, max_results: int=10, filter: str='') -> List[Dict]:\n    \"\"\"Search academic papers from OpenAlex.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        filter: OpenAlex filter string.\n            Examples:\n            - 'open_access.is_oa:true,from_publication_date:2024-01-01'\n            - 'publication_year:2024,type:article'\n            - 'primary_location.source.id:S137773608' for Nature\n            See https://help.openalex.org/api/filtering/\n            for the full list of supported work filters.\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    filter_value = (filter or '').strip()\n    extra = {'filter': filter_value} if filter_value else {}\n    papers = await async_search(openalex_searcher, query, max_results, **extra)\n    return papers if papers else []"
+    },
+    "server:search_openreview": {
+      "path": "server.py",
+      "line_start": 1554,
+      "line_end": 1560,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_openreview(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search public OpenReview API v2 papers anonymously (0..1000 results).\n\n    Reviews, replies, private notes and API v1-only records are excluded.\n    Up to 1000 hits are scanned in 100-record pages; errors are reported.\n    \"\"\"\n    return await async_search(openreview_searcher, query, max_results)"
+    },
+    "server:search_papers": {
+      "path": "server.py",
+      "line_start": 578,
+      "line_end": 705,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_papers(query: str, max_results_per_source: int=5, sources: str='all', year: str='') -> Dict[str, Any]:\n    \"\"\"Unified top-level search across all configured academic platforms.\n\n    Args:\n        query: Search query string.\n        max_results_per_source: Max results to fetch from each selected source.\n        sources: Comma-separated source names or 'all'.\n            Available: arxiv,pubmed,biorxiv,medrxiv,google_scholar,iacr,semantic,crossref,openalex,pmc,core,europepmc,dblp,openaire,citeseerx,doaj,base,zenodo,hal,ssrn,openreview,unpaywall\n        year: Optional year filter for Semantic Scholar only.\n    Returns:\n        Aggregated dictionary with per-source stats, errors, and deduplicated papers.\n    \"\"\"\n    selected_sources = _parse_sources(sources)\n    invalid_sources = _invalid_sources(sources)\n    errors: Dict[str, str] = {source: 'Unknown or unavailable source.' for source in invalid_sources}\n    if not selected_sources:\n        errors['sources'] = 'No valid sources selected.'\n        return {'query': query, 'sources_requested': sources, 'sources_used': [], 'source_results': {}, 'errors': errors, 'papers': [], 'total': 0}\n    task_map = {}\n    for source in selected_sources:\n        if source == 'arxiv':\n            task_map[source] = search_arxiv(query, max_results_per_source)\n        elif source == 'pubmed':\n            task_map[source] = search_pubmed(query, max_results_per_source)\n        elif source == 'biorxiv':\n            task_map[source] = search_biorxiv(query, max_results_per_source)\n        elif source == 'medrxiv':\n            task_map[source] = search_medrxiv(query, max_results_per_source)\n        elif source == 'google_scholar':\n            task_map[source] = search_google_scholar(query, max_results_per_source)\n        elif source == 'iacr':\n            task_map[source] = search_iacr(query, max_results_per_source, fetch_details=False)\n        elif source == 'semantic':\n            task_map[source] = search_semantic(query, year=year, max_results=max_results_per_source)\n        elif source == 'crossref':\n            task_map[source] = search_crossref(query, max_results=max_results_per_source)\n        elif source == 'openalex':\n            task_map[source] = search_openalex(query, max_results_per_source)\n        elif source == 'pmc':\n            task_map[source] = search_pmc(query, max_results_per_source)\n        elif source == 'core':\n            task_map[source] = search_core(query, max_results_per_source)\n        elif source == 'europepmc':\n            task_map[source] = search_europepmc(query, max_results_per_source)\n        elif source == 'dblp':\n            task_map[source] = search_dblp(query, max_results_per_source)\n        elif source == 'openaire':\n            task_map[source] = search_openaire(query, max_results_per_source)\n        elif source == 'citeseerx':\n            task_map[source] = search_citeseerx(query, max_results_per_source)\n        elif source == 'doaj':\n            task_map[source] = search_doaj(query, max_results_per_source)\n        elif source == 'base':\n            task_map[source] = search_base(query, max_results_per_source)\n        elif source == 'zenodo':\n            task_map[source] = search_zenodo(query, max_results_per_source)\n        elif source == 'hal':\n            task_map[source] = search_hal(query, max_results_per_source)\n        elif source == 'openreview':\n            task_map[source] = search_openreview(query, max_results_per_source)\n        elif source == 'ssrn':\n            task_map[source] = search_ssrn(query, max_results_per_source)\n        elif source == 'unpaywall':\n            task_map[source] = search_unpaywall(query, max_results_per_source)\n        elif source == 'ieee':\n            if ieee_searcher is not None:\n                task_map[source] = async_search(ieee_searcher, query, max_results_per_source)\n        elif source == 'scopus':\n            task_map[source] = search_scopus(query, max_results_per_source)\n        elif source == 'wos':\n            task_map[source] = search_wos(query, max_results_per_source)\n        elif source == 'acm':\n            if acm_searcher is not None:\n                task_map[source] = async_search(acm_searcher, query, max_results_per_source)\n    source_names = list(task_map.keys())\n    source_outputs = await asyncio.gather(*(_run_search_with_timeout(source_name, search_task) for source_name, search_task in task_map.items()), return_exceptions=True)\n    source_results: Dict[str, int] = {}\n    merged_papers: List[Dict[str, Any]] = []\n    for source_name, output in zip(source_names, source_outputs):\n        if isinstance(output, Exception):\n            errors[source_name] = str(output)\n            source_results[source_name] = 0\n            continue\n        source_results[source_name] = len(output)\n        for paper in output:\n            if not paper.get('source'):\n                paper['source'] = source_name\n            merged_papers.append(paper)\n    deduped_papers = _dedupe_papers(merged_papers)\n    return {'query': query, 'sources_requested': sources, 'sources_used': source_names, 'source_results': source_results, 'errors': errors, 'papers': deduped_papers, 'total': len(deduped_papers), 'raw_total': len(merged_papers)}"
+    },
+    "server:search_pmc": {
+      "path": "server.py",
+      "line_start": 1414,
+      "line_end": 1424,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_pmc(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from PubMed Central (PMC).\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(pmc_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_pubmed": {
+      "path": "server.py",
+      "line_start": 765,
+      "line_end": 776,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_pubmed(query: str, max_results: int=10, sort: str='relevance') -> List[Dict]:\n    \"\"\"Search academic papers from PubMed.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n        sort: Sort order \u2014 'relevance' or 'pub_date' (default: 'relevance').\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(pubmed_searcher, query, max_results, sort=sort)\n    return papers if papers else []"
+    },
+    "server:search_scopus": {
+      "path": "server.py",
+      "line_start": 721,
+      "line_end": 732,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_scopus(query: str, max_results: int=10, view: str='STANDARD', sort: str='relevance', field: str='', date: str='') -> List[Dict]:\n    \"\"\"Explicit Scopus metadata search, never part of 'all'.\n\n    Requires runtime SCOPUS_API_KEY (PAPER_SEARCH_MCP_ prefix supported).\n    max_results 0..100; at most four pages. COMPLETE requires extra entitlement.\n    sort: relevance, coverDate, citedby-count, creator; date: YYYY or YYYY-YYYY.\n    Field: TITLE, ABS, KEY, AUTH, AFFILORG, or empty for native query syntax.\n    \"\"\"\n    from .academic_platforms.scopus import ScopusSearcher\n    return await async_search(ScopusSearcher(), query, max_results, view=view, sort=sort, field=field, date=date)"
+    },
+    "server:search_semantic": {
+      "path": "server.py",
+      "line_start": 1011,
+      "line_end": 1025,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_semantic(query: str, year: str='', max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Semantic Scholar.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        year: Optional year filter (e.g., '2019', '2016-2020', '2010-', '-2015').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    kwargs = {}\n    if year:\n        kwargs['year'] = year\n    papers = await async_search(semantic_searcher, query, max_results, **kwargs)\n    return papers if papers else []"
+    },
+    "server:search_ssrn": {
+      "path": "server.py",
+      "line_start": 1580,
+      "line_end": 1593,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_ssrn(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search SSRN-indexed metadata through OpenAlex.\n\n    Uses bounded cursor pagination (0..1000 results), with explicit API errors.\n    Direct public SSRN download/read is separate and best-effort.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(ssrn_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_unpaywall": {
+      "path": "server.py",
+      "line_start": 1597,
+      "line_end": 1610,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_unpaywall(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Lookup a DOI via Unpaywall and return OA metadata.\n\n    Unpaywall is DOI-centric and does not support generic keyword search.\n    This tool extracts the first DOI from `query` and returns at most one record.\n\n    Args:\n        query: DOI string or text containing a DOI.\n        max_results: Kept for API consistency; Unpaywall returns max 1 record.\n    Returns:\n        List with one paper metadata dict when DOI is resolvable, else empty list.\n    \"\"\"\n    papers = await async_search(unpaywall_searcher, query, max_results)\n    return papers if papers else []"
+    },
+    "server:search_wos": {
+      "path": "server.py",
+      "line_start": 709,
+      "line_end": 717,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_wos(query: str, max_results: int=10, db: str='WOS') -> List[Dict]:\n    \"\"\"Explicit Web of Science Starter metadata search; never part of 'all'.\n\n    Requires a runtime WOS_API_KEY (PAPER_SEARCH_MCP_ prefix supported).\n    Native WoS query syntax, max_results 0..100 (at most two requests).\n    No PDF, abstract, or full-text capability. API errors are not empty results.\n    \"\"\"\n    from .academic_platforms.wos import WebOfScienceSearcher\n    return await async_search(WebOfScienceSearcher(), query, max_results, db=db)"
+    },
+    "server:search_zenodo": {
+      "path": "server.py",
+      "line_start": 1526,
+      "line_end": 1536,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def search_zenodo(query: str, max_results: int=10) -> List[Dict]:\n    \"\"\"Search academic papers from Zenodo open repository.\n\n    Args:\n        query: Search query string (e.g., 'machine learning').\n        max_results: Maximum number of papers to return (default: 10).\n    Returns:\n        List of paper metadata in dictionary format.\n    \"\"\"\n    papers = await async_search(zenodo_searcher, query, max_results)\n    return papers if papers else []"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "config",
+      "referenced_names": [
+        "ENV_PREFIX",
+        "Exception",
+        "Optional",
+        "Path",
+        "_ENV_LOADED",
+        "__name__",
+        "_candidate_env_files",
+        "_load_env_from_file",
+        "_strip_quotes",
+        "bool",
+        "default",
+        "env_file",
+        "exc",
+        "explicit_path",
+        "force",
+        "key",
+        "keys",
+        "len",
+        "line",
+        "list",
+        "load_env_file",
+        "logger",
+        "logging",
+        "name",
+        "normalized",
+        "os",
+        "raw_line",
+        "str",
+        "user_config_env",
+        "value"
+      ],
+      "omitted": [],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    },
+    {
+      "module": "search_cache",
+      "referenced_names": [
+        "OSError",
+        "RuntimeError",
+        "TypeError",
+        "ValueError",
+        "_MAX_KEY_BYTES",
+        "_PUBLIC_CONNECTORS",
+        "_SCHEMA_VERSION",
+        "_ambient_netrc_possible",
+        "_json",
+        "_public_cache_eligible",
+        "any",
+        "built_in",
+        "config",
+        "configured",
+        "cookie",
+        "dir",
+        "fingerprint",
+        "get_env",
+        "getattr",
+        "hashlib",
+        "isinstance",
+        "json",
+        "k",
+        "key",
+        "len",
+        "locations",
+        "lowered",
+        "max_results",
+        "module",
+        "name",
+        "options",
+        "os",
+        "path",
+        "query",
+        "resolver",
+        "searcher",
+        "session",
+        "str",
+        "type",
+        "v",
+        "value",
+        "vars"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 14,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 15,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 18,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    },
+    {
+      "module": "server",
+      "referenced_names": [
+        "ACMSearcher",
+        "ALL_SOURCES",
+        "Any",
+        "ArxivSearcher",
+        "Awaitable",
+        "BASESearcher",
+        "BioRxivSearcher",
+        "CORESearcher",
+        "CiteSeerXSearcher",
+        "CrossRefSearcher",
+        "DBLPSearcher",
+        "DOAJSearcher",
+        "Dict",
+        "EXPLICIT_ONLY_SOURCES",
+        "EuropePMCSearcher",
+        "Exception",
+        "FastMCP",
+        "GOOGLE_SCHOLAR_TOOL_TIMEOUT_SECONDS",
+        "GoogleScholarSearchError",
+        "GoogleScholarSearcher",
+        "HALSearcher",
+        "IACRSearcher",
+        "IEEESearcher",
+        "List",
+        "MedRxivSearcher",
+        "OpenAiresearcher",
+        "OpenAlexSearcher",
+        "OpenReviewSearcher",
+        "Optional",
+        "PMCSearcher",
+        "PubMedSearcher",
+        "SEARCH_EXECUTOR_MAX_WORKERS",
+        "SEARCH_PAPERS_SOURCE_TIMEOUT_SECONDS",
+        "SSRNSearcher",
+        "ScopusSearcher",
+        "SearchCache",
+        "SearchExecutorSaturatedError",
+        "SemanticSearcher",
+        "TimeoutError",
+        "UnpaywallResolver",
+        "UnpaywallSearcher",
+        "WebOfScienceSearcher",
+        "ZenodoSearcher",
+        "_BoundedSearchExecutor",
+        "_SEARCH_CACHE",
+        "_SEARCH_EXECUTOR",
+        "__name__",
+        "_dedupe_papers",
+        "_ieee_api_key",
+        "_invalid_sources",
+        "_paper_unique_key",
+        "_parse_sources",
+        "_run_search_with_timeout",
+        "acm_searcher",
+        "arxiv_searcher",
+        "async_search",
+        "asyncio",
+        "authors",
+        "base_searcher",
+        "biorxiv_searcher",
+        "bool",
+        "cache",
+        "cached",
+        "citeseerx_searcher",
+        "core_searcher",
+        "crossref_searcher",
+        "date",
+        "db",
+        "dblp_searcher",
+        "deduped",
+        "deduped_papers",
+        "dict",
+        "doaj_searcher",
+        "doi",
+        "errors",
+        "europepmc_searcher",
+        "exc",
+        "extra",
+        "fetch_details",
+        "field",
+        "filter",
+        "filter_value",
+        "float",
+        "generation",
+        "get_env",
+        "google_scholar_searcher",
+        "hal_searcher",
+        "iacr_searcher",
+        "ieee_searcher",
+        "int",
+        "invalid_sources",
+        "isinstance",
+        "key",
+        "kwargs",
+        "len",
+        "list",
+        "logger",
+        "logging",
+        "max_results",
+        "max_results_per_source",
+        "mcp",
+        "medrxiv_searcher",
+        "merged_papers",
+        "normalized",
+        "openaire_searcher",
+        "openalex_searcher",
+        "openreview_searcher",
+        "order",
+        "output",
+        "paper",
+        "paper_id",
+        "papers",
+        "part",
+        "pmc_searcher",
+        "pubmed_searcher",
+        "query",
+        "result",
+        "search_arxiv",
+        "search_base",
+        "search_biorxiv",
+        "search_citeseerx",
+        "search_core",
+        "search_crossref",
+        "search_dblp",
+        "search_doaj",
+        "search_europepmc",
+        "search_future",
+        "search_google_scholar",
+        "search_hal",
+        "search_iacr",
+        "search_key",
+        "search_medrxiv",
+        "search_openaire",
+        "search_openalex",
+        "search_openreview",
+        "search_pmc",
+        "search_pubmed",
+        "search_scopus",
+        "search_semantic",
+        "search_ssrn",
+        "search_task",
+        "search_unpaywall",
+        "search_wos",
+        "search_zenodo",
+        "searcher",
+        "seen",
+        "selected_sources",
+        "semantic_searcher",
+        "set",
+        "sort",
+        "sort_by",
+        "sort_order",
+        "source",
+        "source_name",
+        "source_names",
+        "source_outputs",
+        "source_results",
+        "sources",
+        "ssrn_searcher",
+        "str",
+        "task_map",
+        "timeout_seconds",
+        "title",
+        "unpaywall_resolver",
+        "unpaywall_searcher",
+        "value",
+        "view",
+        "year",
+        "zenodo_searcher",
+        "zip"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 91,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 371,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 1860,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 2114,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+  "tool": "get_search_cache_status",
+  "entry": "server:get_search_cache_status",
+  "entry_method": "registration_pattern",
+  "source": "# module: server\nimport argparse\nimport asyncio\nimport io\nimport logging\nimport os\nimport re\nimport tempfile\nimport threading\nimport time\nimport unicodedata\nfrom collections.abc import Awaitable\nfrom concurrent.futures import Future, ThreadPoolExecutor\nfrom threading import BoundedSemaphore\nfrom typing import Annotated, Any, Dict, List, Optional\nfrom pydantic import Field\nfrom urllib.parse import unquote\nimport httpx\nfrom mcp.server.fastmcp import FastMCP\nfrom .academic_platforms.arxiv import ArxivSearcher\nfrom .academic_platforms.base_search import BASESearcher\nfrom .academic_platforms.biorxiv import BioRxivSearcher\nfrom .academic_platforms.citeseerx import CiteSeerXSearcher\nfrom .academic_platforms.core import CORESearcher\nfrom .academic_platforms.crossref import CrossRefSearcher\nfrom .academic_platforms.dblp import DBLPSearcher\nfrom .academic_platforms.doaj import DOAJSearcher\nfrom .academic_platforms.europepmc import EuropePMCSearcher\nfrom .academic_platforms.google_scholar import GoogleScholarSearchError, GoogleScholarSearcher\nfrom .academic_platforms.hal import HALSearcher\nfrom .academic_platforms.iacr import IACRSearcher\nfrom .academic_platforms.medrxiv import MedRxivSearcher\nfrom .academic_platforms.openaire import OpenAiresearcher\nfrom .academic_platforms.openalex import OpenAlexSearcher\nfrom .academic_platforms.pmc import PMCSearcher\nfrom .academic_platforms.pubmed import PubMedSearcher\nfrom .academic_platforms.sci_hub import SciHubFetcher\nfrom .academic_platforms.semantic import SemanticSearcher\nfrom .academic_platforms.ssrn import SSRNSearcher\nfrom .academic_platforms.openreview import OpenReviewSearcher\nfrom .academic_platforms.unpaywall import UnpaywallResolver, UnpaywallSearcher\nfrom .academic_platforms.zenodo import ZenodoSearcher\nfrom .config import get_env, load_env_file\nfrom .search_cache import SearchCache, search_key\nmcp = FastMCP('paper_search_server')\nSEARCH_EXECUTOR_MAX_WORKERS = 32\n_SEARCH_EXECUTOR = _BoundedSearchExecutor(SEARCH_EXECUTOR_MAX_WORKERS)\n_SEARCH_CACHE = SearchCache.from_env()\n\n@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def get_search_cache_status() -> Dict:\n    \"\"\"Show opt-in local search cache settings and entry count, never query contents.\n\n    Enable/disable with PAPER_SEARCH_MCP_SEARCH_CACHE_ENABLED and restart the\n    server. Defaults to disabled; inspect docs/SEARCH_CACHE.md for TTL/size knobs.\n    \"\"\"\n    return await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(_SEARCH_CACHE.status))\nfrom .academic_platforms.acm import ACMSearcher",
+  "initial_functions": [
+    "server:get_search_cache_status"
+  ],
+  "functions": [
+    "server:get_search_cache_status"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "server:get_search_cache_status",
+      "callee": null,
+      "callsite": "asyncio.wrap_future(_SEARCH_EXECUTOR.submit(_SEARCH_CACHE.status))",
+      "line": 158,
+      "expression": "asyncio.wrap_future",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_search_cache_status",
+      "callee": null,
+      "callsite": "_SEARCH_EXECUTOR.submit(_SEARCH_CACHE.status)",
+      "line": 158,
+      "expression": "_SEARCH_EXECUTOR.submit",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "b4aa4c17dab345cb2bdc9c52ab798d9b0258c549300f59645b4a2f9951b9927f",
+    "_section_worker.py": "cede6fc9c49230b1bb2b50efc375d29290027083b6bcdd857b31e1b340eaee99",
+    "academic_platforms/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "academic_platforms/acm.py": "455f0c25a671a4763101653b65981e6606c1dc7fd096b2b5f7604d725761185a",
+    "academic_platforms/arxiv.py": "23ff87a71a5155784844fbbff2b90ea85f2e0bc6f2565f2b9621bf41ef8d1746",
+    "academic_platforms/base.py": "ee6fcd477678f452c354662186d52ea10c0920b76f1af7e57bd4c5431b22d351",
+    "academic_platforms/base_search.py": "94208329b0c004da7196b00c83abbb1ee21ad594e3f4d40cb0e51ae4515eea76",
+    "academic_platforms/biorxiv.py": "0763f09844ea79f3451976fb70906b0999e05be7ef5cad33f0a653dca9a663f2",
+    "academic_platforms/chemrxiv.py": "894a9b9a1a129dfa616b4506f1237e7e3a4947fb01e8f3d618622b9db8bcf123",
+    "academic_platforms/citeseerx.py": "9965b06bdc0c2991363df3531f9335539e5a1b57d204540098d42e89167a68e4",
+    "academic_platforms/core.py": "659c4f35b42ea61dcd74dab2b4b0dba6a78cad47e2c389fff52c8240154fdc0d",
+    "academic_platforms/crossref.py": "f12fdd974ca2a52bc003443c30022482be00b914c4033eae9d3c68b7b445683f",
+    "academic_platforms/dblp.py": "80077956396a1c0e7ef763d58c8387f7c2c7832c2a0483d69344744d0f1ded54",
+    "academic_platforms/doaj.py": "2ab92db29a839e2623bb95a82d8e4bd7472491833ce361e7bc47f54f14bd454d",
+    "academic_platforms/europepmc.py": "70b3ef2c31c6ac2bd3ad34abb7f5fd9b2e51e480aa5cc25348a3a05fe249e25d",
+    "academic_platforms/google_scholar.py": "96ded1881062d4f309167ddd24686d3a3413631628fe4516fd37b931537d89f8",
+    "academic_platforms/hal.py": "ce36fdb4ddbf2daf99f36f8c2095e48f64ca64e321294643bacf3e0e5c80dc25",
+    "academic_platforms/iacr.py": "468fbc77d07c9c278920cd470f212fb14eebd02338f7d1e9807a1767918359e1",
+    "academic_platforms/ieee.py": "4aea2c483bfbb5e89f2e609e817d3c0cbd88d07ac3c89417e0665d4e0a725340",
+    "academic_platforms/institutional.py": "234af00e5a6293a94bd3f4e63a46d0cfc771939c538638b8c0a77b206184da74",
+    "academic_platforms/medrxiv.py": "aac136a0ba81b4011066d0ae17e863304515fcc1cf8f69628cf175356d80198e",
+    "academic_platforms/oaipmh.py": "d8bc040ec32add63c179282ccfff4836f0825573f4b40c970e6c355e6322e615",
+    "academic_platforms/openaire.py": "6569570cace47e584284fdac01a630de3f713ac34464b94a584db2616510bc5b",
+    "academic_platforms/openalex.py": "bd2583acb708758bf26ad8241e4820ee384b50d61b5b571b103261e9a8c93afe",
+    "academic_platforms/openalex_relations.py": "a6a7b49f498b1f09bec9b6e56f9ad8459a9025731e22ebf9c7aeba22620cbf10",
+    "academic_platforms/openreview.py": "92ddfa7255f1e23f379fe71d047b29f831c35f09d5db8432bcaebb628d480bc3",
+    "academic_platforms/pmc.py": "381474ccb4ad58fe2a3944848355b874eec6965346fe7919ffddac5a2dc31295",
+    "academic_platforms/public_pdf.py": "c4bd6c2fc878e07584b2e4bdbd29e926427baf45f1aef243865a681f54f62293",
+    "academic_platforms/pubmed.py": "f3e0e489cb0bd1885430359156a1828981cdb073ee299f9db801bc3e2dcc62e4",
+    "academic_platforms/sci_hub.py": "883764ea8128f5244c47aa7a79303bbf4b0fc834a460d9ae029530bbee4f3eb2",
+    "academic_platforms/scopus.py": "2cdde84123ce3fd704be3a23bc5b3111018cf7d36d10961055f97e03324b7dbd",
+    "academic_platforms/semantic.py": "df5cd68f45605b525ee2b8dcfe216b1b4e99eec221bf91c9d29de4db24697d65",
+    "academic_platforms/ssrn.py": "c9f6bb5f96a0c58368883d8a7b325b8a54afb60462b7f5b73f590cacc2422da3",
+    "academic_platforms/unpaywall.py": "ee5d849067898365d7171f54dbe7230d48c75d2ae12870db99cb137cef610666",
+    "academic_platforms/wos.py": "4d235e28dbc9e0a55a99d70b420850941d7b6f5828d8dbe948596a94c1b84b6e",
+    "academic_platforms/zenodo.py": "08a7b13d8d8186c52e1d944eb47614f83f30b0ef8bc651c82df657abcdacc8fc",
+    "cli.py": "7932791488fa53052a1e2ddaa9581bf5567d43abc266901d7da0c2941bb6e288",
+    "cli_search.py": "2b2adcc1e8f4d736d80613c1b5576e19682717d7e7a9635d2c26884437525fcb",
+    "cli_search_worker.py": "462c32438c1918aa0aa308f83068e6c210313259d8ca52338262043ec5fa6edd",
+    "config.py": "811105cf096e3d928625a8700642d740caacd70bd1e034cd48451b6dab76eee0",
+    "http_auth.py": "4948b078d3c043dc765e76373ea3bc9abf107fbe7a7cbe87ff0a875d1743d2b5",
+    "paper.py": "24fec199640667905a51dedcd835196d70266fd994a1dc9542ac70054c509a42",
+    "search_cache.py": "f3fb29700521dbe0f592e22dc61dd55215ff9fe9516d488546bc4fc4a670f0c9",
+    "sections.py": "fec65dad1b8b230b1f7731ce2f11898bd61f6341c76bcca12e597ec68c0adfa1",
+    "server.py": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+    "tool_cli.py": "b001fb7166b38abed9e779febf025ab5261bd9d56dcef71a01af443101a44fab",
+    "utils.py": "858b6d1df4f523d9b606a1ff30b57e6d59c26e89a8ae4849ec25a159348d49b6"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "academic_platforms/acm.py: relative import beyond package",
+    "academic_platforms/arxiv.py: relative import beyond package",
+    "academic_platforms/base.py: relative import beyond package",
+    "academic_platforms/base_search.py: relative import beyond package",
+    "academic_platforms/biorxiv.py: relative import beyond package",
+    "academic_platforms/chemrxiv.py: relative import beyond package",
+    "academic_platforms/citeseerx.py: relative import beyond package",
+    "academic_platforms/core.py: relative import beyond package",
+    "academic_platforms/crossref.py: relative import beyond package",
+    "academic_platforms/dblp.py: relative import beyond package",
+    "academic_platforms/doaj.py: relative import beyond package",
+    "academic_platforms/europepmc.py: relative import beyond package",
+    "academic_platforms/google_scholar.py: relative import beyond package",
+    "academic_platforms/hal.py: relative import beyond package",
+    "academic_platforms/iacr.py: relative import beyond package",
+    "academic_platforms/ieee.py: relative import beyond package",
+    "academic_platforms/medrxiv.py: relative import beyond package",
+    "academic_platforms/oaipmh.py: relative import beyond package",
+    "academic_platforms/openaire.py: relative import beyond package",
+    "academic_platforms/openalex.py: relative import beyond package",
+    "academic_platforms/openreview.py: relative import beyond package",
+    "academic_platforms/pmc.py: relative import beyond package",
+    "academic_platforms/pubmed.py: relative import beyond package",
+    "academic_platforms/scopus.py: relative import beyond package",
+    "academic_platforms/semantic.py: relative import beyond package",
+    "academic_platforms/ssrn.py: relative import beyond package",
+    "academic_platforms/unpaywall.py: relative import beyond package",
+    "academic_platforms/wos.py: relative import beyond package",
+    "academic_platforms/zenodo.py: relative import beyond package",
+    "cli.py: relative import beyond package",
+    "http_auth.py: relative import beyond package",
+    "search_cache.py: relative import beyond package",
+    "sections.py: relative import beyond package",
+    "server.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:get_search_cache_status": {
+      "path": "server.py",
+      "line_start": 152,
+      "line_end": 158,
+      "file_sha256": "4932ba358e6fe74c26b83af19d646422919f2ffc33aa334781295a33145546f7",
+      "source": "@mcp.tool(annotations={'readOnlyHint': True, 'openWorldHint': True})\nasync def get_search_cache_status() -> Dict:\n    \"\"\"Show opt-in local search cache settings and entry count, never query contents.\n\n    Enable/disable with PAPER_SEARCH_MCP_SEARCH_CACHE_ENABLED and restart the\n    server. Defaults to disabled; inspect docs/SEARCH_CACHE.md for TTL/size knobs.\n    \"\"\"\n    return await asyncio.wrap_future(_SEARCH_EXECUTOR.submit(_SEARCH_CACHE.status))"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "Dict",
+        "FastMCP",
+        "SEARCH_EXECUTOR_MAX_WORKERS",
+        "SearchCache",
+        "_BoundedSearchExecutor",
+        "_SEARCH_CACHE",
+        "_SEARCH_EXECUTOR",
+        "asyncio",
+        "mcp"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 50,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 51,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 52,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 91,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 95,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 96,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 97,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 98,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 99,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 100,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 101,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 102,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 103,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 104,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 105,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 106,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 107,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 108,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 109,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 110,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 111,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 112,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 113,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 114,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 115,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 116,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 117,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 189,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 220,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 222,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 234,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 239,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 371,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 1860,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "If",
+          "line": 2114,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

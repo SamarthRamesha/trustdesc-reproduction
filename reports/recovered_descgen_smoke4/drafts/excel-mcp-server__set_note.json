@@ -1,0 +1,399 @@
+{
+  "description": {
+    "summary": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+    "functionalities": [
+      "Sets a note at a specified cell location within a worksheet.",
+      "Associates an author with the note for attribution.",
+      "Updates the note content in the workspace using the provided text.",
+      "Operates on a workbook path and sheet name to target the correct worksheet.",
+      "Returns a confirmation string indicating the note was set on a specific cell."
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2024-10/schema",
+      "properties": {
+        "author": {
+          "description": "The author of the note, used for attribution in the workspace.",
+          "type": "string"
+        },
+        "cell": {
+          "description": "The cell reference (e.g., 'A1') where the note should be placed.",
+          "type": "string"
+        },
+        "path": {
+          "description": "The path to the workbook file where the note will be set.",
+          "type": "string"
+        },
+        "sheet": {
+          "description": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+          "type": "string"
+        },
+        "text": {
+          "description": "The content of the note to be inserted into the specified cell.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "sheet",
+        "cell",
+        "text"
+      ],
+      "type": "object"
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Sets a note at a specified cell location within a worksheet.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Associates an author with the note for attribution.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Updates the note content in the workspace using the provided text.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "Operates on a workbook path and sheet name to target the correct worksheet.",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "Returns a confirmation string indicating the note was set on a specific cell.",
+        "target": [
+          "functionalities",
+          4
+        ]
+      },
+      {
+        "id": "c7",
+        "text": "The author of the note, used for attribution in the workspace.",
+        "target": [
+          "input_schema",
+          "properties",
+          "author",
+          "description"
+        ]
+      },
+      {
+        "id": "c8",
+        "text": "The cell reference (e.g., 'A1') where the note should be placed.",
+        "target": [
+          "input_schema",
+          "properties",
+          "cell",
+          "description"
+        ]
+      },
+      {
+        "id": "c9",
+        "text": "The path to the workbook file where the note will be set.",
+        "target": [
+          "input_schema",
+          "properties",
+          "path",
+          "description"
+        ]
+      },
+      {
+        "id": "c10",
+        "text": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+        "target": [
+          "input_schema",
+          "properties",
+          "sheet",
+          "description"
+        ]
+      },
+      {
+        "id": "c11",
+        "text": "The content of the note to be inserted into the specified cell.",
+        "target": [
+          "input_schema",
+          "properties",
+          "text",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "from typing import Annotated\nfrom pydantic import Field\nfrom excel_mcp.operations import names, notes\nfrom excel_mcp.server.params import CellRef, SheetName, WorkbookPath\nfrom excel_mcp.server.registry import ToolRegistry\nfrom excel_mcp.server.results import Changed\nfrom excel_mcp.workspace import Workspace, get_sheet",
+    "truncations": {},
+    "semantic_renames": {
+      "Annotated": "Annotated",
+      "CellRef": "CellRef",
+      "Changed": "Changed",
+      "Field": "Field",
+      "SheetName": "SheetName",
+      "ToolRegistry": "ToolRegistry",
+      "WorkbookPath": "WorkbookPath",
+      "Workspace": "Workspace",
+      "get_sheet": "get_sheet",
+      "names": "names",
+      "notes": "notes"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function `set_note` accepts a workbook path, sheet name, cell reference, text, and author, and returns a confirmation message indicating the note was set on a specific cell. This directly supports the claim that a tool sets a note in a specific cell with specified text, author, and location via cell reference and sheet name, and returns a confirmation message after modifying the workspace.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function `set_note` takes a `cell` parameter of type `CellRef`, which allows specifying the cell location within a worksheet. This supports the claim that the operation sets a note at a specified cell location within a worksheet.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function `set_note` includes an `author` parameter with a default value of 'Claude' and allows passing a custom author string. This supports the claim that an author is associated with the note for attribution.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function `set_note` takes a `text` parameter that is used to update the note content in the workspace. The function replaces the existing note with the provided text, directly supporting the claim that the note content is updated using the provided text.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function `set_note` accepts a `path` parameter of type `WorkbookPath`, which specifies the workbook file location. This supports the claim that the operation operates on a workbook path and sheet name to target the correct worksheet.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function returns a formatted string such as 'Set the note on {sheet}!{cell}', which confirms the note was set on a specific cell. This directly supports the claim that a confirmation string is returned indicating the note was set on a specific cell.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c7",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The input schema property `author` is explicitly defined in the function signature with type `str`, and its description is 'The author of the note, used for attribution in the workspace'. This matches the claim about the author field's description.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c8",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function accepts a `cell` parameter of type `CellRef`, which is used to specify the cell reference (e.g., 'A1') where the note should be placed. This supports the claim that the cell reference is specified in the input schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c9",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function takes a `path` parameter of type `WorkbookPath`, which defines the path to the workbook file. This supports the claim that the path to the workbook file is specified in the input schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c10",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function accepts a `sheet` parameter of type `SheetName`, which specifies the name of the worksheet where the note will be placed. This supports the claim that the sheet name is specified in the input schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c11",
+      "references": [
+        {
+          "function": "server.annotation_tools:register.set_note",
+          "quote": "@tools.destroyer('Set note')\ndef set_note(path: WorkbookPath, sheet: SheetName, cell: CellRef, text: Annotated[str, Field(min_length=1)], author: str='Claude') -> str:\n    \"\"\"Add a note to a cell, replacing its existing note.\"\"\"\n    with workspace.edit(path) as workbook:\n        notes.set_note(get_sheet(workbook, sheet), cell, text, author)\n    return f'Set the note on {sheet}!{cell}.'",
+          "path": "server/annotation_tools.py",
+          "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44",
+          "line_start": 52,
+          "line_end": 62
+        }
+      ],
+      "rationale": "The function takes a `text` parameter of type `str` with a minimum length of 1, which is used to insert the content of the note into the specified cell. This supports the claim that the content of the note is specified in the input schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "path": {},
+      "sheet": {},
+      "cell": {},
+      "text": {},
+      "author": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "path",
+      "sheet",
+      "cell",
+      "text"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "server.annotation_tools:register.set_note",
+        "expression": "return f'Set the note on {sheet}!{cell}.'",
+        "path": "server/annotation_tools.py",
+        "function_line_start": 52,
+        "function_line_end": 62,
+        "file_sha256": "dd9f4131f7908ff0978e1225609c6ef037980089b3cee89f8531fce9e9780e44"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "server.annotation_tools:register.set_note",
+        "call": "tools.destroyer",
+        "expression": "tools.destroyer('Set note')"
+      },
+      {
+        "function": "server.annotation_tools:register.set_note",
+        "call": "workspace.edit",
+        "expression": "workspace.edit(path)"
+      },
+      {
+        "function": "server.annotation_tools:register.set_note",
+        "call": "notes.set_note",
+        "expression": "notes.set_note(get_sheet(workbook, sheet), cell, text, author)"
+      },
+      {
+        "function": "server.annotation_tools:register.set_note",
+        "call": "get_sheet",
+        "expression": "get_sheet(workbook, sheet)"
+      },
+      {
+        "function": "server.annotation_tools:register.set_note",
+        "call": "Field",
+        "expression": "Field(min_length=1)"
+      }
+    ],
+    "source_identity": "42d8710bc6c752a9fcadff49211c04ee6621b61c4aeac9daf0a0a921551ff803",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

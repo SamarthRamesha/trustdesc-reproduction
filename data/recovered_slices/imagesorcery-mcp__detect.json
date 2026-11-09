@@ -1,0 +1,646 @@
+{
+  "tool": "detect",
+  "entry": "tools.detect:register_tool.detect",
+  "entry_method": "registration_pattern",
+  "source": "# module: tools.detect\nimport os\nfrom pathlib import Path\nfrom typing import Annotated, Any, Dict, List, Literal, Optional, Union\nimport cv2\nimport numpy as np\nfrom fastmcp import FastMCP\nfrom pydantic import Field\nfrom imagesorcery_mcp.config import get_config\nfrom imagesorcery_mcp.logging_config import logger\n\ndef get_model_path(model_name):\n    \"\"\"Get the path to a model in the models directory.\"\"\"\n    logger.info(f'Attempting to get path for model: {model_name}')\n    model_path = Path('models') / model_name\n    if model_path.exists():\n        logger.info(f'Model found at: {model_path}')\n        return str(model_path)\n    logger.warning(f'Model not found in models directory: {model_name}')\n    return None",
+  "initial_functions": [
+    "tools.detect:get_model_path",
+    "tools.detect:register_tool.detect"
+  ],
+  "functions": [
+    "tools.detect:get_model_path",
+    "tools.detect:register_tool.detect"
+  ],
+  "edges": [
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": "tools.detect:get_model_path",
+      "callsite": "get_model_path(model_name)",
+      "line": 98
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "get_config()",
+      "line": 72,
+      "expression": "get_config",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Using config default confidence: {confidence}')",
+      "line": 77,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Using config default model: {model_name}')",
+      "line": 81,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Detect tool requested for image: {input_path} with model: {model_name} and confidence: {confidence}')",
+      "line": 83,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "os.path.exists(input_path)",
+      "line": 87,
+      "expression": "os.path.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.error(f'Input file not found: {input_path}')",
+      "line": 88,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "FileNotFoundError(f'Input file not found: {input_path}. Please provide a full path to the file.')",
+      "line": 89,
+      "expression": "FileNotFoundError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "model_name.endswith('.pt')",
+      "line": 92,
+      "expression": "model_name.endswith",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Added .pt extension to model name: {original_model_name} -> {model_name}')",
+      "line": 95,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "logger.info(f'Attempting to get path for model: {model_name}')",
+      "line": 17,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "Path('models')",
+      "line": 18,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "model_path.exists()",
+      "line": 19,
+      "expression": "model_path.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "logger.info(f'Model found at: {model_path}')",
+      "line": 20,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "str(model_path)",
+      "line": 21,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:get_model_path",
+      "callee": null,
+      "callsite": "logger.warning(f'Model not found in models directory: {model_name}')",
+      "line": 22,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.error(f'Model {model_name} not found.')",
+      "line": 102,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "Path('models')",
+      "line": 105,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "models_dir.exists()",
+      "line": 108,
+      "expression": "models_dir.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "models_dir.glob('**/*.pt')",
+      "line": 109,
+      "expression": "models_dir.glob",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "available_models.append(str(file.relative_to(models_dir)))",
+      "line": 110,
+      "expression": "available_models.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(file.relative_to(models_dir))",
+      "line": 110,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "file.relative_to(models_dir)",
+      "line": 110,
+      "expression": "file.relative_to",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "', '.join(available_models)",
+      "line": 115,
+      "expression": "', '.join",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "RuntimeError(error_msg)",
+      "line": 123,
+      "expression": "RuntimeError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(Path('models').absolute())",
+      "line": 127,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "Path('models').absolute()",
+      "line": 127,
+      "expression": "Path('models').absolute",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "Path('models')",
+      "line": 127,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f\"Set YOLO_CONFIG_DIR environment variable to: {os.environ['YOLO_CONFIG_DIR']}\")",
+      "line": 128,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info('Importing Ultralytics')",
+      "line": 131,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info('Ultralytics imported successfully')",
+      "line": 133,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Loading model from: {model_path}')",
+      "line": 136,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "YOLO(model_path)",
+      "line": 137,
+      "expression": "YOLO",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info('Model loaded successfully')",
+      "line": 138,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Running inference on {input_path} with confidence {confidence}')",
+      "line": 141,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "model(input_path, conf=confidence)",
+      "line": 142,
+      "expression": "model",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Inference completed. Found {len(results.boxes)} detections.')",
+      "line": 143,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "len(results.boxes)",
+      "line": 143,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "ValueError(f\"Model '{model_name}' does not support segmentation, but return_geometry=True was requested. Please use a segmentation model (e.g., one ending in '-seg.pt').\")",
+      "line": 146,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "enumerate(results.boxes)",
+      "line": 153,
+      "expression": "enumerate",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "int(box.cls.item())",
+      "line": 155,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "box.cls.item()",
+      "line": 155,
+      "expression": "box.cls.item",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "float(box.conf.item())",
+      "line": 159,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "box.conf.item()",
+      "line": 159,
+      "expression": "box.conf.item",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "float(coord)",
+      "line": 162,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "box.xyxy[0].tolist()",
+      "line": 162,
+      "expression": "box.xyxy[0].tolist",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "results.masks.data[i].cpu().numpy()",
+      "line": 169,
+      "expression": "results.masks.data[i].cpu().numpy",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "results.masks.data[i].cpu()",
+      "line": 169,
+      "expression": "results.masks.data[i].cpu",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "(mask * 255).astype(np.uint8)",
+      "line": 170,
+      "expression": "(mask * 255).astype",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "Path(input_path)",
+      "line": 173,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "cv2.imwrite(str(mask_output_path), mask_image)",
+      "line": 180,
+      "expression": "cv2.imwrite",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(mask_output_path)",
+      "line": 180,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Saved detection mask to {mask_output_path}')",
+      "line": 182,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(mask_output_path)",
+      "line": 183,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.error(f'Failed to save mask to {mask_output_path}')",
+      "line": 185,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.error(f'An unexpected error occurred while saving mask to {mask_output_path}: {e}')",
+      "line": 187,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "results.masks.xy[i].tolist()",
+      "line": 191,
+      "expression": "results.masks.xy[i].tolist",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "detections.append(detection_item)",
+      "line": 194,
+      "expression": "detections.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.debug(f'Detected: class={class_name}, confidence={conf:.2f}, bbox=[{x1:.2f}, {y1:.2f}, {x2:.2f}, {y2:.2f}]')",
+      "line": 195,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.info(f'Detection completed successfully for {input_path}')",
+      "line": 198,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 203,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "logger.error(f'Error during object detection: {str(e)}', exc_info=True)",
+      "line": 204,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 204,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e).lower()",
+      "line": 206,
+      "expression": "str(e).lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 206,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e).lower()",
+      "line": 212,
+      "expression": "str(e).lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 212,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.detect:register_tool.detect",
+      "callee": null,
+      "callsite": "RuntimeError(error_msg)",
+      "line": 219,
+      "expression": "RuntimeError",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "f2346882b00b1f6c9b161c29669dcd0cbf943be403d17c56262e296c28016028",
+    "__main__.py": "e99e0665bebcfc2c2b42f556266d1a4e6db490e9fa16b8cac554669b1bfc13ae",
+    "config.py": "dd6e9e52ec0ca9f683f16d6bc049d48667ba9fce7292d1eef9c78249dfd30d0a",
+    "logging_config.py": "7152beae769bc828492583c44e40781e11d1e7a8bcb5f9d7be2d13c092108fc4",
+    "middlewares/path_access.py": "79876f38d833c0e01664599770b73cb050bf7c7a4724908eca1649ec0d79e663",
+    "middlewares/telemetry.py": "97f8eca36f32fd862143488a56e20e84d4d05651c4aa92b35059a6c0d8876fc0",
+    "middlewares/validation.py": "8da4519add13f8c484c9c986a5e2a6df759bd83293f6589af3d88f50cf071568",
+    "prompts/__init__.py": "35ab310dd7bf7c37a373a22d72be26797f77ab77d8ec07ca29b2849c165df6a2",
+    "prompts/remove_background.py": "01e3ebece6ccf6423b558015495a28473a72300fe4e06b1e0c2b599d4a4b528e",
+    "resources/__init__.py": "f9ae8afdef2f03ca4388e60dabf45fa85b7e91ef44d891fc294d83c177690673",
+    "resources/models.py": "8cf865f8c38e8cd56bca3c6e36721c098f74c15887a8bd1b2f7d8059751f6da5",
+    "scripts/__init__.py": "186664519a36a573ce53d919102631ac7ebb089ebc23eb9b03d60973e0cf0093",
+    "scripts/clear_telemetry_keys.py": "3dfd47b43334636f1e2a8b6dcffdc83e4f77322e2fe6d1d33d8e7a228ba177b8",
+    "scripts/create_model_descriptions.py": "03016601585a4048f376f5961c1c52a5c8e67fd4828dece434dc4e5ec467515b",
+    "scripts/download_clip.py": "7b27c56e1ed0423097aabe481bc5f77f552396eb30f0576f78c4b6a8fbbb235b",
+    "scripts/download_models.py": "5b29ce1da29d196fac258cc162f6e676ff8c8d609817aa675d65958f935b4716",
+    "scripts/populate_telemetry_keys.py": "e5e13a4cd7ed955c0189508053001d823e9393eddfc8ed4ce6fee9e16e2fc388",
+    "scripts/post_install.py": "502c27ba4782d3ebea9eaed386dec9910d1cfcc1e995a8c3d1d7828fd99c4105",
+    "server.py": "387dea4f3202049ff22407c803f1166e24b42cbd901d0d16658841f5ad2a0888",
+    "telemetry_amplitude.py": "17ca181e813a7e8bee36e4ca688dae89a0b47ac1db27624a0a7a9901b9926219",
+    "telemetry_keys.py": "799ede0e2985989551cb1ef030a5fb35a2d04285b1b194ca6381de63efec70f6",
+    "telemetry_posthog.py": "1f8e7e0bcd682f461b65cfbec1ea838b3ce0f3423cf6f63e38ac3a92729f836c",
+    "tools/__init__.py": "8d11806a00d1863561d7bdd54ae14bafd698daffbc7be8486631c8597f1050c4",
+    "tools/blur.py": "dcd210697f444a5d812648c2230e8fc1548f04e25b4a4d2e082e40f79ff23048",
+    "tools/change_color.py": "ad5993832d8a65ba83aeac6db2792ebf039bf1798ba3fc373a8ea4ac19264c68",
+    "tools/config.py": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+    "tools/crop.py": "19b3440faf319abb9fab28c721d9c00b848156eaa2655474cb0f2e7a4297782c",
+    "tools/detect.py": "51d17a283858366822528c7e70228620f23da5581cf6d0b3df97fe573279fb22",
+    "tools/draw_arrows.py": "c43716588abcc54e51261a5decc5981bc4cec4943515a44e6415d151e9e01680",
+    "tools/draw_circle.py": "dddba210a5e394d9f78604e2cb30542fa0c0d11cdb3c3a8cff7bfbd19a255fd4",
+    "tools/draw_lines.py": "a7d7dcaa0d6d5ea5822cbd31502757dcce66891f72d624f8e4c0a07386a9c83d",
+    "tools/draw_rectangle.py": "4b247f9b7362fe07c26cd30f0e4d05f8b678c030638fb7cf9dd2e6afcf0ca030",
+    "tools/draw_text.py": "693e07cf50e898f7205732a99801ebb1edb59f831da74395aa6ff1638bb3cedf",
+    "tools/fill.py": "28471d60581f5431ea0d01f92457a40925c859decde18aca80c481cfd076090a",
+    "tools/find.py": "ab92ce7ad187075d600a16dc8da6c2a6a3617b3594a984403efcda97ebc201f5",
+    "tools/metainfo.py": "21dca9d23348adadb7213c0079f503ccc9d9a8d0179d03c7bfe8b30c26461a9e",
+    "tools/ocr.py": "3f4d8a596b8ff4cacfb51cd0be3fa1c278e01af4ddf74971f09b8de884f3490e",
+    "tools/overlay.py": "bf59b6930d3311fd3608b13e207312e96fe26defabb8167c580429052d38d9da",
+    "tools/resize.py": "fd45bcb677fb564685450ca4c657bc97d55c4b40b4826d755ea004de301289de",
+    "tools/rotate.py": "d50d9a476dcb1b4c526f5db37b451d24b2b7f9e40de6b1f39bb3ac66b158284b"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "__main__.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "tools.detect:get_model_path": {
+      "path": "tools/detect.py",
+      "line_start": 15,
+      "line_end": 23,
+      "file_sha256": "51d17a283858366822528c7e70228620f23da5581cf6d0b3df97fe573279fb22",
+      "source": "def get_model_path(model_name):\n    \"\"\"Get the path to a model in the models directory.\"\"\"\n    logger.info(f'Attempting to get path for model: {model_name}')\n    model_path = Path('models') / model_name\n    if model_path.exists():\n        logger.info(f'Model found at: {model_path}')\n        return str(model_path)\n    logger.warning(f'Model not found in models directory: {model_name}')\n    return None"
+    },
+    "tools.detect:register_tool.detect": {
+      "path": "tools/detect.py",
+      "line_start": 28,
+      "line_end": 219,
+      "file_sha256": "51d17a283858366822528c7e70228620f23da5581cf6d0b3df97fe573279fb22",
+      "source": "@mcp.tool()\ndef detect(input_path: Annotated[str, Field(description='Full path to the input image (must be a full path)')], confidence: Annotated[Optional[float], Field(description='Confidence threshold for detection (0.0 to 1.0). If not provided, uses config default.', ge=0.0, le=1.0)]=None, model_name: Annotated[Optional[str], Field(description=\"Model name to use for detection (e.g., 'yoloe-11l-seg-pf.pt', 'yolov8m.pt'). If not provided, uses config default.\")]=None, return_geometry: Annotated[bool, Field(description='If True, returns segmentation masks or polygons for detected objects.')]=False, geometry_format: Annotated[Literal['mask', 'polygon'], Field(description=\"Format for returned geometry: 'mask' or 'polygon'.\")]='mask') -> Dict[str, Union[str, List[Dict[str, Any]]]]:\n    \"\"\"\n        Detect objects in an image using models from Ultralytics.\n\n        This tool requires pre-downloaded models. Use the download-yolo-models\n        command to download models before using this tool.\n\n        If objects aren't common, consider using a specialized model.\n\n        This tool can optionally return segmentation masks or polygons if a segmentation\n        model (e.g., one ending in '-seg.pt') is used.\n\n        When 'mask' is chosen for geometry_format, a PNG file is created for each\n        detected object's mask. The file path is returned in the 'mask_path' field.\n\n        Returns:\n            Dictionary containing the input image path and a list of detected objects.\n            Each object includes its class name, confidence score, and bounding box.\n            If return_geometry is True, it also includes a 'mask_path' (path to a PNG file) or\n            'polygon' (list of points).\n        \"\"\"\n    config = get_config()\n    if confidence is None:\n        confidence = config.detection.confidence_threshold\n        logger.info(f'Using config default confidence: {confidence}')\n    if model_name is None:\n        model_name = config.detection.default_model\n        logger.info(f'Using config default model: {model_name}')\n    logger.info(f'Detect tool requested for image: {input_path} with model: {model_name} and confidence: {confidence}')\n    if not os.path.exists(input_path):\n        logger.error(f'Input file not found: {input_path}')\n        raise FileNotFoundError(f'Input file not found: {input_path}. Please provide a full path to the file.')\n    if not model_name.endswith('.pt'):\n        original_model_name = model_name\n        model_name = f'{model_name}.pt'\n        logger.info(f'Added .pt extension to model name: {original_model_name} -> {model_name}')\n    model_path = get_model_path(model_name)\n    if not model_path:\n        logger.error(f'Model {model_name} not found.')\n        available_models = []\n        models_dir = Path('models')\n        if models_dir.exists():\n            for file in models_dir.glob('**/*.pt'):\n                available_models.append(str(file.relative_to(models_dir)))\n        error_msg = f\"Model {model_name} not found. Available local models: {(', '.join(available_models) if available_models else 'None')}\\nTo use this tool, you need to download the model first using:\\ndownload-yolo-models --ultralytics MODEL_NAME\\nor\\ndownload-yolo-models --huggingface REPO_ID[:FILENAME]\\nModels will be downloaded to the 'models' directory in the project root.\"\n        raise RuntimeError(error_msg)\n    try:\n        os.environ['YOLO_CONFIG_DIR'] = str(Path('models').absolute())\n        logger.info(f\"Set YOLO_CONFIG_DIR environment variable to: {os.environ['YOLO_CONFIG_DIR']}\")\n        logger.info('Importing Ultralytics')\n        from ultralytics import YOLO\n        logger.info('Ultralytics imported successfully')\n        logger.info(f'Loading model from: {model_path}')\n        model = YOLO(model_path)\n        logger.info('Model loaded successfully')\n        logger.info(f'Running inference on {input_path} with confidence {confidence}')\n        results = model(input_path, conf=confidence)[0]\n        logger.info(f'Inference completed. Found {len(results.boxes)} detections.')\n        if return_geometry and results.masks is None:\n            raise ValueError(f\"Model '{model_name}' does not support segmentation, but return_geometry=True was requested. Please use a segmentation model (e.g., one ending in '-seg.pt').\")\n        detections = []\n        for i, box in enumerate(results.boxes):\n            class_id = int(box.cls.item())\n            class_name = results.names[class_id]\n            conf = float(box.conf.item())\n            x1, y1, x2, y2 = [float(coord) for coord in box.xyxy[0].tolist()]\n            detection_item = {'class': class_name, 'confidence': conf, 'bbox': [x1, y1, x2, y2]}\n            if return_geometry:\n                if geometry_format == 'mask':\n                    mask = results.masks.data[i].cpu().numpy()\n                    mask_image = (mask * 255).astype(np.uint8)\n                    input_p = Path(input_path)\n                    base_name = input_p.stem\n                    output_dir = input_p.parent\n                    mask_output_path = output_dir / f'{base_name}_mask_{i}.png'\n                    try:\n                        success = cv2.imwrite(str(mask_output_path), mask_image)\n                        if success:\n                            logger.info(f'Saved detection mask to {mask_output_path}')\n                            detection_item['mask_path'] = str(mask_output_path)\n                        else:\n                            logger.error(f'Failed to save mask to {mask_output_path}')\n                    except Exception as e:\n                        logger.error(f'An unexpected error occurred while saving mask to {mask_output_path}: {e}')\n                elif geometry_format == 'polygon':\n                    polygon = results.masks.xy[i].tolist()\n                    detection_item['polygon'] = polygon\n            detections.append(detection_item)\n            logger.debug(f'Detected: class={class_name}, confidence={conf:.2f}, bbox=[{x1:.2f}, {y1:.2f}, {x2:.2f}, {y2:.2f}]')\n        logger.info(f'Detection completed successfully for {input_path}')\n        return {'image_path': input_path, 'detections': detections}\n    except Exception as e:\n        error_msg = f'Error running object detection: {str(e)}\\n'\n        logger.error(f'Error during object detection: {str(e)}', exc_info=True)\n        if 'not found' in str(e).lower():\n            error_msg += 'The model could not be found. Please download it first using: download-yolo-models --ultralytics MODEL_NAME'\n        elif 'permission denied' in str(e).lower():\n            error_msg += 'Permission denied when trying to access or create the models directory.\\nTry running the command with appropriate permissions.'\n        raise RuntimeError(error_msg) from e"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "tools.detect",
+      "referenced_names": [
+        "Path",
+        "logger",
+        "model_name",
+        "model_path",
+        "str"
+      ],
+      "omitted": [],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

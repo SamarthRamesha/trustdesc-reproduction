@@ -1,0 +1,368 @@
+{
+  "tool": "unwatch_topic",
+  "entry": "tools.alerts:handle_unwatch_topic",
+  "entry_method": "dispatch_callee_pattern",
+  "source": "# module: tools.alerts\nfrom __future__ import annotations\nimport json\nimport logging\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom dateutil import parser\nfrom ..config import Settings\nfrom .search import ArxivRateLimitError, _rate_limited_response, _raw_arxiv_search\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nWATCH_FILE_NAME = 'watched_topics.json'\n\ndef _watch_file_path() -> Path:\n    \"\"\"Get watched topics file path.\"\"\"\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME\n\ndef _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}\n\ndef _save_watches(payload: Dict[str, Any]) -> None:\n    \"\"\"Persist watches to disk.\"\"\"\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')\n\nasync def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+  "initial_functions": [
+    "tools.alerts:_load_watches",
+    "tools.alerts:_save_watches",
+    "tools.alerts:_watch_file_path",
+    "tools.alerts:handle_unwatch_topic"
+  ],
+  "functions": [
+    "tools.alerts:_load_watches",
+    "tools.alerts:_save_watches",
+    "tools.alerts:_watch_file_path",
+    "tools.alerts:handle_unwatch_topic"
+  ],
+  "edges": [
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": "tools.alerts:_load_watches",
+      "callsite": "_load_watches()",
+      "line": 471
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": "tools.alerts:_watch_file_path",
+      "callsite": "_watch_file_path()",
+      "line": 162
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": "tools.alerts:_save_watches",
+      "callsite": "_save_watches(payload)",
+      "line": 488
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": "tools.alerts:_watch_file_path",
+      "callsite": "_watch_file_path()",
+      "line": 175
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "(arguments.get('topic') or '').strip()",
+      "line": 460,
+      "expression": "(arguments.get('topic') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "arguments.get('topic')",
+      "line": 460,
+      "expression": "arguments.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))",
+      "line": 463,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "json.dumps({'status': 'error', 'message': 'topic is required'})",
+      "line": 465,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_watch_file_path",
+      "callee": null,
+      "callsite": "Path(settings.STORAGE_PATH)",
+      "line": 157,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "watch_file.exists()",
+      "line": 163,
+      "expression": "watch_file.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "json.loads(watch_file.read_text(encoding='utf-8'))",
+      "line": 167,
+      "expression": "json.loads",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "watch_file.read_text(encoding='utf-8')",
+      "line": 167,
+      "expression": "watch_file.read_text",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "logger.warning('Invalid watched topics file, resetting: %s', watch_file)",
+      "line": 169,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "payload.get('topics', [])",
+      "line": 472,
+      "expression": "payload.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "item.get('topic')",
+      "line": 473,
+      "expression": "item.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "len(remaining)",
+      "line": 474,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "len(topics)",
+      "line": 474,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))",
+      "line": 476,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'})",
+      "line": 478,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": null,
+      "callsite": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')",
+      "line": 175,
+      "expression": "_watch_file_path().write_text",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": null,
+      "callsite": "json.dumps(payload, indent=2)",
+      "line": 175,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))",
+      "line": 491,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2)",
+      "line": 493,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "logger.error('unwatch_topic error: %s', exc)",
+      "line": 504,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=f'Error: {str(exc)}')",
+      "line": 505,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_unwatch_topic",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 505,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "ca9817eb6135f895a0449eff78af00a4902ebe0f7f98c2275cc626bde9eb803d",
+    "__main__.py": "8817be1bd4860c58edd6fbf1b7bee85f34a6bf650ab333c5c490ecd793c7114f",
+    "arxiv_api.py": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+    "config.py": "cae51c120a58a1843d76aa0d4f4ddcd3e027110c027e1b2add44ffec7119b0fe",
+    "prompts/__init__.py": "a17bb606cb104b4b7975ce13dcb3dc45337e2caceb0caa76fad0e9b47d06ff5f",
+    "prompts/compare_papers_prompt.py": "41455a124dfbf32c88cfae0cab4b797c265f58c8ac7e0a95be527820d85eaf3b",
+    "prompts/deep_research_analysis_prompt.py": "292d3040286b157235c38286df2d873953e4f5332ac3b4737456a496d6ca8d5b",
+    "prompts/handlers.py": "d0f3e9342417743e2f14d4b8c0bb0e3b60114e3004ddb018b4fef756917b774e",
+    "prompts/literature_review_prompt.py": "164d753a9d1b47c784e3cefdb93b7ba7a7e382a0a3b961c2eafc0e6425574c5d",
+    "prompts/prompt_manager.py": "805de0f3b8b79e7b7186561fb786cf619b271c8c42cadeda8c84bea62b770bdc",
+    "prompts/prompts.py": "831c2806bd185f9f5c50cc356d9537d7beb63402a023d8a90ae03160cc6918b3",
+    "prompts/summarize_paper_prompt.py": "f17d13ca77944a368b6953a9515aba1165f461db0f6d127a089610974ebc2d17",
+    "resources/__init__.py": "d10b1397c7e164ec634eb0560d0e43973959dec4dfcf9766e95facbd49f79dbe",
+    "resources/papers.py": "13e460380e84e4f3a52e030ecae1581ba4aa933e9432543dfe2b9c287c07cda2",
+    "server.py": "aaa8d509065564d785541b4e79c9d81ad7cc2a17c51064280b8eb078160e1d90",
+    "tools/__init__.py": "5a8872d8919ba7905aee22f921f0361c5ede985665877aacc4cea85829ea598e",
+    "tools/alerts.py": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+    "tools/arxiv_ids.py": "72117414d4186d292a87b013d3c8349c94091fc25700be353074dfa70b867d1b",
+    "tools/citation_graph.py": "1109b2503509d219b7050fdef3818be034c38a40afa47aadf1c0f9648c5c5aa6",
+    "tools/content.py": "5844b96c38816916140ee439ff8f19b566518ba3b77360f1d1fbe67898f1a434",
+    "tools/download.py": "aeee7a3d0eca9076d7b11aa1699257d498d9cddef24245cd526e6121fb414e47",
+    "tools/export_citations.py": "19265a8653d624765f87e99dab10b481990644a47c58d07da3a06b71e59ac91f",
+    "tools/get_abstract.py": "ec9a85a440aa2d22f119bfdb2c328d1a5f7c267e96c6eed0b9a984e76358d228",
+    "tools/latex.py": "3859621266def0bef2a3825dc980a8e09885fbff288c6c2a1deb46f3e73b7a22",
+    "tools/latex_archive.py": "e0e3a82773c5a1438fc589eb184dc03b12f7ebe66129743c2e051839b4b3a48f",
+    "tools/latex_flatten.py": "80f78ea196905be1fd5727615d95f0c1fe69e91866455e0d9a5f8759770a4610",
+    "tools/list_papers.py": "726dff69a69e256f5da48a19952d4e2199da557fc6411966d2525ba779045a68",
+    "tools/paper_outline.py": "abc28899f52658e7423f8bbb9fe524242b1c948dbbe7461674aab9b26169d2ee",
+    "tools/read_paper.py": "f825783a60664c6c8a248874c0f067e054aa0bdcdd402173e074af3067fb1f3e",
+    "tools/search.py": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+    "tools/semantic_search.py": "7d19df120839799ab89ecd548b648894da93587ed6050eb0806785fa750250db"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "__main__.py: relative import beyond package",
+    "resources/papers.py: relative import beyond package",
+    "server.py: relative import beyond package",
+    "tools/alerts.py: relative import beyond package",
+    "tools/citation_graph.py: relative import beyond package",
+    "tools/download.py: relative import beyond package",
+    "tools/export_citations.py: relative import beyond package",
+    "tools/get_abstract.py: relative import beyond package",
+    "tools/latex.py: relative import beyond package",
+    "tools/latex_archive.py: relative import beyond package",
+    "tools/list_papers.py: relative import beyond package",
+    "tools/paper_outline.py: relative import beyond package",
+    "tools/read_paper.py: relative import beyond package",
+    "tools/search.py: relative import beyond package",
+    "tools/semantic_search.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "tools.alerts:_load_watches": {
+      "path": "tools/alerts.py",
+      "line_start": 160,
+      "line_end": 170,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}"
+    },
+    "tools.alerts:_save_watches": {
+      "path": "tools/alerts.py",
+      "line_start": 173,
+      "line_end": 175,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _save_watches(payload: Dict[str, Any]) -> None:\n    \"\"\"Persist watches to disk.\"\"\"\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')"
+    },
+    "tools.alerts:_watch_file_path": {
+      "path": "tools/alerts.py",
+      "line_start": 155,
+      "line_end": 157,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _watch_file_path() -> Path:\n    \"\"\"Get watched topics file path.\"\"\"\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME"
+    },
+    "tools.alerts:handle_unwatch_topic": {
+      "path": "tools/alerts.py",
+      "line_start": 457,
+      "line_end": 505,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "tools.alerts",
+      "referenced_names": [
+        "Any",
+        "Dict",
+        "Exception",
+        "List",
+        "Path",
+        "Settings",
+        "WATCH_FILE_NAME",
+        "_load_watches",
+        "_save_watches",
+        "_watch_file_path",
+        "arguments",
+        "exc",
+        "item",
+        "json",
+        "len",
+        "logger",
+        "logging",
+        "payload",
+        "remaining",
+        "settings",
+        "str",
+        "topic",
+        "topics",
+        "types",
+        "watch_file"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 28,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 77,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 111,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 127,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

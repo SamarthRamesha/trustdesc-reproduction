@@ -1,0 +1,80 @@
+{
+  "tool": "get_article",
+  "entry": "server:create_server.get_article",
+  "entry_method": "explicit_operator_override",
+  "source": "# module: server\nimport logging\nfrom typing import Annotated, Any, Literal, Optional, cast\nfrom fastmcp import FastMCP\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom starlette.datastructures import Headers\nfrom starlette.middleware import Middleware as ASGIMiddleware\nfrom starlette.responses import JSONResponse\nfrom starlette.types import ASGIApp, Receive, Scope, Send\nfrom wikipedia_mcp.auth_config import AuthConfig\nfrom wikipedia_mcp.schemas import ArticleResponse, ConnectivityResponse, CoordinatesResponse, KeyFactsResponse, LinksResponse, QuerySummaryResponse, RelatedTopicsResponse, SearchWikipediaResponse, SectionSummaryResponse, SectionsResponse, SummaryResponse, model_output_schema\nfrom wikipedia_mcp.wikipedia_client import WikipediaClient",
+  "initial_functions": [
+    "server:create_server.get_article"
+  ],
+  "functions": [
+    "server:create_server.get_article"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "server:create_server.get_article",
+      "callee": null,
+      "callsite": "logger.info('Tool: Getting article: %s', title)",
+      "line": 256,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:create_server.get_article",
+      "callee": null,
+      "callsite": "wikipedia_client.get_article(title)",
+      "line": 257,
+      "expression": "wikipedia_client.get_article",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "66f262fe8ff6d7f5d9e96fc43a29135d9d213b2debe875920e4615d276bb503a",
+    "__main__.py": "8a80e3a5be68124f86ee4e0790c572bbb0c481c80738e9984d9286360fd94a82",
+    "auth_config.py": "de8e46e5cc81bcec079f99ca4b683724b75b1e1dc3c9ea27cef7d171075d7fd8",
+    "schemas.py": "f15454e8228d4214961d7e1351b3be74025dae18432ecd0526fdff35a7c02625",
+    "server.py": "5542367a91ad803a736676c89e15f7d88681380ef81835044c22115b3518df7c",
+    "wikipedia_client.py": "e524e126c2dfef0649d9ac9f24546eeb110c5de9d286509dabb0424cd7f352a7"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:create_server.get_article": {
+      "path": "server.py",
+      "line_start": 249,
+      "line_end": 258,
+      "file_sha256": "5542367a91ad803a736676c89e15f7d88681380ef81835044c22115b3518df7c",
+      "source": "@register_tool('get_article', model_output_schema(ArticleResponse))\ndef get_article(title: str):\n    \"\"\"\n        Get the full content of a Wikipedia article.\n\n        Returns a dictionary containing article details or an error message\n        if retrieval fails.\n        \"\"\"\n    logger.info('Tool: Getting article: %s', title)\n    article = wikipedia_client.get_article(title)\n    return article or {'title': title, 'exists': False, 'error': 'Unknown error retrieving article'}"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 37,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 39,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

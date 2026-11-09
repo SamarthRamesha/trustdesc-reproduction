@@ -1,0 +1,304 @@
+{
+  "tool": "config",
+  "entry": "tools.config:register_tool.config",
+  "entry_method": "registration_pattern",
+  "source": "# module: tools.config\nfrom typing import Annotated, Any, Dict, Optional, Union\nfrom fastmcp import FastMCP\nfrom pydantic import Field\nfrom imagesorcery_mcp.config import generate_config_documentation, get_available_config_keys, get_config_manager\nfrom imagesorcery_mcp.logging_config import logger",
+  "initial_functions": [
+    "tools.config:register_tool.config"
+  ],
+  "functions": [
+    "tools.config:register_tool.config"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")",
+      "line": 84,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "get_config_manager()",
+      "line": 86,
+      "expression": "get_config_manager",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.get_config_dict()",
+      "line": 92,
+      "expression": "config_manager.get_config_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.get_runtime_overrides()",
+      "line": 93,
+      "expression": "config_manager.get_runtime_overrides",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "str(config_manager.config_file)",
+      "line": 99,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.info('Retrieved entire configuration')",
+      "line": 102,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.get_config_dict()",
+      "line": 106,
+      "expression": "config_manager.get_config_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "key.split('.')",
+      "line": 110,
+      "expression": "key.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "KeyError(f\"Configuration key '{key}' not found\")",
+      "line": 114,
+      "expression": "KeyError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "KeyError(f\"Configuration key '{key}' not found\")",
+      "line": 119,
+      "expression": "KeyError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")",
+      "line": 128,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "ValueError(\"Key is required for 'set' action\")",
+      "line": 133,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "ValueError(\"Value is required for 'set' action\")",
+      "line": 135,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.update_config(updates, persist=persist)",
+      "line": 141,
+      "expression": "config_manager.update_config",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "key.split('.')",
+      "line": 145,
+      "expression": "key.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))",
+      "line": 162,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.reset_runtime_overrides()",
+      "line": 167,
+      "expression": "config_manager.reset_runtime_overrides",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "config_manager.get_config_dict()",
+      "line": 172,
+      "expression": "config_manager.get_config_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.info('Reset runtime configuration overrides')",
+      "line": 175,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")",
+      "line": 179,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.error(f'Configuration key error: {e}')",
+      "line": 182,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 185,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "get_available_config_keys()",
+      "line": 186,
+      "expression": "get_available_config_keys",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.error(f'Configuration value error: {e}')",
+      "line": 190,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 193,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "logger.error(f'Configuration tool error: {e}', exc_info=True)",
+      "line": 198,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.config:register_tool.config",
+      "callee": null,
+      "callsite": "str(e)",
+      "line": 201,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "f2346882b00b1f6c9b161c29669dcd0cbf943be403d17c56262e296c28016028",
+    "__main__.py": "e99e0665bebcfc2c2b42f556266d1a4e6db490e9fa16b8cac554669b1bfc13ae",
+    "config.py": "dd6e9e52ec0ca9f683f16d6bc049d48667ba9fce7292d1eef9c78249dfd30d0a",
+    "logging_config.py": "7152beae769bc828492583c44e40781e11d1e7a8bcb5f9d7be2d13c092108fc4",
+    "middlewares/path_access.py": "79876f38d833c0e01664599770b73cb050bf7c7a4724908eca1649ec0d79e663",
+    "middlewares/telemetry.py": "97f8eca36f32fd862143488a56e20e84d4d05651c4aa92b35059a6c0d8876fc0",
+    "middlewares/validation.py": "8da4519add13f8c484c9c986a5e2a6df759bd83293f6589af3d88f50cf071568",
+    "prompts/__init__.py": "35ab310dd7bf7c37a373a22d72be26797f77ab77d8ec07ca29b2849c165df6a2",
+    "prompts/remove_background.py": "01e3ebece6ccf6423b558015495a28473a72300fe4e06b1e0c2b599d4a4b528e",
+    "resources/__init__.py": "f9ae8afdef2f03ca4388e60dabf45fa85b7e91ef44d891fc294d83c177690673",
+    "resources/models.py": "8cf865f8c38e8cd56bca3c6e36721c098f74c15887a8bd1b2f7d8059751f6da5",
+    "scripts/__init__.py": "186664519a36a573ce53d919102631ac7ebb089ebc23eb9b03d60973e0cf0093",
+    "scripts/clear_telemetry_keys.py": "3dfd47b43334636f1e2a8b6dcffdc83e4f77322e2fe6d1d33d8e7a228ba177b8",
+    "scripts/create_model_descriptions.py": "03016601585a4048f376f5961c1c52a5c8e67fd4828dece434dc4e5ec467515b",
+    "scripts/download_clip.py": "7b27c56e1ed0423097aabe481bc5f77f552396eb30f0576f78c4b6a8fbbb235b",
+    "scripts/download_models.py": "5b29ce1da29d196fac258cc162f6e676ff8c8d609817aa675d65958f935b4716",
+    "scripts/populate_telemetry_keys.py": "e5e13a4cd7ed955c0189508053001d823e9393eddfc8ed4ce6fee9e16e2fc388",
+    "scripts/post_install.py": "502c27ba4782d3ebea9eaed386dec9910d1cfcc1e995a8c3d1d7828fd99c4105",
+    "server.py": "387dea4f3202049ff22407c803f1166e24b42cbd901d0d16658841f5ad2a0888",
+    "telemetry_amplitude.py": "17ca181e813a7e8bee36e4ca688dae89a0b47ac1db27624a0a7a9901b9926219",
+    "telemetry_keys.py": "799ede0e2985989551cb1ef030a5fb35a2d04285b1b194ca6381de63efec70f6",
+    "telemetry_posthog.py": "1f8e7e0bcd682f461b65cfbec1ea838b3ce0f3423cf6f63e38ac3a92729f836c",
+    "tools/__init__.py": "8d11806a00d1863561d7bdd54ae14bafd698daffbc7be8486631c8597f1050c4",
+    "tools/blur.py": "dcd210697f444a5d812648c2230e8fc1548f04e25b4a4d2e082e40f79ff23048",
+    "tools/change_color.py": "ad5993832d8a65ba83aeac6db2792ebf039bf1798ba3fc373a8ea4ac19264c68",
+    "tools/config.py": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+    "tools/crop.py": "19b3440faf319abb9fab28c721d9c00b848156eaa2655474cb0f2e7a4297782c",
+    "tools/detect.py": "51d17a283858366822528c7e70228620f23da5581cf6d0b3df97fe573279fb22",
+    "tools/draw_arrows.py": "c43716588abcc54e51261a5decc5981bc4cec4943515a44e6415d151e9e01680",
+    "tools/draw_circle.py": "dddba210a5e394d9f78604e2cb30542fa0c0d11cdb3c3a8cff7bfbd19a255fd4",
+    "tools/draw_lines.py": "a7d7dcaa0d6d5ea5822cbd31502757dcce66891f72d624f8e4c0a07386a9c83d",
+    "tools/draw_rectangle.py": "4b247f9b7362fe07c26cd30f0e4d05f8b678c030638fb7cf9dd2e6afcf0ca030",
+    "tools/draw_text.py": "693e07cf50e898f7205732a99801ebb1edb59f831da74395aa6ff1638bb3cedf",
+    "tools/fill.py": "28471d60581f5431ea0d01f92457a40925c859decde18aca80c481cfd076090a",
+    "tools/find.py": "ab92ce7ad187075d600a16dc8da6c2a6a3617b3594a984403efcda97ebc201f5",
+    "tools/metainfo.py": "21dca9d23348adadb7213c0079f503ccc9d9a8d0179d03c7bfe8b30c26461a9e",
+    "tools/ocr.py": "3f4d8a596b8ff4cacfb51cd0be3fa1c278e01af4ddf74971f09b8de884f3490e",
+    "tools/overlay.py": "bf59b6930d3311fd3608b13e207312e96fe26defabb8167c580429052d38d9da",
+    "tools/resize.py": "fd45bcb677fb564685450ca4c657bc97d55c4b40b4826d755ea004de301289de",
+    "tools/rotate.py": "d50d9a476dcb1b4c526f5db37b451d24b2b7f9e40de6b1f39bb3ac66b158284b"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "__main__.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "tools.config:register_tool.config": {
+      "path": "tools/config.py",
+      "line_start": 52,
+      "line_end": 203,
+      "file_sha256": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+      "source": "@mcp.tool()\ndef config(action: Annotated[str, Field(description=\"Action to perform: 'get' to view config, 'set' to update config, 'reset' to reset runtime overrides\", pattern='^(get|set|reset)$')]='get', key: Annotated[Optional[str], Field(description=\"Configuration key to get/set. Use dot notation for nested values (e.g., 'detection.confidence_threshold', 'blur.strength'). Leave empty to get/set entire config.\")]=None, value: Annotated[Optional[Union[str, int, float, bool]], Field(description=\"Value to set (only used with action='set')\")]=None, persist: Annotated[bool, Field(description=\"Whether to persist changes to config file (only used with action='set')\")]=False) -> Dict[str, Any]:\n    \"\"\"Configuration tool - docstring will be set dynamically.\"\"\"\n    logger.info(f\"Config tool called with action='{action}', key='{key}', value='{value}', persist={persist}\")\n    config_manager = get_config_manager()\n    try:\n        if action == 'get':\n            if key is None:\n                config_dict = config_manager.get_config_dict()\n                runtime_overrides = config_manager.get_runtime_overrides()\n                result = {'action': 'get', 'config': config_dict, 'runtime_overrides': runtime_overrides, 'config_file': str(config_manager.config_file), 'message': 'Current configuration retrieved successfully'}\n                logger.info('Retrieved entire configuration')\n                return result\n            else:\n                config_dict = config_manager.get_config_dict()\n                if '.' in key:\n                    parts = key.split('.')\n                    current = config_dict\n                    for part in parts:\n                        if part not in current:\n                            raise KeyError(f\"Configuration key '{key}' not found\")\n                        current = current[part]\n                    value_result = current\n                else:\n                    if key not in config_dict:\n                        raise KeyError(f\"Configuration key '{key}' not found\")\n                    value_result = config_dict[key]\n                result = {'action': 'get', 'key': key, 'value': value_result, 'message': f\"Configuration value for '{key}' retrieved successfully\"}\n                logger.info(f\"Retrieved configuration value for key '{key}': {value_result}\")\n                return result\n        elif action == 'set':\n            if key is None:\n                raise ValueError(\"Key is required for 'set' action\")\n            if value is None:\n                raise ValueError(\"Value is required for 'set' action\")\n            updates = {key: value}\n            updated_config = config_manager.update_config(updates, persist=persist)\n            if '.' in key:\n                parts = key.split('.')\n                current = updated_config\n                for part in parts:\n                    current = current[part]\n                new_value = current\n            else:\n                new_value = updated_config[key]\n            result = {'action': 'set', 'key': key, 'old_value': value, 'new_value': new_value, 'persisted': persist, 'message': f\"Configuration '{key}' updated successfully\" + (' and persisted to file' if persist else ' for current session')}\n            logger.info(f\"Updated configuration '{key}' to '{new_value}'\" + (' (persisted)' if persist else ' (runtime only)'))\n            return result\n        elif action == 'reset':\n            config_manager.reset_runtime_overrides()\n            result = {'action': 'reset', 'message': 'Runtime configuration overrides reset successfully', 'config': config_manager.get_config_dict()}\n            logger.info('Reset runtime configuration overrides')\n            return result\n        else:\n            raise ValueError(f\"Invalid action '{action}'. Must be 'get', 'set', or 'reset'\")\n    except KeyError as e:\n        logger.error(f'Configuration key error: {e}')\n        return {'action': action, 'error': str(e), 'available_keys': get_available_config_keys()}\n    except ValueError as e:\n        logger.error(f'Configuration value error: {e}')\n        return {'action': action, 'error': str(e), 'message': 'Please check the provided key and value'}\n    except Exception as e:\n        logger.error(f'Configuration tool error: {e}', exc_info=True)\n        return {'action': action, 'error': f'Configuration operation failed: {str(e)}', 'message': 'An unexpected error occurred while processing the configuration request'}"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "tools.config",
+      "referenced_names": [],
+      "omitted": [],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

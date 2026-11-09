@@ -1,0 +1,740 @@
+{
+  "generated_utc": "2026-11-09T14:23:14.862428+00:00",
+  "classification": "bounded_pilot_independently_collected_real_tools",
+  "is_original_paper_benchmark": false,
+  "tools": [
+    {
+      "tool_id": "arxiv-mcp-server::watch_topic",
+      "server": "arxiv-mcp-server",
+      "tool": "watch_topic",
+      "source_file": "tools/alerts.py",
+      "commit": "572e301bb3198962c025d5ed5e14becb86868daa",
+      "slice": {
+        "functions": 5,
+        "edges": 5,
+        "unresolved_calls": 30,
+        "slice_sha256": "d2c0c934a234db19d794dabefad3de567fbb4facf070f1b9c57b34e1d1d0d156"
+      },
+      "conditions": {
+        "original": {
+          "text": "Save or update a persistent research topic watch. When checked via check_alerts, returns only papers published since the last check \u2014 acting as a standing alert for new work on a topic. New watches seed last_checked to creation time so the first check does not dump historical matches. The topic string uses the same query syntax as search_papers (quoted phrases, field specifiers, boolean operators). Examples: '\"diffusion models\" AND ti:\"video generation\"', 'au:\"LeCun\" AND cs.LG'. Calling watch_topic with the same topic string updates the existing watch rather than creating a duplicate. On update, omit categories to preserve existing filters; pass categories: [] to clear them. Pair with check_alerts to poll for new papers.",
+          "origin": "recovered_public_source_tool_description",
+          "file": "tools/alerts.py",
+          "line": 28,
+          "note": "developer-authored Tool(description=...) literal; not TRUSTDESC output"
+        },
+        "full": {
+          "summary": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+          "functionalities": [
+            "Saves a user-defined topic to a persistent file for tracking and future retrieval.",
+            "Supports updating existing topic watches with new parameters like categories or max results.",
+            "Maintains metadata such as creation and last-checked timestamps for each watched topic.",
+            "Handles both new and existing topics, with appropriate updates to the watch list.",
+            "Validates input and returns structured error messages if required fields (like topic) are missing.",
+            "Logs errors and invalid file content (e.g., corrupted JSON) with warnings and resets the file if needed."
+          ],
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "required": [
+              "arguments"
+            ],
+            "properties": {
+              "arguments": {
+                "type": "object",
+                "properties": {
+                  "topic": {
+                    "type": "string",
+                    "description": "The name or identifier of the topic to watch, must be provided and non-empty."
+                  },
+                  "max_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit."
+                  },
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories."
+              }
+            }
+          },
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c2",
+              "text": "Saves a user-defined topic to a persistent file for tracking and future retrieval.",
+              "target": [
+                "functionalities",
+                0
+              ]
+            },
+            {
+              "id": "c3",
+              "text": "Supports updating existing topic watches with new parameters like categories or max results.",
+              "target": [
+                "functionalities",
+                1
+              ]
+            },
+            {
+              "id": "c4",
+              "text": "Maintains metadata such as creation and last-checked timestamps for each watched topic.",
+              "target": [
+                "functionalities",
+                2
+              ]
+            },
+            {
+              "id": "c5",
+              "text": "Handles both new and existing topics, with appropriate updates to the watch list.",
+              "target": [
+                "functionalities",
+                3
+              ]
+            },
+            {
+              "id": "c6",
+              "text": "Validates input and returns structured error messages if required fields (like topic) are missing.",
+              "target": [
+                "functionalities",
+                4
+              ]
+            },
+            {
+              "id": "c7",
+              "text": "Logs errors and invalid file content (e.g., corrupted JSON) with warnings and resets the file if needed.",
+              "target": [
+                "functionalities",
+                5
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "The name or identifier of the topic to watch, must be provided and non-empty.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "topic",
+                "description"
+              ]
+            },
+            {
+              "id": "c9",
+              "text": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "max_results",
+                "description"
+              ]
+            },
+            {
+              "id": "c10",
+              "text": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "categories",
+                "description"
+              ]
+            },
+            {
+              "id": "c11",
+              "text": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "description"
+              ]
+            }
+          ]
+        },
+        "lite": {
+          "summary": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "required": [
+              "arguments"
+            ],
+            "properties": {
+              "arguments": {
+                "type": "object",
+                "properties": {
+                  "topic": {
+                    "type": "string",
+                    "description": "The name or identifier of the topic to watch, must be provided and non-empty."
+                  },
+                  "max_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit."
+                  },
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories."
+              }
+            }
+          },
+          "functionalities": [],
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "The name or identifier of the topic to watch, must be provided and non-empty.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "topic",
+                "description"
+              ]
+            },
+            {
+              "id": "c9",
+              "text": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "max_results",
+                "description"
+              ]
+            },
+            {
+              "id": "c10",
+              "text": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "properties",
+                "categories",
+                "description"
+              ]
+            },
+            {
+              "id": "c11",
+              "text": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories.",
+              "target": [
+                "input_schema",
+                "properties",
+                "arguments",
+                "description"
+              ]
+            }
+          ],
+          "note": "lite removes only the functionality list (paper definition)"
+        }
+      },
+      "dynver": {
+        "status": "plan_not_run_session_budget",
+        "execution": {
+          "status": "blocked",
+          "reason": "no validated isolated runner for these servers",
+          "verdicts": null
+        },
+        "note": "task generation can be produced on demand; no verdict is claimed without execution"
+      }
+    },
+    {
+      "tool_id": "yfinance-mcp::yfinance_get_ticker_info",
+      "server": "yfinance-mcp",
+      "tool": "yfinance_get_ticker_info",
+      "source_file": "server.py",
+      "commit": "d5fe3253d03c3dc6cab58f3e0a57065dbb07373b",
+      "slice": {
+        "functions": 3,
+        "edges": 2,
+        "unresolved_calls": 18,
+        "slice_sha256": "87246eb0fb6b4579973346f67e08d23c70cfabeb4b91ec6cd8f0bd25e1354bf5"
+      },
+      "conditions": {
+        "original": {
+          "text": "Retrieve comprehensive stock data including company information, financials, trading metrics and governance.\n\nReturns JSON object with fields including:\n- Company: symbol, longName, sector, industry, longBusinessSummary, website, city, country\n- Price: currentPrice, previousClose, open, dayHigh, dayLow, fiftyTwoWeekHigh, fiftyTwoWeekLow\n- Valuation: marketCap, enterpriseValue, trailingPE, forwardPE, priceToBook, pegRatio\n- Trading: volume, averageVolume, averageVolume10days, bid, ask, bidSize, askSize\n- Dividends: dividendRate, dividendYield, exDividendDate, payoutRatio\n- Financials: totalRevenue, revenueGrowth, earningsGrowth, profitMargins, operatingMargins\n- Performance: beta, fiftyDayAverage, twoHundredDayAverage, trailingEps, forwardEps\n\nNote: Available fields vary by security type. Timestamps are converted to readable dates.",
+          "origin": "recovered_public_source_docstring",
+          "file": "server.py",
+          "line": 393,
+          "note": "developer-authored description shipped with the tool; not TRUSTDESC output"
+        },
+        "full": {
+          "summary": "A tool that retrieves detailed information about a given stock ticker symbol from Yahoo Finance, with error handling for network issues, invalid symbols, and rate limits. It formats timestamp fields in the response to a readable datetime string and returns structured JSON output.",
+          "functionalities": [
+            "Fetches comprehensive stock information (e.g., company name, sector, market cap, financials) for a provided ticker symbol using Yahoo Finance API.",
+            "Handles retryable network errors such as rate limits and timeouts with user-friendly error messages indicating a need to retry later.",
+            "Validates input symbol and returns an error if the symbol is invalid or the data is missing.",
+            "Converts timestamp values in the response (e.g., 'date', 'start', 'end') to human-readable datetime strings (e.g., '2023-10-05 14:30:00').",
+            "Returns structured JSON output for easy consumption by downstream systems or clients.",
+            "Supports idempotency and open-world semantics, meaning it can be safely called multiple times with the same input without side effects."
+          ],
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft-2024-10-31/schema",
+            "type": "object",
+            "required": [
+              "symbol"
+            ],
+            "properties": {
+              "symbol": {
+                "description": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company to retrieve information for.",
+                "type": "string",
+                "pattern": "^[A-Z]{1,5}$",
+                "examples": [
+                  "AAPL",
+                  "GOOGL",
+                  "MSFT",
+                  "TSLA"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that retrieves detailed information about a given stock ticker symbol from Yahoo Finance, with error handling for network issues, invalid symbols, and rate limits. It formats timestamp fields in the response to a readable datetime string and returns structured JSON output.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c2",
+              "text": "Fetches comprehensive stock information (e.g., company name, sector, market cap, financials) for a provided ticker symbol using Yahoo Finance API.",
+              "target": [
+                "functionalities",
+                0
+              ]
+            },
+            {
+              "id": "c3",
+              "text": "Handles retryable network errors such as rate limits and timeouts with user-friendly error messages indicating a need to retry later.",
+              "target": [
+                "functionalities",
+                1
+              ]
+            },
+            {
+              "id": "c4",
+              "text": "Validates input symbol and returns an error if the symbol is invalid or the data is missing.",
+              "target": [
+                "functionalities",
+                2
+              ]
+            },
+            {
+              "id": "c5",
+              "text": "Converts timestamp values in the response (e.g., 'date', 'start', 'end') to human-readable datetime strings (e.g., '2023-10-05 14:30:00').",
+              "target": [
+                "functionalities",
+                3
+              ]
+            },
+            {
+              "id": "c6",
+              "text": "Returns structured JSON output for easy consumption by downstream systems or clients.",
+              "target": [
+                "functionalities",
+                4
+              ]
+            },
+            {
+              "id": "c7",
+              "text": "Supports idempotency and open-world semantics, meaning it can be safely called multiple times with the same input without side effects.",
+              "target": [
+                "functionalities",
+                5
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company to retrieve information for.",
+              "target": [
+                "input_schema",
+                "properties",
+                "symbol",
+                "description"
+              ]
+            }
+          ]
+        },
+        "lite": {
+          "summary": "A tool that retrieves detailed information about a given stock ticker symbol from Yahoo Finance, with error handling for network issues, invalid symbols, and rate limits. It formats timestamp fields in the response to a readable datetime string and returns structured JSON output.",
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft-2024-10-31/schema",
+            "type": "object",
+            "required": [
+              "symbol"
+            ],
+            "properties": {
+              "symbol": {
+                "description": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company to retrieve information for.",
+                "type": "string",
+                "pattern": "^[A-Z]{1,5}$",
+                "examples": [
+                  "AAPL",
+                  "GOOGL",
+                  "MSFT",
+                  "TSLA"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "functionalities": [],
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that retrieves detailed information about a given stock ticker symbol from Yahoo Finance, with error handling for network issues, invalid symbols, and rate limits. It formats timestamp fields in the response to a readable datetime string and returns structured JSON output.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company to retrieve information for.",
+              "target": [
+                "input_schema",
+                "properties",
+                "symbol",
+                "description"
+              ]
+            }
+          ],
+          "note": "lite removes only the functionality list (paper definition)"
+        }
+      },
+      "dynver": {
+        "status": "plan_not_run_session_budget",
+        "execution": {
+          "status": "blocked",
+          "reason": "no validated isolated runner for these servers",
+          "verdicts": null
+        },
+        "note": "task generation can be produced on demand; no verdict is claimed without execution"
+      }
+    },
+    {
+      "tool_id": "excel-mcp-server::set_note",
+      "server": "excel-mcp-server",
+      "tool": "set_note",
+      "source_file": "server/annotation_tools.py",
+      "commit": "1e6af4e06338584bb217542002c2996c1802172e",
+      "slice": {
+        "functions": 1,
+        "edges": 0,
+        "unresolved_calls": 3,
+        "slice_sha256": "33cf30985a788ff37a4ee9febce8e8d05b53d0589d017a771f45354eae232f61"
+      },
+      "conditions": {
+        "original": {
+          "text": "Add a note to a cell, replacing its existing note.",
+          "origin": "recovered_public_source_docstring",
+          "file": "server/annotation_tools.py",
+          "line": 52,
+          "note": "developer-authored description shipped with the tool; not TRUSTDESC output"
+        },
+        "full": {
+          "summary": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+          "functionalities": [
+            "Sets a note at a specified cell location within a worksheet.",
+            "Associates an author with the note for attribution.",
+            "Updates the note content in the workspace using the provided text.",
+            "Operates on a workbook path and sheet name to target the correct worksheet.",
+            "Returns a confirmation string indicating the note was set on a specific cell."
+          ],
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2024-10/schema",
+            "properties": {
+              "author": {
+                "description": "The author of the note, used for attribution in the workspace.",
+                "type": "string"
+              },
+              "cell": {
+                "description": "The cell reference (e.g., 'A1') where the note should be placed.",
+                "type": "string"
+              },
+              "path": {
+                "description": "The path to the workbook file where the note will be set.",
+                "type": "string"
+              },
+              "sheet": {
+                "description": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+                "type": "string"
+              },
+              "text": {
+                "description": "The content of the note to be inserted into the specified cell.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "path",
+              "sheet",
+              "cell",
+              "text"
+            ],
+            "type": "object"
+          },
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c2",
+              "text": "Sets a note at a specified cell location within a worksheet.",
+              "target": [
+                "functionalities",
+                0
+              ]
+            },
+            {
+              "id": "c3",
+              "text": "Associates an author with the note for attribution.",
+              "target": [
+                "functionalities",
+                1
+              ]
+            },
+            {
+              "id": "c4",
+              "text": "Updates the note content in the workspace using the provided text.",
+              "target": [
+                "functionalities",
+                2
+              ]
+            },
+            {
+              "id": "c5",
+              "text": "Operates on a workbook path and sheet name to target the correct worksheet.",
+              "target": [
+                "functionalities",
+                3
+              ]
+            },
+            {
+              "id": "c6",
+              "text": "Returns a confirmation string indicating the note was set on a specific cell.",
+              "target": [
+                "functionalities",
+                4
+              ]
+            },
+            {
+              "id": "c7",
+              "text": "The author of the note, used for attribution in the workspace.",
+              "target": [
+                "input_schema",
+                "properties",
+                "author",
+                "description"
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "The cell reference (e.g., 'A1') where the note should be placed.",
+              "target": [
+                "input_schema",
+                "properties",
+                "cell",
+                "description"
+              ]
+            },
+            {
+              "id": "c9",
+              "text": "The path to the workbook file where the note will be set.",
+              "target": [
+                "input_schema",
+                "properties",
+                "path",
+                "description"
+              ]
+            },
+            {
+              "id": "c10",
+              "text": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+              "target": [
+                "input_schema",
+                "properties",
+                "sheet",
+                "description"
+              ]
+            },
+            {
+              "id": "c11",
+              "text": "The content of the note to be inserted into the specified cell.",
+              "target": [
+                "input_schema",
+                "properties",
+                "text",
+                "description"
+              ]
+            }
+          ]
+        },
+        "lite": {
+          "summary": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+          "input_schema": {
+            "$schema": "https://json-schema.org/draft/2024-10/schema",
+            "properties": {
+              "author": {
+                "description": "The author of the note, used for attribution in the workspace.",
+                "type": "string"
+              },
+              "cell": {
+                "description": "The cell reference (e.g., 'A1') where the note should be placed.",
+                "type": "string"
+              },
+              "path": {
+                "description": "The path to the workbook file where the note will be set.",
+                "type": "string"
+              },
+              "sheet": {
+                "description": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+                "type": "string"
+              },
+              "text": {
+                "description": "The content of the note to be inserted into the specified cell.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "path",
+              "sheet",
+              "cell",
+              "text"
+            ],
+            "type": "object"
+          },
+          "functionalities": [],
+          "claims": [
+            {
+              "id": "c1",
+              "text": "A tool that sets a note in a specific cell of a worksheet within a workbook, allowing specification of the note's text, author, and location via cell reference and sheet name. The operation modifies the workspace and returns a confirmation message.",
+              "target": [
+                "summary"
+              ]
+            },
+            {
+              "id": "c7",
+              "text": "The author of the note, used for attribution in the workspace.",
+              "target": [
+                "input_schema",
+                "properties",
+                "author",
+                "description"
+              ]
+            },
+            {
+              "id": "c8",
+              "text": "The cell reference (e.g., 'A1') where the note should be placed.",
+              "target": [
+                "input_schema",
+                "properties",
+                "cell",
+                "description"
+              ]
+            },
+            {
+              "id": "c9",
+              "text": "The path to the workbook file where the note will be set.",
+              "target": [
+                "input_schema",
+                "properties",
+                "path",
+                "description"
+              ]
+            },
+            {
+              "id": "c10",
+              "text": "The name of the worksheet (sheet) within the workbook where the note will be placed.",
+              "target": [
+                "input_schema",
+                "properties",
+                "sheet",
+                "description"
+              ]
+            },
+            {
+              "id": "c11",
+              "text": "The content of the note to be inserted into the specified cell.",
+              "target": [
+                "input_schema",
+                "properties",
+                "text",
+                "description"
+              ]
+            }
+          ],
+          "note": "lite removes only the functionality list (paper definition)"
+        }
+      },
+      "dynver": {
+        "status": "plan_not_run_session_budget",
+        "execution": {
+          "status": "blocked",
+          "reason": "no validated isolated runner for these servers",
+          "verdicts": null
+        },
+        "note": "task generation can be produced on demand; no verdict is claimed without execution"
+      }
+    }
+  ],
+  "model": {
+    "id": "qwen3-mlx-4b",
+    "provider": "local",
+    "backend": "mlx",
+    "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "estimated_weight_bytes": 2263022417,
+    "minimum_available_ram_bytes": 3758096384,
+    "max_input_tokens": 4096,
+    "max_generation_seconds": 90,
+    "temperature": 0.2,
+    "seed": 42,
+    "max_new_tokens": 1600,
+    "debloat": true,
+    "reasoning": "provider_default",
+    "max_worker_rss_bytes": 5368709120
+  },
+  "task_agent": "none (execution gated; identical agent across conditions is vacuous without execution)",
+  "task_success_rate": null,
+  "tsr_reason": "no executable task set; reporting a TSR would be fabricated",
+  "calls": []
+}

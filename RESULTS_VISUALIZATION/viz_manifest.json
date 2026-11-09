@@ -1,0 +1,53 @@
+{
+  "generated_utc": "2026-11-09T14:24:22.028022+00:00",
+  "charts": [
+    {
+      "file": "descgen_by_server.svg",
+      "data": [
+        {
+          "server": "arxiv-mcp-server",
+          "generated": 3,
+          "attempted": 4
+        },
+        {
+          "server": "excel-mcp-server",
+          "generated": 3,
+          "attempted": 5
+        },
+        {
+          "server": "imagesorcery-mcp",
+          "generated": 0,
+          "attempted": 1
+        },
+        {
+          "server": "mysql_mcp_server",
+          "generated": 1,
+          "attempted": 1
+        },
+        {
+          "server": "paper-search-mcp",
+          "generated": 0,
+          "attempted": 5
+        },
+        {
+          "server": "wikipedia-mcp",
+          "generated": 0,
+          "attempted": 5
+        },
+        {
+          "server": "yfinance-mcp",
+          "generated": 2,
+          "attempted": 5
+        }
+      ],
+      "caption": "Counts of valid structured descriptions; failures are model format rejections."
+    }
+  ],
+  "not_plotted": [
+    "TSR by condition",
+    "runtime overhead",
+    "tool-selection rate",
+    "adaptive-attack trajectory"
+  ],
+  "reason": "no recovered task set, labels or attack fixtures; plotting them would require fabricated data"
+}

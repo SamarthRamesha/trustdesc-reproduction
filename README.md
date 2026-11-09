@@ -4,7 +4,13 @@ Open [TRUSTDESC_REPRODUCTION.ipynb](TRUSTDESC_REPRODUCTION.ipynb) in local Jupyt
 
 This is an independent implementation of [Ye et al., TRUSTDESC](https://arxiv.org/abs/2604.07536v1). **The original scientific reproduction remains incomplete:** authenticated original 52-tool/208-task identities, snapshots, task texts, prompts, labels and traces have not been recovered. Authored fixtures and public example observations are labeled separately and never presented as the paper's benchmark or TSR.
 
-The [final completion report](FINAL_PROJECT_COMPLETION_REPORT.md) records the actual fresh-environment notebook run, 156 passing software tests, measured results and remaining scientific limits. Exact tool objectives were 6/8 in each main condition and 4/4 in each separate public-example condition. These finite observations show no measured improvement.
+The [final completion report](FINAL_PROJECT_COMPLETION_REPORT.md) records the actual fresh-environment notebook run, 161 passing software tests, measured results and remaining scientific limits. Exact tool objectives were 6/8 in each main condition and 4/4 in each separate public-example condition. These finite observations show no measured improvement.
+
+## Recovered public source track
+
+The original artifact (`anonymous.4open.science/r/ae-trustdesc-13A6`) now returns HTTP 410 `repository_expired` and was never captured by the Wayback Machine; no author code or data release exists. Instead of substituting data, all **12 MCP servers named in paper Table 1** were cloned at pinned commits and every Python tool was sliced and described. See [ORIGINAL_DATASET_ACQUISITION_REPORT.md](ORIGINAL_DATASET_ACQUISITION_REPORT.md), [DATASET_VALIDATION_REPORT.md](DATASET_VALIDATION_REPORT.md), [SOURCE_PROVENANCE.json](SOURCE_PROVENANCE.json) and [METRICS_REPORT.md](METRICS_REPORT.md).
+
+Every record is labelled `independently_collected`. Tool identity is a deterministic prefix of static discovery order because the authors' random sampling seed was never released, and the current HEAD is not the paper's revision. These tools are not the paper's benchmark, and no task-success rate is computed from them.
 
 ## Local execution
 

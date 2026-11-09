@@ -1,0 +1,382 @@
+{
+  "description": {
+    "summary": "The function `handle_list_watches` retrieves a list of currently watched topics from a persistent JSON file stored at a configurable path. If the file does not exist or is invalid, it resets the file content to an empty list. It returns a structured response containing the list of topics, the count of topics, and a success status. On any error during execution, it returns a formatted error message instead of crashing. The operation is asynchronous and designed to be resilient to file I/O and parsing issues.",
+    "functionalities": [
+      "Retrieves watched topics from a persistent JSON file stored in the application's storage directory.",
+      "Handles missing or corrupted watched topics files by resetting them to an empty list with a warning log.",
+      "Returns a structured JSON-formatted text response listing the topics, their count, and success status.",
+      "Fails gracefully with a human-readable error message if any exception occurs during execution."
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "arguments"
+      ],
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "description": "A dictionary containing any arguments passed to the tool; currently unused as the function does not process arguments beyond the default structure.",
+          "additionalProperties": false
+        }
+      }
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "The function `handle_list_watches` retrieves a list of currently watched topics from a persistent JSON file stored at a configurable path. If the file does not exist or is invalid, it resets the file content to an empty list. It returns a structured response containing the list of topics, the count of topics, and a success status. On any error during execution, it returns a formatted error message instead of crashing. The operation is asynchronous and designed to be resilient to file I/O and parsing issues.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Retrieves watched topics from a persistent JSON file stored in the application's storage directory.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Handles missing or corrupted watched topics files by resetting them to an empty list with a warning log.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Returns a structured JSON-formatted text response listing the topics, their count, and success status.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "Fails gracefully with a human-readable error message if any exception occurs during execution.",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "A dictionary containing any arguments passed to the tool; currently unused as the function does not process arguments beyond the default structure.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "from __future__ import annotations\nimport json\nimport logging\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom dateutil import parser\nfrom ..config import Settings\nfrom .search import ArxivRateLimitError, _rate_limited_respon, _raw_arxiv_search\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nWATCH_FILE_NAME = 'watched_topics.json'\n\ndef _watch_file_path() -> Path:\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME\n\ndef _load_watches() -> Dict[str, Any]:\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}\n\nasync def handle_list_watches(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    try:\n        payload = _load_watches()\n        watches = list(payload.get('topics', []))\n        result = {'status': 'success', 'watch_count': len(watches), 'watches': watches}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except Exception as exc:\n        logger.error('list_watches error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+    "truncations": {
+      "_rate_limited_response": "_rate_limited_respon"
+    },
+    "semantic_renames": {
+      "Any": "Any",
+      "ArxivRateLimitError": "ArxivRateLimitError",
+      "Dict": "Dict",
+      "Exception": "Exception",
+      "JSONDecodeError": "JSONDecodeError",
+      "List": "List",
+      "Optional": "Optional",
+      "Path": "Path",
+      "STORAGE_PATH": "STORAGE_PATH",
+      "Settings": "Settings",
+      "TextContent": "TextContent",
+      "ToolAnnotations": "ToolAnnotations",
+      "WATCH_FILE_NAME": "WATCH_FILE_NAME",
+      "_load_watches": "_load_watches",
+      "_rate_limited_respon": "_rate_limited_respon",
+      "_raw_arxiv_search": "_raw_arxiv_search",
+      "_watch_file_path": "_watch_file_path",
+      "annotations": "annotations",
+      "arguments": "arguments",
+      "datetime": "datetime",
+      "dumps": "dumps",
+      "encoding": "encoding",
+      "error": "error",
+      "exc": "exc",
+      "exists": "exists",
+      "get": "get",
+      "getLogger": "getLogger",
+      "handle_list_watches": "handle_list_watches",
+      "indent": "indent",
+      "json": "json",
+      "len": "len",
+      "list": "list",
+      "loads": "loads",
+      "logger": "logger",
+      "logging": "logging",
+      "mcp": "mcp",
+      "parser": "parser",
+      "payload": "payload",
+      "read_text": "read_text",
+      "result": "result",
+      "settings": "settings",
+      "str": "str",
+      "text": "text",
+      "timezone": "timezone",
+      "type": "type",
+      "types": "types",
+      "warning": "warning",
+      "watch_file": "watch_file",
+      "watches": "watches"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "tools.alerts:handle_list_watches",
+          "quote": "async def handle_list_watches(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Return saved watches without updating last_checked.\"\"\"\n    try:\n        payload = _load_watches()\n        watches = list(payload.get('topics', []))\n        result = {'status': 'success', 'watch_count': len(watches), 'watches': watches}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except Exception as exc:\n        logger.error('list_watches error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 441,
+          "line_end": 454
+        }
+      ],
+      "rationale": "The claim describes the behavior of `handle_list_watches` including retrieving watched topics from a persistent JSON file, resetting the file to an empty list if invalid, returning a structured response with topics, count, and success status, and failing gracefully with a human-readable error. This is fully supported by the implementation of `handle_list_watches`, which calls `_load_watches()` to retrieve the topics, handles invalid JSON by logging a warning and returning an empty list, and returns a JSON-formatted text response with the required fields. The asynchronous nature and resilience to I/O/parsing issues are implied by the use of try-except and file reading logic.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "tools.alerts:_load_watches",
+          "quote": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 160,
+          "line_end": 170
+        }
+      ],
+      "rationale": "The claim states that the function retrieves watched topics from a persistent JSON file stored in the application's storage directory. This is directly implemented in `_load_watches()`, which reads from the file path returned by `_watch_file_path()`, which is constructed as `settings.STORAGE_PATH / WATCH_FILE_NAME`, confirming the storage location is in the application's storage directory.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "tools.alerts:_load_watches",
+          "quote": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 160,
+          "line_end": 170
+        }
+      ],
+      "rationale": "The claim specifies that missing or corrupted files are handled by resetting them to an empty list with a warning log. The `_load_watches()` function explicitly catches `json.JSONDecodeError`, logs a warning message, and returns an empty list, which matches the described behavior of resetting the file content to an empty list upon corruption or non-existence.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "tools.alerts:handle_list_watches",
+          "quote": "async def handle_list_watches(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Return saved watches without updating last_checked.\"\"\"\n    try:\n        payload = _load_watches()\n        watches = list(payload.get('topics', []))\n        result = {'status': 'success', 'watch_count': len(watches), 'watches': watches}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except Exception as exc:\n        logger.error('list_watches error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 441,
+          "line_end": 454
+        }
+      ],
+      "rationale": "The claim states that a structured JSON-formatted text response is returned, listing topics, count, and success status. The `handle_list_watches` function constructs a dictionary with 'status', 'watch_count', and 'watches' fields and serializes it to JSON using `json.dumps()`, which is then returned as a `TextContent` object with type 'text'. This matches the described structured response format.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "tools.alerts:handle_list_watches",
+          "quote": "async def handle_list_watches(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Return saved watches without updating last_checked.\"\"\"\n    try:\n        payload = _load_watches()\n        watches = list(payload.get('topics', []))\n        result = {'status': 'success', 'watch_count': len(watches), 'watches': watches}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except Exception as exc:\n        logger.error('list_watches error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 441,
+          "line_end": 454
+        }
+      ],
+      "rationale": "The claim asserts that the function fails gracefully with a human-readable error message on exception. The `handle_list_watches` function wraps its execution in a try-except block, catching any exception and returning a formatted error message in the form 'Error: {str(exc)}', which is a human-readable error response as required.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "tools.alerts:handle_list_watches",
+          "quote": "async def handle_list_watches(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Return saved watches without updating last_checked.\"\"\"\n    try:\n        payload = _load_watches()\n        watches = list(payload.get('topics', []))\n        result = {'status': 'success', 'watch_count': len(watches), 'watches': watches}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except Exception as exc:\n        logger.error('list_watches error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 441,
+          "line_end": 454
+        }
+      ],
+      "rationale": "The claim describes the input schema property 'arguments' as containing any arguments passed to the tool, currently unused. The function signature shows `arguments: Dict[str, Any]` as a parameter, and the implementation does not process it beyond default behavior, confirming that arguments are passed but not used, which aligns with the claim.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "arguments": {}
+    },
+    "required": [
+      "arguments"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return json.loads(watch_file.read_text(encoding='utf-8'))",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_watch_file_path",
+        "expression": "return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME",
+        "path": "tools/alerts.py",
+        "function_line_start": 155,
+        "function_line_end": 157,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_list_watches",
+        "expression": "return [types.TextContent(type='text', text=json.dumps(result, indent=2))]",
+        "path": "tools/alerts.py",
+        "function_line_start": 441,
+        "function_line_end": 454,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_list_watches",
+        "expression": "return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+        "path": "tools/alerts.py",
+        "function_line_start": 441,
+        "function_line_end": 454,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "_watch_file_path",
+        "expression": "_watch_file_path()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.exists",
+        "expression": "watch_file.exists()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "json.loads",
+        "expression": "json.loads(watch_file.read_text(encoding='utf-8'))"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.read_text",
+        "expression": "watch_file.read_text(encoding='utf-8')"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "logger.warning",
+        "expression": "logger.warning('Invalid watched topics file, resetting: %s', watch_file)"
+      },
+      {
+        "function": "tools.alerts:_watch_file_path",
+        "call": "Path",
+        "expression": "Path(settings.STORAGE_PATH)"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "_load_watches",
+        "expression": "_load_watches()"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "list",
+        "expression": "list(payload.get('topics', []))"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "payload.get",
+        "expression": "payload.get('topics', [])"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "len",
+        "expression": "len(watches)"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=json.dumps(result, indent=2))"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "logger.error",
+        "expression": "logger.error('list_watches error: %s', exc)"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=f'Error: {str(exc)}')"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "json.dumps",
+        "expression": "json.dumps(result, indent=2)"
+      },
+      {
+        "function": "tools.alerts:handle_list_watches",
+        "call": "str",
+        "expression": "str(exc)"
+      }
+    ],
+    "source_identity": "01803b4d6bf8968de715215e4fd22ad58ecd9113443d269bfec8d74b7daa4bf0",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

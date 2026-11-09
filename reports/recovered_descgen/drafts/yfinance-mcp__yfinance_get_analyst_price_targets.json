@@ -1,0 +1,433 @@
+{
+  "description": {
+    "summary": "A tool that retrieves analyst price target data for a given stock ticker symbol from Yahoo Finance. It handles retries for network or rate-limiting issues, validates input, and returns structured JSON data with cleaned numeric values or nulls for non-numeric entries. If no data is available or an error occurs, it returns appropriate error responses with contextual details.",
+    "functionalities": [
+      "Fetches analyst price target data for a specified stock ticker (e.g., 'AAPL', 'GOOGL') using Yahoo Finance's API.",
+      "Handles transient network errors and rate limits with retry logic, returning a network error message with a suggestion to retry later.",
+      "Validates and cleans the returned price targets by converting values to floats and filtering out invalid or non-numeric entries.",
+      "Returns structured JSON output for the analyst price targets, with nulls for invalid or missing values.",
+      "Returns error responses for invalid symbols, missing data, or unexpected exceptions, with clear error codes and context.",
+      "Supports idempotency and read-only operations, meaning it does not modify external state and can be safely reused with the same input."
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft-2024-12-07/schema",
+      "type": "object",
+      "required": [
+        "symbol"
+      ],
+      "properties": {
+        "symbol": {
+          "description": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company for which analyst price targets are to be fetched.",
+          "type": "string",
+          "pattern": "^[A-Z]{1,5}$|^[A-Z]{1,4}\\.[A-Z]{1,4}$",
+          "examples": [
+            "AAPL",
+            "GOOGL",
+            "MSFT",
+            "TSLA"
+          ]
+        }
+      }
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that retrieves analyst price target data for a given stock ticker symbol from Yahoo Finance. It handles retries for network or rate-limiting issues, validates input, and returns structured JSON data with cleaned numeric values or nulls for non-numeric entries. If no data is available or an error occurs, it returns appropriate error responses with contextual details.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Fetches analyst price target data for a specified stock ticker (e.g., 'AAPL', 'GOOGL') using Yahoo Finance's API.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Handles transient network errors and rate limits with retry logic, returning a network error message with a suggestion to retry later.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Validates and cleans the returned price targets by converting values to floats and filtering out invalid or non-numeric entries.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "Returns structured JSON output for the analyst price targets, with nulls for invalid or missing values.",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "Returns error responses for invalid symbols, missing data, or unexpected exceptions, with clear error codes and context.",
+        "target": [
+          "functionalities",
+          4
+        ]
+      },
+      {
+        "id": "c7",
+        "text": "Supports idempotency and read-only operations, meaning it does not modify external state and can be safely reused with the same input.",
+        "target": [
+          "functionalities",
+          5
+        ]
+      },
+      {
+        "id": "c8",
+        "text": "Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT') representing the company for which analyst price targets are to be fetched.",
+        "target": [
+          "input_schema",
+          "properties",
+          "symbol",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "import asyncio\nimport math\nimport re\nfrom datetime import datetime\nfrom numbers import Real\nfrom typing import Annotated\nfrom typing import Any\nimport yfinance as yf\nfrom loguru import logger\nfrom mcp.server.fastmcp import FastMCP\nfrom mcp.types import ImageContent\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom yfinance.const import SECTOR_INDUSTRY_MAP\nfrom yfinance.exceptions import YFDataException\nfrom yfinance.exceptions import YFInvalidPeriodError\nfrom yfinance.exceptions import YFPricesMissingError\nfrom yfinance.exceptions import YFRateLimitError\nfrom yfinance.exceptions import YFTzMissingError\nfrom yfmcp.chart import generate_chart\nfrom yfmcp.screener import build_screener_query\nfrom yfmcp.types import ChartType\nfrom yfmcp.types import Interval\nfrom yfmcp.types import OptionChainType\nfrom yfmcp.types import Period\nfrom yfmcp.types import ScreenerQueryType\nfrom yfmcp.types import SearchType\nfrom yfmcp.types import Sector\nfrom yfmcp.types import TopType\nfrom yfmcp.utils import create_error_respons\nfrom yfmcp.utils import dump_json\nmcp = FastMCP('yfinance_mcp', log_level='ERROR')\n_RETRYABLE_YFINANCE_: tuple[type[Exception], ...] = (ConnectionError, TimeoutError, OSError, YFRateLimitError)\n\ndef _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)\n\ndef _create_retryable_er(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_respons(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})\n\n@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_ta(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_target)\n    except _RETRYABLE_YFINANCE_ as exc:\n        return _create_retryable_er(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_respons(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_respons(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+    "truncations": {
+      "SECTOR_INDUSTY_MAPPING": "SECTOR_INDUSTY_MAPPI",
+      "analyst_price_targets": "analyst_price_target",
+      "get_analyst_price_targets": "get_analyst_price_ta",
+      "_RETRYABLE_YFINANCE_EXCEPTIONS": "_RETRYABLE_YFINANCE_",
+      "_create_retryable_error_response": "_create_retryable_er",
+      "create_error_response": "create_error_respons"
+    },
+    "semantic_renames": {
+      "SECTOR_INDUSTY_MAPPI": "SECTOR_INDUSTRY_MAP"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function `server:get_analyst_price_targets` retrieves analyst price target data for a given stock ticker, handles retries for network or rate-limiting issues via exception handling and the `_create_retryable_error_response` function, validates input through the use of a symbol parameter with a clear description, and returns structured JSON data with cleaned numeric values or nulls for non-numeric entries as specified in the claim.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function `server:get_analyst_price_targets` directly fetches analyst price target data for a specified stock ticker (e.g., 'AAPL', 'GOOGL') using Yahoo Finance's `yf.Ticker` and its `analyst_price_targets` attribute, matching the described functionality in claim c2.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "server:_create_retryable_error_response",
+          "quote": "def _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 77,
+          "line_end": 83
+        },
+        {
+          "function": "server:_is_rate_limit_error",
+          "quote": "def _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 73,
+          "line_end": 74
+        }
+      ],
+      "rationale": "The function `server:_is_rate_limit_error` identifies rate-limiting exceptions, and when triggered, `server:_create_retryable_error_response` returns a network error message with a suggestion to retry later, directly supporting the retry logic for network or rate-limiting issues as described in claim c3.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "Within `server:get_analyst_price_targets`, the function iterates over the analyst price targets and attempts to convert each value to a float. If conversion fails (due to non-numeric or invalid entries), the value is retained as-is, and null is assigned if the float conversion fails due to non-finite or invalid values, thus validating and cleaning the price targets as described in claim c4.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function `server:get_analyst_price_targets` constructs a cleaned dictionary of price targets and returns it via `dump_json`, ensuring structured JSON output with nulls for invalid or missing values, as specified in claim c5.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function includes a comprehensive error handling block that catches unexpected exceptions and returns error responses with clear error codes (e.g., 'API_ERROR', 'NO_DATA') and contextual details (e.g., symbol, exception), fulfilling the requirement in claim c6 for error responses with clear context and codes.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c7",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function is annotated with `readOnlyHint=True` and `idempotentHint=True`, indicating it performs read-only operations and is idempotent\u2014meaning repeated calls with the same input produce the same result without modifying external state, as described in claim c7.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c8",
+      "references": [
+        {
+          "function": "server:get_analyst_price_targets",
+          "quote": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+          "path": "server.py",
+          "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+          "line_start": 456,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The input schema for the `symbol` parameter in `server:get_analyst_price_targets` is explicitly described as 'Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')', directly matching the description provided in claim c8 for the `symbol` property.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "symbol": {}
+    },
+    "required": [
+      "symbol"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "server:_create_retryable_error_response",
+        "expression": "return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})",
+        "path": "server.py",
+        "function_line_start": 77,
+        "function_line_end": 83,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "return_expression",
+        "function": "server:_is_rate_limit_error",
+        "expression": "return isinstance(exc, YFRateLimitError)",
+        "path": "server.py",
+        "function_line_start": 73,
+        "function_line_end": 74,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "return_expression",
+        "function": "server:get_analyst_price_targets",
+        "expression": "return dump_json(cleaned_targets)",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "return_expression",
+        "function": "server:get_analyst_price_targets",
+        "expression": "return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "server:get_analyst_price_targets",
+        "expression": "cleaned_targets[key] = None if numeric != numeric else numeric",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "return_expression",
+        "function": "server:get_analyst_price_targets",
+        "expression": "return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "return_expression",
+        "function": "server:get_analyst_price_targets",
+        "expression": "return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "server:get_analyst_price_targets",
+        "expression": "cleaned_targets[key] = None",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "server:get_analyst_price_targets",
+        "expression": "cleaned_targets[key] = value",
+        "path": "server.py",
+        "function_line_start": 456,
+        "function_line_end": 505,
+        "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "server:_create_retryable_error_response",
+        "call": "_is_rate_limit_error",
+        "expression": "_is_rate_limit_error(exc)"
+      },
+      {
+        "function": "server:_create_retryable_error_response",
+        "call": "create_error_response",
+        "expression": "create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})"
+      },
+      {
+        "function": "server:_create_retryable_error_response",
+        "call": "str",
+        "expression": "str(exc)"
+      },
+      {
+        "function": "server:_is_rate_limit_error",
+        "call": "isinstance",
+        "expression": "isinstance(exc, YFRateLimitError)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "mcp.tool",
+        "expression": "mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "targets.items",
+        "expression": "targets.items()"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "dump_json",
+        "expression": "dump_json(cleaned_targets)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "create_error_response",
+        "expression": "create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "ToolAnnotations",
+        "expression": "ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "asyncio.to_thread",
+        "expression": "asyncio.to_thread(yf.Ticker, symbol)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "asyncio.to_thread",
+        "expression": "asyncio.to_thread(lambda: ticker.analyst_price_targets)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "_create_retryable_error_response",
+        "expression": "_create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "create_error_response",
+        "expression": "create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "float",
+        "expression": "float(value)"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "Field",
+        "expression": "Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")"
+      },
+      {
+        "function": "server:get_analyst_price_targets",
+        "call": "str",
+        "expression": "str(exc)"
+      }
+    ],
+    "source_identity": "4853d08e7dfe1f934f213871b27eaf0401e5b842eb71977988320647e3827f5b",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

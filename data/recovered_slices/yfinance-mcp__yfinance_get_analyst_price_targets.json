@@ -1,0 +1,223 @@
+{
+  "tool": "yfinance_get_analyst_price_targets",
+  "entry": "server:get_analyst_price_targets",
+  "entry_method": "registration_pattern",
+  "source": "# module: server\nimport asyncio\nimport math\nimport re\nfrom datetime import datetime\nfrom numbers import Real\nfrom typing import Annotated\nfrom typing import Any\nimport yfinance as yf\nfrom loguru import logger\nfrom mcp.server.fastmcp import FastMCP\nfrom mcp.types import ImageContent\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom yfinance.const import SECTOR_INDUSTY_MAPPING\nfrom yfinance.exceptions import YFDataException\nfrom yfinance.exceptions import YFInvalidPeriodError\nfrom yfinance.exceptions import YFPricesMissingError\nfrom yfinance.exceptions import YFRateLimitError\nfrom yfinance.exceptions import YFTzMissingError\nfrom yfmcp.chart import generate_chart\nfrom yfmcp.screener import build_screener_query\nfrom yfmcp.types import ChartType\nfrom yfmcp.types import Interval\nfrom yfmcp.types import OptionChainType\nfrom yfmcp.types import Period\nfrom yfmcp.types import ScreenerQueryType\nfrom yfmcp.types import SearchType\nfrom yfmcp.types import Sector\nfrom yfmcp.types import TopType\nfrom yfmcp.utils import create_error_response\nfrom yfmcp.utils import dump_json\nmcp = FastMCP('yfinance_mcp', log_level='ERROR')\n_RETRYABLE_YFINANCE_EXCEPTIONS: tuple[type[Exception], ...] = (ConnectionError, TimeoutError, OSError, YFRateLimitError)\n\ndef _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)\n\ndef _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})\n\n@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)",
+  "initial_functions": [
+    "server:_create_retryable_error_response",
+    "server:_is_rate_limit_error",
+    "server:get_analyst_price_targets"
+  ],
+  "functions": [
+    "server:_create_retryable_error_response",
+    "server:_is_rate_limit_error",
+    "server:get_analyst_price_targets"
+  ],
+  "edges": [
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": "server:_create_retryable_error_response",
+      "callsite": "_create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})",
+      "line": 474
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": "server:_is_rate_limit_error",
+      "callsite": "_is_rate_limit_error(exc)",
+      "line": 78
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "asyncio.to_thread(yf.Ticker, symbol)",
+      "line": 471,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "asyncio.to_thread(lambda: ticker.analyst_price_targets)",
+      "line": 472,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_is_rate_limit_error",
+      "callee": null,
+      "callsite": "isinstance(exc, YFRateLimitError)",
+      "line": 74,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})",
+      "line": 83,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 83,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})",
+      "line": 480,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 483,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})",
+      "line": 487,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "targets.items()",
+      "line": 494,
+      "expression": "targets.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "float(value)",
+      "line": 499,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_price_targets",
+      "callee": null,
+      "callsite": "dump_json(cleaned_targets)",
+      "line": 505,
+      "expression": "dump_json",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "chart.py": "2369caf696cfe6c39bd0b689560abaeb6de4867085db39ef98ffce3798216e02",
+    "screener.py": "1d88da98abc75ac3bd477d7357b95cf565b18e0f2b1d1cb61c6a3e89715de282",
+    "server.py": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+    "types.py": "7b287574a31c23b20fc07796804f432c6592081386266cb35c4b515b0d8d5176",
+    "utils.py": "4589c4175b8ade80c0d1f2fac19aa66baed87e2fc2a1af13de7440345d7f092d"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:_create_retryable_error_response": {
+      "path": "server.py",
+      "line_start": 77,
+      "line_end": 83,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})"
+    },
+    "server:_is_rate_limit_error": {
+      "path": "server.py",
+      "line_start": 73,
+      "line_end": 74,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)"
+    },
+    "server:get_analyst_price_targets": {
+      "path": "server.py",
+      "line_start": 456,
+      "line_end": 505,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "@mcp.tool(name='yfinance_get_analyst_price_targets', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_price_targets(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")]) -> str:\n    \"\"\"Fetch the current price and analyst consensus price targets for a stock.\n\n    Returns a JSON object with the fields supplied by Yahoo Finance:\n    - current: Current market price\n    - low: Lowest analyst price target\n    - high: Highest analyst price target\n    - mean: Mean analyst price target\n    - median: Median analyst price target\n\n    Analyst coverage and available fields vary by symbol.\n    \"\"\"\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        targets = await asyncio.to_thread(lambda: ticker.analyst_price_targets)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst price targets for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst price targets for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if not targets:\n        return create_error_response(f\"No analyst price targets available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    cleaned_targets: dict[str, Any] = {}\n    for key, value in targets.items():\n        if value is None:\n            cleaned_targets[key] = None\n            continue\n        try:\n            numeric = float(value)\n        except (TypeError, ValueError):\n            cleaned_targets[key] = value\n            continue\n        cleaned_targets[key] = None if numeric != numeric else numeric\n    return dump_json(cleaned_targets)"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "Annotated",
+        "Any",
+        "BaseException",
+        "ConnectionError",
+        "Exception",
+        "FastMCP",
+        "Field",
+        "OSError",
+        "TimeoutError",
+        "ToolAnnotations",
+        "TypeError",
+        "ValueError",
+        "YFRateLimitError",
+        "_RETRYABLE_YFINANCE_EXCEPTIONS",
+        "_create_retryable_error_response",
+        "_is_rate_limit_error",
+        "action",
+        "asyncio",
+        "bool",
+        "cleaned_targets",
+        "create_error_response",
+        "details",
+        "dict",
+        "dump_json",
+        "exc",
+        "float",
+        "isinstance",
+        "key",
+        "mcp",
+        "message",
+        "numeric",
+        "str",
+        "symbol",
+        "targets",
+        "ticker",
+        "tuple",
+        "type",
+        "value",
+        "yf"
+      ],
+      "omitted": [
+        {
+          "kind": "AnnAssign",
+          "line": 46,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 56,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

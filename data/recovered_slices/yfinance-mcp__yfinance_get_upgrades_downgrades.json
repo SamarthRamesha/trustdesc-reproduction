@@ -1,0 +1,295 @@
+{
+  "tool": "yfinance_get_upgrades_downgrades",
+  "entry": "server:get_upgrades_downgrades",
+  "entry_method": "registration_pattern",
+  "source": "# module: server\nimport asyncio\nimport math\nimport re\nfrom datetime import datetime\nfrom numbers import Real\nfrom typing import Annotated\nfrom typing import Any\nimport yfinance as yf\nfrom loguru import logger\nfrom mcp.server.fastmcp import FastMCP\nfrom mcp.types import ImageContent\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom yfinance.const import SECTOR_INDUSTY_MAPPING\nfrom yfinance.exceptions import YFDataException\nfrom yfinance.exceptions import YFInvalidPeriodError\nfrom yfinance.exceptions import YFPricesMissingError\nfrom yfinance.exceptions import YFRateLimitError\nfrom yfinance.exceptions import YFTzMissingError\nfrom yfmcp.chart import generate_chart\nfrom yfmcp.screener import build_screener_query\nfrom yfmcp.types import ChartType\nfrom yfmcp.types import Interval\nfrom yfmcp.types import OptionChainType\nfrom yfmcp.types import Period\nfrom yfmcp.types import ScreenerQueryType\nfrom yfmcp.types import SearchType\nfrom yfmcp.types import Sector\nfrom yfmcp.types import TopType\nfrom yfmcp.utils import create_error_response\nfrom yfmcp.utils import dump_json\nmcp = FastMCP('yfinance_mcp', log_level='ERROR')\n_RETRYABLE_YFINANCE_EXCEPTIONS: tuple[type[Exception], ...] = (ConnectionError, TimeoutError, OSError, YFRateLimitError)\n\ndef _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)\n\ndef _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})\n\n@mcp.tool(name='yfinance_get_upgrades_downgrades', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_upgrades_downgrades(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")], max_rows: Annotated[int, Field(description='Maximum analyst actions to return, newest first. Use 0 to return all rows.')]=25) -> str:\n    \"\"\"Fetch analyst upgrades, downgrades, initiations, and price target changes.\n\n    Returns analyst actions newest first. Fields supplied by Yahoo Finance can include:\n    - GradeDate: Date and time of the analyst action\n    - Firm: Analyst firm name\n    - ToGrade and FromGrade: New and previous ratings\n    - Action: Rating action, such as upgrade, downgrade, initiation, or reiteration\n    - priceTargetAction: Price target action, such as Raises, Lowers, or Maintains\n    - currentPriceTarget and priorPriceTarget: New and previous price targets\n\n    Available fields vary by symbol and analyst action.\n    \"\"\"\n    if max_rows < 0:\n        return create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows})\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        history = await asyncio.to_thread(lambda: ticker.upgrades_downgrades)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching upgrades and downgrades for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch upgrades and downgrades for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if history is None or history.empty:\n        return create_error_response(f\"No upgrades or downgrades available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    history = history.sort_index(ascending=False).reset_index()\n    total_rows = len(history)\n    limited_history = history if max_rows == 0 else history.head(max_rows)\n    limited_history = limited_history.astype(object).where(limited_history.notna(), None)\n    records = limited_history.to_dict(orient='records')\n    return dump_json({'upgrades_downgrades': records, '_metadata': {'symbol': symbol, 'max_rows': max_rows, 'total_rows': total_rows, 'returned_rows': len(records), 'truncated': len(records) < total_rows}})",
+  "initial_functions": [
+    "server:_create_retryable_error_response",
+    "server:_is_rate_limit_error",
+    "server:get_upgrades_downgrades"
+  ],
+  "functions": [
+    "server:_create_retryable_error_response",
+    "server:_is_rate_limit_error",
+    "server:get_upgrades_downgrades"
+  ],
+  "edges": [
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": "server:_create_retryable_error_response",
+      "callsite": "_create_retryable_error_response(f\"fetching upgrades and downgrades for '{symbol}'\", exc, {'symbol': symbol})",
+      "line": 726
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": "server:_is_rate_limit_error",
+      "callsite": "_is_rate_limit_error(exc)",
+      "line": 78
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows})",
+      "line": 716,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "asyncio.to_thread(yf.Ticker, symbol)",
+      "line": 723,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "asyncio.to_thread(lambda: ticker.upgrades_downgrades)",
+      "line": 724,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_is_rate_limit_error",
+      "callee": null,
+      "callsite": "isinstance(exc, YFRateLimitError)",
+      "line": 74,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})",
+      "line": 83,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 83,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "create_error_response(f\"Failed to fetch upgrades and downgrades for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})",
+      "line": 732,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 735,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "create_error_response(f\"No upgrades or downgrades available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})",
+      "line": 739,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "history.sort_index(ascending=False).reset_index()",
+      "line": 745,
+      "expression": "history.sort_index(ascending=False).reset_index",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "history.sort_index(ascending=False)",
+      "line": 745,
+      "expression": "history.sort_index",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "len(history)",
+      "line": 746,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "history.head(max_rows)",
+      "line": 747,
+      "expression": "history.head",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "limited_history.astype(object).where(limited_history.notna(), None)",
+      "line": 748,
+      "expression": "limited_history.astype(object).where",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "limited_history.astype(object)",
+      "line": 748,
+      "expression": "limited_history.astype",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "limited_history.notna()",
+      "line": 748,
+      "expression": "limited_history.notna",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "limited_history.to_dict(orient='records')",
+      "line": 749,
+      "expression": "limited_history.to_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "dump_json({'upgrades_downgrades': records, '_metadata': {'symbol': symbol, 'max_rows': max_rows, 'total_rows': total_rows, 'returned_rows': len(records), 'truncated': len(records) < total_rows}})",
+      "line": 751,
+      "expression": "dump_json",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "len(records)",
+      "line": 758,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_upgrades_downgrades",
+      "callee": null,
+      "callsite": "len(records)",
+      "line": 759,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "chart.py": "2369caf696cfe6c39bd0b689560abaeb6de4867085db39ef98ffce3798216e02",
+    "screener.py": "1d88da98abc75ac3bd477d7357b95cf565b18e0f2b1d1cb61c6a3e89715de282",
+    "server.py": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+    "types.py": "7b287574a31c23b20fc07796804f432c6592081386266cb35c4b515b0d8d5176",
+    "utils.py": "4589c4175b8ade80c0d1f2fac19aa66baed87e2fc2a1af13de7440345d7f092d"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:_create_retryable_error_response": {
+      "path": "server.py",
+      "line_start": 77,
+      "line_end": 83,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})"
+    },
+    "server:_is_rate_limit_error": {
+      "path": "server.py",
+      "line_start": 73,
+      "line_end": 74,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)"
+    },
+    "server:get_upgrades_downgrades": {
+      "path": "server.py",
+      "line_start": 696,
+      "line_end": 762,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "@mcp.tool(name='yfinance_get_upgrades_downgrades', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_upgrades_downgrades(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")], max_rows: Annotated[int, Field(description='Maximum analyst actions to return, newest first. Use 0 to return all rows.')]=25) -> str:\n    \"\"\"Fetch analyst upgrades, downgrades, initiations, and price target changes.\n\n    Returns analyst actions newest first. Fields supplied by Yahoo Finance can include:\n    - GradeDate: Date and time of the analyst action\n    - Firm: Analyst firm name\n    - ToGrade and FromGrade: New and previous ratings\n    - Action: Rating action, such as upgrade, downgrade, initiation, or reiteration\n    - priceTargetAction: Price target action, such as Raises, Lowers, or Maintains\n    - currentPriceTarget and priorPriceTarget: New and previous price targets\n\n    Available fields vary by symbol and analyst action.\n    \"\"\"\n    if max_rows < 0:\n        return create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows})\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n        history = await asyncio.to_thread(lambda: ticker.upgrades_downgrades)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching upgrades and downgrades for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch upgrades and downgrades for '{symbol}'. Verify the symbol is correct.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    if history is None or history.empty:\n        return create_error_response(f\"No upgrades or downgrades available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol})\n    history = history.sort_index(ascending=False).reset_index()\n    total_rows = len(history)\n    limited_history = history if max_rows == 0 else history.head(max_rows)\n    limited_history = limited_history.astype(object).where(limited_history.notna(), None)\n    records = limited_history.to_dict(orient='records')\n    return dump_json({'upgrades_downgrades': records, '_metadata': {'symbol': symbol, 'max_rows': max_rows, 'total_rows': total_rows, 'returned_rows': len(records), 'truncated': len(records) < total_rows}})"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "Annotated",
+        "Any",
+        "BaseException",
+        "ConnectionError",
+        "Exception",
+        "FastMCP",
+        "Field",
+        "OSError",
+        "TimeoutError",
+        "ToolAnnotations",
+        "YFRateLimitError",
+        "_RETRYABLE_YFINANCE_EXCEPTIONS",
+        "_create_retryable_error_response",
+        "_is_rate_limit_error",
+        "action",
+        "asyncio",
+        "bool",
+        "create_error_response",
+        "details",
+        "dict",
+        "dump_json",
+        "exc",
+        "history",
+        "int",
+        "isinstance",
+        "len",
+        "limited_history",
+        "max_rows",
+        "mcp",
+        "message",
+        "object",
+        "records",
+        "str",
+        "symbol",
+        "ticker",
+        "total_rows",
+        "tuple",
+        "type",
+        "yf"
+      ],
+      "omitted": [
+        {
+          "kind": "AnnAssign",
+          "line": 46,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 56,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

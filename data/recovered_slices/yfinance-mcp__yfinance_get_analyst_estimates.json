@@ -1,0 +1,636 @@
+{
+  "tool": "yfinance_get_analyst_estimates",
+  "entry": "server:get_analyst_estimates",
+  "entry_method": "registration_pattern",
+  "source": "# module: server\nimport asyncio\nimport math\nimport re\nfrom datetime import datetime\nfrom numbers import Real\nfrom typing import Annotated\nfrom typing import Any\nimport yfinance as yf\nfrom loguru import logger\nfrom mcp.server.fastmcp import FastMCP\nfrom mcp.types import ImageContent\nfrom mcp.types import ToolAnnotations\nfrom pydantic import Field\nfrom yfinance.const import SECTOR_INDUSTY_MAPPING\nfrom yfinance.exceptions import YFDataException\nfrom yfinance.exceptions import YFInvalidPeriodError\nfrom yfinance.exceptions import YFPricesMissingError\nfrom yfinance.exceptions import YFRateLimitError\nfrom yfinance.exceptions import YFTzMissingError\nfrom yfmcp.chart import generate_chart\nfrom yfmcp.screener import build_screener_query\nfrom yfmcp.types import ChartType\nfrom yfmcp.types import Interval\nfrom yfmcp.types import OptionChainType\nfrom yfmcp.types import Period\nfrom yfmcp.types import ScreenerQueryType\nfrom yfmcp.types import SearchType\nfrom yfmcp.types import Sector\nfrom yfmcp.types import TopType\nfrom yfmcp.utils import create_error_response\nfrom yfmcp.utils import dump_json\nmcp = FastMCP('yfinance_mcp', log_level='ERROR')\n_RETRYABLE_YFINANCE_EXCEPTIONS: tuple[type[Exception], ...] = (ConnectionError, TimeoutError, OSError, YFRateLimitError)\n_ANALYST_ESTIMATE_SECTIONS: dict[str, tuple[str, str | None, bool]] = {'recommendations': ('recommendations', None, False), 'earnings_estimate': ('earnings_estimate', 'period', False), 'revenue_estimate': ('revenue_estimate', 'period', False), 'eps_trend': ('eps_trend', 'period', False), 'eps_revisions': ('eps_revisions', 'period', False), 'earnings_history': ('earnings_history', 'date', True), 'growth_estimates': ('growth_estimates', 'period', False)}\n\ndef _is_retryable_yfinance_error(exc: BaseException) -> bool:\n    return isinstance(exc, _RETRYABLE_YFINANCE_EXCEPTIONS)\n\ndef _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)\n\ndef _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})\n\ndef _select_retryable_exception(exceptions: list[Exception]) -> BaseException:\n    rate_limit_exception = next((exc for exc in exceptions if _is_rate_limit_error(exc)), None)\n    return rate_limit_exception or exceptions[0]\n\ndef _normalize_json_value(value: Any) -> Any:\n    \"\"\"Replace non-finite numeric values recursively so responses remain strict JSON.\"\"\"\n    if isinstance(value, dict):\n        return {key: _normalize_json_value(item) for key, item in value.items()}\n    if isinstance(value, (list, tuple)):\n        return [_normalize_json_value(item) for item in value]\n    if isinstance(value, Real) and (not math.isfinite(float(value))):\n        return None\n    return value\n\ndef _dataframe_records(frame: Any, max_rows: int, *, include_index: bool, index_name: str | None=None, sort_descending: bool=False) -> tuple[list[dict[str, Any]], dict[str, Any]]:\n    prepared = frame.copy()\n    if sort_descending:\n        prepared = prepared.sort_index(ascending=False)\n    if include_index:\n        if index_name is not None:\n            prepared.index.name = index_name\n        prepared = prepared.reset_index()\n    total_rows = len(prepared)\n    limited = prepared if max_rows == 0 else prepared.head(max_rows)\n    limited = limited.astype(object).where(limited.notna(), None)\n    records = _normalize_json_value(limited.to_dict(orient='records'))\n    return (records, {'total_rows': total_rows, 'returned_rows': len(records), 'truncated': len(records) < total_rows})\n\ndef _validate_sections(sections: list[str] | None, valid_sections: set[str], *, max_rows: int) -> tuple[list[str] | None, str | None]:\n    if max_rows < 0:\n        return (None, create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows}))\n    if sections is not None and (not sections):\n        return (None, create_error_response('sections must include at least one section when provided.', error_code='INVALID_PARAMS', details={'sections': sections, 'valid_sections': sorted(valid_sections)}))\n    selected = sorted(valid_sections) if sections is None else list(dict.fromkeys(sections))\n    invalid = sorted(set(selected).difference(valid_sections))\n    if invalid:\n        return (None, create_error_response('One or more requested sections are invalid.', error_code='INVALID_PARAMS', details={'invalid_sections': invalid, 'valid_sections': sorted(valid_sections)}))\n    return (selected, None)\n\ndef _section_fetch_error_response(symbol: str, subject: str, selected_sections: list[str], fetch_errors: list[tuple[str, Exception]]) -> str:\n    retryable = [exc for _, exc in fetch_errors if _is_retryable_yfinance_error(exc)]\n    failed_sections = [section for section, _ in fetch_errors]\n    details: dict[str, Any] = {'symbol': symbol, 'requested_sections': selected_sections, 'failed_sections': failed_sections}\n    if retryable:\n        return _create_retryable_error_response(f\"fetching {subject} for '{symbol}'\", _select_retryable_exception(retryable), details)\n    details['exception'] = str(fetch_errors[0][1])\n    return create_error_response(f\"Failed to fetch {subject} for '{symbol}'.\", error_code='API_ERROR', details=details)\n\n@mcp.tool(name='yfinance_get_analyst_estimates', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_estimates(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")], sections: Annotated[list[str] | None, Field(description='Optional analyst sections: recommendations, earnings_estimate, revenue_estimate, eps_trend, eps_revisions, earnings_history, and growth_estimates. Omit to return all sections.')]=None, max_rows: Annotated[int, Field(description='Maximum rows per section. Use 0 to return all rows.')]=12) -> str:\n    \"\"\"Fetch consensus estimates, EPS/revenue trends, revisions, recommendations, and earnings history.\"\"\"\n    selected_sections, validation_error = _validate_sections(sections, set(_ANALYST_ESTIMATE_SECTIONS), max_rows=max_rows)\n    if validation_error is not None:\n        return validation_error\n    assert selected_sections is not None\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst estimates for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst estimates for '{symbol}'.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    response: dict[str, Any] = {}\n    section_metadata: dict[str, Any] = {}\n    unavailable_sections: list[str] = []\n    fetch_errors: list[tuple[str, Exception]] = []\n    for section in selected_sections:\n        attribute, index_name, sort_descending = _ANALYST_ESTIMATE_SECTIONS[section]\n        try:\n            frame = await asyncio.to_thread(lambda attribute=attribute: getattr(ticker, attribute))\n            if frame is None or frame.empty:\n                unavailable_sections.append(section)\n                continue\n            records, metadata = _dataframe_records(frame, max_rows, include_index=index_name is not None, index_name=index_name, sort_descending=sort_descending)\n            response[section] = records\n            section_metadata[section] = metadata\n        except Exception as exc:\n            fetch_errors.append((section, exc))\n    if not response:\n        if fetch_errors:\n            return _section_fetch_error_response(symbol, 'analyst estimates', selected_sections, fetch_errors)\n        return create_error_response(f\"No analyst estimates available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol, 'requested_sections': selected_sections})\n    response['_metadata'] = {'symbol': symbol, 'max_rows': max_rows, 'requested_sections': selected_sections, 'sections': section_metadata, 'unavailable_sections': unavailable_sections, 'failed_sections': [section for section, _ in fetch_errors]}\n    return dump_json(response)",
+  "initial_functions": [
+    "server:_create_retryable_error_response",
+    "server:_dataframe_records",
+    "server:_is_rate_limit_error",
+    "server:_is_retryable_yfinance_error",
+    "server:_normalize_json_value",
+    "server:_section_fetch_error_response",
+    "server:_select_retryable_exception",
+    "server:_validate_sections",
+    "server:get_analyst_estimates"
+  ],
+  "functions": [
+    "server:_create_retryable_error_response",
+    "server:_dataframe_records",
+    "server:_is_rate_limit_error",
+    "server:_is_retryable_yfinance_error",
+    "server:_normalize_json_value",
+    "server:_section_fetch_error_response",
+    "server:_select_retryable_exception",
+    "server:_validate_sections",
+    "server:get_analyst_estimates"
+  ],
+  "edges": [
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": "server:_validate_sections",
+      "callsite": "_validate_sections(sections, set(_ANALYST_ESTIMATE_SECTIONS), max_rows=max_rows)",
+      "line": 534
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": "server:_create_retryable_error_response",
+      "callsite": "_create_retryable_error_response(f\"fetching analyst estimates for '{symbol}'\", exc, {'symbol': symbol})",
+      "line": 546
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": "server:_is_rate_limit_error",
+      "callsite": "_is_rate_limit_error(exc)",
+      "line": 78
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": "server:_dataframe_records",
+      "callsite": "_dataframe_records(frame, max_rows, include_index=index_name is not None, index_name=index_name, sort_descending=sort_descending)",
+      "line": 570
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": "server:_normalize_json_value",
+      "callsite": "_normalize_json_value(limited.to_dict(orient='records'))",
+      "line": 221
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": "server:_normalize_json_value",
+      "callsite": "_normalize_json_value(item)",
+      "line": 194
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": "server:_normalize_json_value",
+      "callsite": "_normalize_json_value(item)",
+      "line": 196
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": "server:_section_fetch_error_response",
+      "callsite": "_section_fetch_error_response(symbol, 'analyst estimates', selected_sections, fetch_errors)",
+      "line": 584
+    },
+    {
+      "caller": "server:_section_fetch_error_response",
+      "callee": "server:_is_retryable_yfinance_error",
+      "callsite": "_is_retryable_yfinance_error(exc)",
+      "line": 304
+    },
+    {
+      "caller": "server:_section_fetch_error_response",
+      "callee": "server:_create_retryable_error_response",
+      "callsite": "_create_retryable_error_response(f\"fetching {subject} for '{symbol}'\", _select_retryable_exception(retryable), details)",
+      "line": 312
+    },
+    {
+      "caller": "server:_section_fetch_error_response",
+      "callee": "server:_select_retryable_exception",
+      "callsite": "_select_retryable_exception(retryable)",
+      "line": 314
+    },
+    {
+      "caller": "server:_select_retryable_exception",
+      "callee": "server:_is_rate_limit_error",
+      "callsite": "_is_rate_limit_error(exc)",
+      "line": 187
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows})",
+      "line": 275,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "create_error_response('sections must include at least one section when provided.', error_code='INVALID_PARAMS', details={'sections': sections, 'valid_sections': sorted(valid_sections)})",
+      "line": 281,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "sorted(valid_sections)",
+      "line": 284,
+      "expression": "sorted",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "sorted(valid_sections)",
+      "line": 287,
+      "expression": "sorted",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "list(dict.fromkeys(sections))",
+      "line": 287,
+      "expression": "list",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "dict.fromkeys(sections)",
+      "line": 287,
+      "expression": "dict.fromkeys",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "sorted(set(selected).difference(valid_sections))",
+      "line": 288,
+      "expression": "sorted",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "set(selected).difference(valid_sections)",
+      "line": 288,
+      "expression": "set(selected).difference",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "set(selected)",
+      "line": 288,
+      "expression": "set",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "create_error_response('One or more requested sections are invalid.', error_code='INVALID_PARAMS', details={'invalid_sections': invalid, 'valid_sections': sorted(valid_sections)})",
+      "line": 290,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_validate_sections",
+      "callee": null,
+      "callsite": "sorted(valid_sections)",
+      "line": 293,
+      "expression": "sorted",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "set(_ANALYST_ESTIMATE_SECTIONS)",
+      "line": 536,
+      "expression": "set",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "asyncio.to_thread(yf.Ticker, symbol)",
+      "line": 544,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_is_rate_limit_error",
+      "callee": null,
+      "callsite": "isinstance(exc, YFRateLimitError)",
+      "line": 74,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})",
+      "line": 83,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_create_retryable_error_response",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 83,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "create_error_response(f\"Failed to fetch analyst estimates for '{symbol}'.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})",
+      "line": 552,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 555,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "asyncio.to_thread(lambda attribute=attribute: getattr(ticker, attribute))",
+      "line": 566,
+      "expression": "asyncio.to_thread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "unavailable_sections.append(section)",
+      "line": 568,
+      "expression": "unavailable_sections.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "frame.copy()",
+      "line": 210,
+      "expression": "frame.copy",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "prepared.sort_index(ascending=False)",
+      "line": 212,
+      "expression": "prepared.sort_index",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "prepared.reset_index()",
+      "line": 216,
+      "expression": "prepared.reset_index",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "len(prepared)",
+      "line": 218,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "prepared.head(max_rows)",
+      "line": 219,
+      "expression": "prepared.head",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "limited.astype(object).where(limited.notna(), None)",
+      "line": 220,
+      "expression": "limited.astype(object).where",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "limited.astype(object)",
+      "line": 220,
+      "expression": "limited.astype",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "limited.notna()",
+      "line": 220,
+      "expression": "limited.notna",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "isinstance(value, dict)",
+      "line": 193,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "value.items()",
+      "line": 194,
+      "expression": "value.items",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "isinstance(value, (list, tuple))",
+      "line": 195,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "isinstance(value, Real)",
+      "line": 197,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "math.isfinite(float(value))",
+      "line": 197,
+      "expression": "math.isfinite",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_normalize_json_value",
+      "callee": null,
+      "callsite": "float(value)",
+      "line": 197,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "limited.to_dict(orient='records')",
+      "line": 221,
+      "expression": "limited.to_dict",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "len(records)",
+      "line": 224,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_dataframe_records",
+      "callee": null,
+      "callsite": "len(records)",
+      "line": 225,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "fetch_errors.append((section, exc))",
+      "line": 580,
+      "expression": "fetch_errors.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_is_retryable_yfinance_error",
+      "callee": null,
+      "callsite": "isinstance(exc, _RETRYABLE_YFINANCE_EXCEPTIONS)",
+      "line": 70,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_select_retryable_exception",
+      "callee": null,
+      "callsite": "next((exc for exc in exceptions if _is_rate_limit_error(exc)), None)",
+      "line": 187,
+      "expression": "next",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_section_fetch_error_response",
+      "callee": null,
+      "callsite": "str(fetch_errors[0][1])",
+      "line": 317,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:_section_fetch_error_response",
+      "callee": null,
+      "callsite": "create_error_response(f\"Failed to fetch {subject} for '{symbol}'.\", error_code='API_ERROR', details=details)",
+      "line": 318,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "create_error_response(f\"No analyst estimates available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol, 'requested_sections': selected_sections})",
+      "line": 590,
+      "expression": "create_error_response",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "server:get_analyst_estimates",
+      "callee": null,
+      "callsite": "dump_json(response)",
+      "line": 604,
+      "expression": "dump_json",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "chart.py": "2369caf696cfe6c39bd0b689560abaeb6de4867085db39ef98ffce3798216e02",
+    "screener.py": "1d88da98abc75ac3bd477d7357b95cf565b18e0f2b1d1cb61c6a3e89715de282",
+    "server.py": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+    "types.py": "7b287574a31c23b20fc07796804f432c6592081386266cb35c4b515b0d8d5176",
+    "utils.py": "4589c4175b8ade80c0d1f2fac19aa66baed87e2fc2a1af13de7440345d7f092d"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "server:_create_retryable_error_response": {
+      "path": "server.py",
+      "line_start": 77,
+      "line_end": 83,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _create_retryable_error_response(action: str, exc: BaseException, details: dict[str, Any]) -> str:\n    if _is_rate_limit_error(exc):\n        message = f'Rate limit reached while {action}. Try again later.'\n    else:\n        message = f'Temporary network issue while {action}. Try again later.'\n    return create_error_response(message, error_code='NETWORK_ERROR', details={**details, 'exception': str(exc)})"
+    },
+    "server:_dataframe_records": {
+      "path": "server.py",
+      "line_start": 202,
+      "line_end": 226,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _dataframe_records(frame: Any, max_rows: int, *, include_index: bool, index_name: str | None=None, sort_descending: bool=False) -> tuple[list[dict[str, Any]], dict[str, Any]]:\n    prepared = frame.copy()\n    if sort_descending:\n        prepared = prepared.sort_index(ascending=False)\n    if include_index:\n        if index_name is not None:\n            prepared.index.name = index_name\n        prepared = prepared.reset_index()\n    total_rows = len(prepared)\n    limited = prepared if max_rows == 0 else prepared.head(max_rows)\n    limited = limited.astype(object).where(limited.notna(), None)\n    records = _normalize_json_value(limited.to_dict(orient='records'))\n    return (records, {'total_rows': total_rows, 'returned_rows': len(records), 'truncated': len(records) < total_rows})"
+    },
+    "server:_is_rate_limit_error": {
+      "path": "server.py",
+      "line_start": 73,
+      "line_end": 74,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _is_rate_limit_error(exc: BaseException) -> bool:\n    return isinstance(exc, YFRateLimitError)"
+    },
+    "server:_is_retryable_yfinance_error": {
+      "path": "server.py",
+      "line_start": 69,
+      "line_end": 70,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _is_retryable_yfinance_error(exc: BaseException) -> bool:\n    return isinstance(exc, _RETRYABLE_YFINANCE_EXCEPTIONS)"
+    },
+    "server:_normalize_json_value": {
+      "path": "server.py",
+      "line_start": 191,
+      "line_end": 199,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _normalize_json_value(value: Any) -> Any:\n    \"\"\"Replace non-finite numeric values recursively so responses remain strict JSON.\"\"\"\n    if isinstance(value, dict):\n        return {key: _normalize_json_value(item) for key, item in value.items()}\n    if isinstance(value, (list, tuple)):\n        return [_normalize_json_value(item) for item in value]\n    if isinstance(value, Real) and (not math.isfinite(float(value))):\n        return None\n    return value"
+    },
+    "server:_section_fetch_error_response": {
+      "path": "server.py",
+      "line_start": 298,
+      "line_end": 322,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _section_fetch_error_response(symbol: str, subject: str, selected_sections: list[str], fetch_errors: list[tuple[str, Exception]]) -> str:\n    retryable = [exc for _, exc in fetch_errors if _is_retryable_yfinance_error(exc)]\n    failed_sections = [section for section, _ in fetch_errors]\n    details: dict[str, Any] = {'symbol': symbol, 'requested_sections': selected_sections, 'failed_sections': failed_sections}\n    if retryable:\n        return _create_retryable_error_response(f\"fetching {subject} for '{symbol}'\", _select_retryable_exception(retryable), details)\n    details['exception'] = str(fetch_errors[0][1])\n    return create_error_response(f\"Failed to fetch {subject} for '{symbol}'.\", error_code='API_ERROR', details=details)"
+    },
+    "server:_select_retryable_exception": {
+      "path": "server.py",
+      "line_start": 186,
+      "line_end": 188,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _select_retryable_exception(exceptions: list[Exception]) -> BaseException:\n    rate_limit_exception = next((exc for exc in exceptions if _is_rate_limit_error(exc)), None)\n    return rate_limit_exception or exceptions[0]"
+    },
+    "server:_validate_sections": {
+      "path": "server.py",
+      "line_start": 268,
+      "line_end": 295,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "def _validate_sections(sections: list[str] | None, valid_sections: set[str], *, max_rows: int) -> tuple[list[str] | None, str | None]:\n    if max_rows < 0:\n        return (None, create_error_response('max_rows must be greater than or equal to 0.', error_code='INVALID_PARAMS', details={'max_rows': max_rows}))\n    if sections is not None and (not sections):\n        return (None, create_error_response('sections must include at least one section when provided.', error_code='INVALID_PARAMS', details={'sections': sections, 'valid_sections': sorted(valid_sections)}))\n    selected = sorted(valid_sections) if sections is None else list(dict.fromkeys(sections))\n    invalid = sorted(set(selected).difference(valid_sections))\n    if invalid:\n        return (None, create_error_response('One or more requested sections are invalid.', error_code='INVALID_PARAMS', details={'invalid_sections': invalid, 'valid_sections': sorted(valid_sections)}))\n    return (selected, None)"
+    },
+    "server:get_analyst_estimates": {
+      "path": "server.py",
+      "line_start": 517,
+      "line_end": 604,
+      "file_sha256": "37449b541716b8f59a4ad78955337a2c9d8b1eeba63d4dc8a05e0fa7cc2722d1",
+      "source": "@mcp.tool(name='yfinance_get_analyst_estimates', annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True))\nasync def get_analyst_estimates(symbol: Annotated[str, Field(description=\"Stock ticker symbol (e.g., 'AAPL', 'GOOGL', 'MSFT')\")], sections: Annotated[list[str] | None, Field(description='Optional analyst sections: recommendations, earnings_estimate, revenue_estimate, eps_trend, eps_revisions, earnings_history, and growth_estimates. Omit to return all sections.')]=None, max_rows: Annotated[int, Field(description='Maximum rows per section. Use 0 to return all rows.')]=12) -> str:\n    \"\"\"Fetch consensus estimates, EPS/revenue trends, revisions, recommendations, and earnings history.\"\"\"\n    selected_sections, validation_error = _validate_sections(sections, set(_ANALYST_ESTIMATE_SECTIONS), max_rows=max_rows)\n    if validation_error is not None:\n        return validation_error\n    assert selected_sections is not None\n    try:\n        ticker = await asyncio.to_thread(yf.Ticker, symbol)\n    except _RETRYABLE_YFINANCE_EXCEPTIONS as exc:\n        return _create_retryable_error_response(f\"fetching analyst estimates for '{symbol}'\", exc, {'symbol': symbol})\n    except Exception as exc:\n        return create_error_response(f\"Failed to fetch analyst estimates for '{symbol}'.\", error_code='API_ERROR', details={'symbol': symbol, 'exception': str(exc)})\n    response: dict[str, Any] = {}\n    section_metadata: dict[str, Any] = {}\n    unavailable_sections: list[str] = []\n    fetch_errors: list[tuple[str, Exception]] = []\n    for section in selected_sections:\n        attribute, index_name, sort_descending = _ANALYST_ESTIMATE_SECTIONS[section]\n        try:\n            frame = await asyncio.to_thread(lambda attribute=attribute: getattr(ticker, attribute))\n            if frame is None or frame.empty:\n                unavailable_sections.append(section)\n                continue\n            records, metadata = _dataframe_records(frame, max_rows, include_index=index_name is not None, index_name=index_name, sort_descending=sort_descending)\n            response[section] = records\n            section_metadata[section] = metadata\n        except Exception as exc:\n            fetch_errors.append((section, exc))\n    if not response:\n        if fetch_errors:\n            return _section_fetch_error_response(symbol, 'analyst estimates', selected_sections, fetch_errors)\n        return create_error_response(f\"No analyst estimates available for '{symbol}'.\", error_code='NO_DATA', details={'symbol': symbol, 'requested_sections': selected_sections})\n    response['_metadata'] = {'symbol': symbol, 'max_rows': max_rows, 'requested_sections': selected_sections, 'sections': section_metadata, 'unavailable_sections': unavailable_sections, 'failed_sections': [section for section, _ in fetch_errors]}\n    return dump_json(response)"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "server",
+      "referenced_names": [
+        "Annotated",
+        "Any",
+        "BaseException",
+        "ConnectionError",
+        "Exception",
+        "FastMCP",
+        "Field",
+        "OSError",
+        "Real",
+        "TimeoutError",
+        "ToolAnnotations",
+        "YFRateLimitError",
+        "_ANALYST_ESTIMATE_SECTIONS",
+        "_RETRYABLE_YFINANCE_EXCEPTIONS",
+        "_create_retryable_error_response",
+        "_dataframe_records",
+        "_is_rate_limit_error",
+        "_is_retryable_yfinance_error",
+        "_normalize_json_value",
+        "_section_fetch_error_response",
+        "_select_retryable_exception",
+        "_validate_sections",
+        "action",
+        "asyncio",
+        "attribute",
+        "bool",
+        "create_error_response",
+        "details",
+        "dict",
+        "dump_json",
+        "exc",
+        "exceptions",
+        "failed_sections",
+        "fetch_errors",
+        "float",
+        "frame",
+        "getattr",
+        "include_index",
+        "index_name",
+        "int",
+        "invalid",
+        "isinstance",
+        "item",
+        "key",
+        "len",
+        "limited",
+        "list",
+        "math",
+        "max_rows",
+        "mcp",
+        "message",
+        "metadata",
+        "next",
+        "object",
+        "prepared",
+        "rate_limit_exception",
+        "records",
+        "response",
+        "retryable",
+        "section",
+        "section_metadata",
+        "sections",
+        "selected",
+        "selected_sections",
+        "set",
+        "sort_descending",
+        "sorted",
+        "str",
+        "subject",
+        "symbol",
+        "ticker",
+        "total_rows",
+        "tuple",
+        "type",
+        "unavailable_sections",
+        "valid_sections",
+        "validation_error",
+        "value",
+        "yf"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 56,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

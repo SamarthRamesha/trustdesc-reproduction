@@ -1,0 +1,741 @@
+{
+  "description": {
+    "summary": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+    "functionalities": [
+      "Saves a user-defined topic to a persistent file for tracking and future retrieval.",
+      "Supports updating existing topic watches with new parameters like categories or max results.",
+      "Maintains metadata such as creation and last-checked timestamps for each watched topic.",
+      "Handles both new and existing topics, with appropriate updates to the watch list.",
+      "Validates input and returns structured error messages if required fields (like topic) are missing.",
+      "Logs errors and invalid file content (e.g., corrupted JSON) with warnings and resets the file if needed."
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "arguments"
+      ],
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "type": "string",
+              "description": "The name or identifier of the topic to watch, must be provided and non-empty."
+            },
+            "max_results": {
+              "type": "integer",
+              "description": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit."
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list."
+            }
+          },
+          "additionalProperties": false,
+          "description": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories."
+        }
+      }
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that allows users to watch and manage topics of interest by saving topic details (like topic name, categories, and result limits) to a persistent JSON file. It supports updating existing topic watches or adding new ones, with automatic updates to timestamps and metadata. On error, it returns a descriptive error message. The function ensures data integrity by validating inputs and logging errors.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Saves a user-defined topic to a persistent file for tracking and future retrieval.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Supports updating existing topic watches with new parameters like categories or max results.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "Maintains metadata such as creation and last-checked timestamps for each watched topic.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "Handles both new and existing topics, with appropriate updates to the watch list.",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "Validates input and returns structured error messages if required fields (like topic) are missing.",
+        "target": [
+          "functionalities",
+          4
+        ]
+      },
+      {
+        "id": "c7",
+        "text": "Logs errors and invalid file content (e.g., corrupted JSON) with warnings and resets the file if needed.",
+        "target": [
+          "functionalities",
+          5
+        ]
+      },
+      {
+        "id": "c8",
+        "text": "The name or identifier of the topic to watch, must be provided and non-empty.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "properties",
+          "topic",
+          "description"
+        ]
+      },
+      {
+        "id": "c9",
+        "text": "Maximum number of results to retrieve for the topic; defaults to 10 or the value specified in the existing watch entry, capped by the system's MAX_RESULTS limit.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "properties",
+          "max_results",
+          "description"
+        ]
+      },
+      {
+        "id": "c10",
+        "text": "List of arXiv categories (e.g., cs.LG) to filter results for the topic. If not provided, defaults to the categories from an existing watch entry or empty list.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "properties",
+          "categories",
+          "description"
+        ]
+      },
+      {
+        "id": "c11",
+        "text": "Input arguments for the watch topic operation. Required field: topic. Optional: max_results and categories.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "from __future__ import annotations\nimport json\nimport logging\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom dateutil import parser\nfrom ..config import Settings\nfrom .search import ArxivRateLimitError, _rate_limited_respon, _raw_arxiv_search\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nWATCH_FILE_NAME = 'watched_topics.json'\n\ndef _watch_file_path() -> Path:\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME\n\ndef _load_watches() -> Dict[str, Any]:\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}\n\ndef _save_watches(payload: Dict[str, Any]) -> None:\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')\n\ndef _now_iso() -> str:\n    return datetime.now(timezone.utc).isoformat()\n\nasync def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+    "truncations": {
+      "_rate_limited_response": "_rate_limited_respon"
+    },
+    "semantic_renames": {
+      "Any": "Any",
+      "ArxivRateLimitError": "ArxivRateLimitError",
+      "Dict": "Dict",
+      "Exception": "Exception",
+      "JSONDecodeError": "JSONDecodeError",
+      "List": "List",
+      "MAX_RESULTS": "MAX_RESULTS",
+      "Optional": "Optional",
+      "Path": "Path",
+      "STORAGE_PATH": "STORAGE_PATH",
+      "Settings": "Settings",
+      "TextContent": "TextContent",
+      "ToolAnnotations": "ToolAnnotations",
+      "WATCH_FILE_NAME": "WATCH_FILE_NAME",
+      "_load_watches": "_load_watches",
+      "_now_iso": "_now_iso",
+      "_rate_limited_respon": "_rate_limited_respon",
+      "_raw_arxiv_search": "_raw_arxiv_search",
+      "_save_watches": "_save_watches",
+      "_watch_file_path": "_watch_file_path",
+      "annotations": "annotations",
+      "append": "append",
+      "arguments": "arguments",
+      "categories": "categories",
+      "current": "current",
+      "datetime": "datetime",
+      "dumps": "dumps",
+      "encoding": "encoding",
+      "enumerate": "enumerate",
+      "error": "error",
+      "exc": "exc",
+      "existing_index": "existing_index",
+      "exists": "exists",
+      "get": "get",
+      "getLogger": "getLogger",
+      "handle_watch_topic": "handle_watch_topic",
+      "idx": "idx",
+      "indent": "indent",
+      "int": "int",
+      "isoformat": "isoformat",
+      "item": "item",
+      "json": "json",
+      "loads": "loads",
+      "logger": "logger",
+      "logging": "logging",
+      "max_results": "max_results",
+      "mcp": "mcp",
+      "min": "min",
+      "next": "next",
+      "now": "now",
+      "parser": "parser",
+      "payload": "payload",
+      "read_text": "read_text",
+      "record": "record",
+      "settings": "settings",
+      "str": "str",
+      "strip": "strip",
+      "text": "text",
+      "timezone": "timezone",
+      "topic": "topic",
+      "topics": "topics",
+      "type": "type",
+      "types": "types",
+      "utc": "utc",
+      "warning": "warning",
+      "watch_file": "watch_file",
+      "write_text": "write_text"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        },
+        {
+          "function": "tools.alerts:_load_watches",
+          "quote": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 160,
+          "line_end": 170
+        },
+        {
+          "function": "tools.alerts:_save_watches",
+          "quote": "def _save_watches(payload: Dict[str, Any]) -> None:\n    \"\"\"Persist watches to disk.\"\"\"\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 173,
+          "line_end": 175
+        },
+        {
+          "function": "tools.alerts:_now_iso",
+          "quote": "def _now_iso() -> str:\n    \"\"\"UTC timestamp in ISO format.\"\"\"\n    return datetime.now(timezone.utc).isoformat()",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 178,
+          "line_end": 180
+        },
+        {
+          "function": "tools.alerts:_watch_file_path",
+          "quote": "def _watch_file_path() -> Path:\n    \"\"\"Get watched topics file path.\"\"\"\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 155,
+          "line_end": 157
+        }
+      ],
+      "rationale": "The claim describes a tool that watches and manages topics with persistent storage via a JSON file. The `_load_watches` function loads topic data from disk, `_save_watches` persists updates to disk, and `_now_iso` generates timestamps for metadata. The `handle_watch_topic` function orchestrates saving or updating topics, including handling new and existing entries with proper metadata (creation and last-checked timestamps), and validates inputs. This directly supports the described behavior of persistent, managed topic tracking with error handling and data integrity.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function saves a user-defined topic to a persistent file by updating the watch list and writing it to disk via `_save_watches`. It ensures the topic is stored with metadata like timestamps and result limits, fulfilling the requirement to save a user-defined topic for future retrieval.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function supports updating existing topic watches by detecting an existing entry via `topic` matching and overwriting its fields (e.g., categories, max_results) with new values provided in the input. It updates the `updated_at` and `last_checked` timestamps accordingly, directly supporting the ability to update existing topic watches.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function maintains metadata such as `created_at`, `last_checked`, and `updated_at` for each watched topic. These timestamps are set using `_now_iso()` and updated when a topic is modified, ensuring the metadata is preserved and synchronized with the watch state.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function handles both new and existing topics by checking for an existing entry with the same `topic` value. If found, it updates the existing record; otherwise, it appends a new one. This behavior ensures both scenarios are supported with appropriate updates to the watch list.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function validates input by checking if the `topic` argument is provided and non-empty. If missing, it returns a descriptive error message, directly supporting input validation and structured error messaging as required.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c7",
+      "references": [
+        {
+          "function": "tools.alerts:_load_watches",
+          "quote": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 160,
+          "line_end": 170
+        }
+      ],
+      "rationale": "The `_load_watches` function catches and logs `json.JSONDecodeError` when attempting to parse the watch file, issuing a warning and resetting the file to an empty state. This ensures corrupted or invalid file content is handled gracefully, with logging and file reset as specified.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c8",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function extracts the `topic` from the input arguments and validates it by stripping whitespace. The function requires the `topic` to be non-empty, and if absent, returns an error. This confirms the requirement that the topic name must be provided and non-empty as per the input schema description.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c9",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function processes the `max_results` argument, defaulting to 10 if not provided, and caps it at `settings.MAX_RESULTS`. It uses the existing entry's value if updating an existing watch, ensuring the max results are correctly applied and bounded as described.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c10",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function processes the `categories` argument, using the existing watch's categories if not provided. It sets the `categories` field in the topic record, ensuring that if no categories are specified, it defaults to the existing entry or an empty list, as required by the schema.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c11",
+      "references": [
+        {
+          "function": "tools.alerts:handle_watch_topic",
+          "quote": "async def handle_watch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Save or update a watched topic definition.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text='Error: topic is required')]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        existing_index = next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)\n        if 'max_results' in arguments:\n            max_results = min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)\n        elif existing_index is not None:\n            max_results = topics[existing_index].get('max_results', 10)\n        else:\n            max_results = 10\n        if 'categories' in arguments:\n            categories = arguments.get('categories') or []\n        elif existing_index is not None:\n            categories = topics[existing_index].get('categories') or []\n        else:\n            categories = []\n        now = _now_iso()\n        record = {'topic': topic, 'categories': categories, 'max_results': max_results, 'last_checked': now, 'created_at': now, 'updated_at': now}\n        if existing_index is not None:\n            current = topics[existing_index]\n            record['created_at'] = current.get('created_at', record['created_at'])\n            record['last_checked'] = current.get('last_checked')\n            topics[existing_index] = record\n        else:\n            topics.append(record)\n        payload['topics'] = topics\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]\n    except Exception as exc:\n        logger.error('watch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 248,
+          "line_end": 320
+        }
+      ],
+      "rationale": "The `handle_watch_topic` function receives a dictionary of arguments with required `topic` and optional `max_results` and `categories`. The function validates the presence of `topic` and processes optional fields, confirming the input schema definition of required and optional fields as specified.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "arguments": {}
+    },
+    "required": [
+      "arguments"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return json.loads(watch_file.read_text(encoding='utf-8'))",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_now_iso",
+        "expression": "return datetime.now(timezone.utc).isoformat()",
+        "path": "tools/alerts.py",
+        "function_line_start": 178,
+        "function_line_end": 180,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_external_side_effect",
+        "function": "tools.alerts:_save_watches",
+        "expression": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')",
+        "path": "tools/alerts.py",
+        "function_line_start": 173,
+        "function_line_end": 175,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_watch_file_path",
+        "expression": "return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME",
+        "path": "tools/alerts.py",
+        "function_line_start": 155,
+        "function_line_end": 157,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "payload['topics'] = topics",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))]",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "return [types.TextContent(type='text', text='Error: topic is required')]",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "record['created_at'] = current.get('created_at', record['created_at'])",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "record['last_checked'] = current.get('last_checked')",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "topics[existing_index] = record",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_watch_topic",
+        "expression": "return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+        "path": "tools/alerts.py",
+        "function_line_start": 248,
+        "function_line_end": 320,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "_watch_file_path",
+        "expression": "_watch_file_path()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.exists",
+        "expression": "watch_file.exists()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "json.loads",
+        "expression": "json.loads(watch_file.read_text(encoding='utf-8'))"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.read_text",
+        "expression": "watch_file.read_text(encoding='utf-8')"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "logger.warning",
+        "expression": "logger.warning('Invalid watched topics file, resetting: %s', watch_file)"
+      },
+      {
+        "function": "tools.alerts:_now_iso",
+        "call": "datetime.now(timezone.utc).isoformat",
+        "expression": "datetime.now(timezone.utc).isoformat()"
+      },
+      {
+        "function": "tools.alerts:_now_iso",
+        "call": "datetime.now",
+        "expression": "datetime.now(timezone.utc)"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "_watch_file_path().write_text",
+        "expression": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "json.dumps",
+        "expression": "json.dumps(payload, indent=2)"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "_watch_file_path",
+        "expression": "_watch_file_path()"
+      },
+      {
+        "function": "tools.alerts:_watch_file_path",
+        "call": "Path",
+        "expression": "Path(settings.STORAGE_PATH)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "(arguments.get('topic') or '').strip",
+        "expression": "(arguments.get('topic') or '').strip()"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "_load_watches",
+        "expression": "_load_watches()"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "payload.get",
+        "expression": "payload.get('topics', [])"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "next",
+        "expression": "next((idx for idx, item in enumerate(topics) if item.get('topic') == topic), None)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "_now_iso",
+        "expression": "_now_iso()"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "_save_watches",
+        "expression": "_save_watches(payload)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "min",
+        "expression": "min(int(arguments.get('max_results', 10)), settings.MAX_RESULTS)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "current.get",
+        "expression": "current.get('created_at', record['created_at'])"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "current.get",
+        "expression": "current.get('last_checked')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "topics.append",
+        "expression": "topics.append(record)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2))"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "logger.error",
+        "expression": "logger.error('watch_topic error: %s', exc)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text='Error: topic is required')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "int",
+        "expression": "int(arguments.get('max_results', 10))"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "topics[existing_index].get",
+        "expression": "topics[existing_index].get('max_results', 10)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "arguments.get",
+        "expression": "arguments.get('categories')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=f'Error: {str(exc)}')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "arguments.get",
+        "expression": "arguments.get('topic')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "enumerate",
+        "expression": "enumerate(topics)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "arguments.get",
+        "expression": "arguments.get('max_results', 10)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "topics[existing_index].get",
+        "expression": "topics[existing_index].get('categories')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "json.dumps",
+        "expression": "json.dumps({'status': 'success', 'message': 'Topic watch saved', 'topic': record}, indent=2)"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "item.get",
+        "expression": "item.get('topic')"
+      },
+      {
+        "function": "tools.alerts:handle_watch_topic",
+        "call": "str",
+        "expression": "str(exc)"
+      }
+    ],
+    "source_identity": "01803b4d6bf8968de715215e4fd22ad58ecd9113443d269bfec8d74b7daa4bf0",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

@@ -1,0 +1,534 @@
+{
+  "description": {
+    "summary": "A tool that removes a specified topic from the list of watched topics by updating a local JSON file storing watched topics. It validates input, checks for existence of the topic, and returns a success or error message in JSON format. The operation is idempotent and handles errors gracefully with logging.",
+    "functionalities": [
+      "Removes a specified topic from the list of watched topics stored in a persistent JSON file.",
+      "Validates that a topic is provided; returns an error if no topic is given.",
+      "If the topic does not exist in the watched list, returns an error indicating it was not found.",
+      "On successful removal, returns a success message with the removed topic and confirmation.",
+      "Catches and logs any exceptions during execution, returning a generic error message.",
+      "Ensures the watched topics file is properly formatted and resets on invalid JSON content."
+    ],
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "arguments"
+      ],
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "topic": {
+              "type": "string",
+              "description": "The topic name to remove from the watched topics list. Must be a non-empty string."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "claims": [
+      {
+        "id": "c1",
+        "text": "A tool that removes a specified topic from the list of watched topics by updating a local JSON file storing watched topics. It validates input, checks for existence of the topic, and returns a success or error message in JSON format. The operation is idempotent and handles errors gracefully with logging.",
+        "target": [
+          "summary"
+        ]
+      },
+      {
+        "id": "c2",
+        "text": "Removes a specified topic from the list of watched topics stored in a persistent JSON file.",
+        "target": [
+          "functionalities",
+          0
+        ]
+      },
+      {
+        "id": "c3",
+        "text": "Validates that a topic is provided; returns an error if no topic is given.",
+        "target": [
+          "functionalities",
+          1
+        ]
+      },
+      {
+        "id": "c4",
+        "text": "If the topic does not exist in the watched list, returns an error indicating it was not found.",
+        "target": [
+          "functionalities",
+          2
+        ]
+      },
+      {
+        "id": "c5",
+        "text": "On successful removal, returns a success message with the removed topic and confirmation.",
+        "target": [
+          "functionalities",
+          3
+        ]
+      },
+      {
+        "id": "c6",
+        "text": "Catches and logs any exceptions during execution, returning a generic error message.",
+        "target": [
+          "functionalities",
+          4
+        ]
+      },
+      {
+        "id": "c7",
+        "text": "Ensures the watched topics file is properly formatted and resets on invalid JSON content.",
+        "target": [
+          "functionalities",
+          5
+        ]
+      },
+      {
+        "id": "c8",
+        "text": "The topic name to remove from the watched topics list. Must be a non-empty string.",
+        "target": [
+          "input_schema",
+          "properties",
+          "arguments",
+          "properties",
+          "topic",
+          "description"
+        ]
+      }
+    ]
+  },
+  "sanitized": {
+    "source": "from __future__ import annotations\nimport json\nimport logging\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom dateutil import parser\nfrom ..config import Settings\nfrom .search import ArxivRateLimitError, _rate_limited_respon, _raw_arxiv_search\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nWATCH_FILE_NAME = 'watched_topics.json'\n\ndef _watch_file_path() -> Path:\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME\n\ndef _load_watches() -> Dict[str, Any]:\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}\n\ndef _save_watches(payload: Dict[str, Any]) -> None:\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')\n\nasync def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+    "truncations": {
+      "_rate_limited_response": "_rate_limited_respon"
+    },
+    "semantic_renames": {
+      "Any": "Any",
+      "ArxivRateLimitError": "ArxivRateLimitError",
+      "Dict": "Dict",
+      "Exception": "Exception",
+      "JSONDecodeError": "JSONDecodeError",
+      "List": "List",
+      "Optional": "Optional",
+      "Path": "Path",
+      "STORAGE_PATH": "STORAGE_PATH",
+      "Settings": "Settings",
+      "TextContent": "TextContent",
+      "ToolAnnotations": "ToolAnnotations",
+      "WATCH_FILE_NAME": "WATCH_FILE_NAME",
+      "_load_watches": "_load_watches",
+      "_rate_limited_respon": "_rate_limited_respon",
+      "_raw_arxiv_search": "_raw_arxiv_search",
+      "_save_watches": "_save_watches",
+      "_watch_file_path": "_watch_file_path",
+      "annotations": "annotations",
+      "arguments": "arguments",
+      "datetime": "datetime",
+      "dumps": "dumps",
+      "encoding": "encoding",
+      "error": "error",
+      "exc": "exc",
+      "exists": "exists",
+      "get": "get",
+      "getLogger": "getLogger",
+      "handle_unwatch_topic": "handle_unwatch_topic",
+      "indent": "indent",
+      "item": "item",
+      "json": "json",
+      "len": "len",
+      "loads": "loads",
+      "logger": "logger",
+      "logging": "logging",
+      "mcp": "mcp",
+      "parser": "parser",
+      "payload": "payload",
+      "read_text": "read_text",
+      "remaining": "remaining",
+      "settings": "settings",
+      "str": "str",
+      "strip": "strip",
+      "text": "text",
+      "timezone": "timezone",
+      "topic": "topic",
+      "topics": "topics",
+      "type": "type",
+      "types": "types",
+      "warning": "warning",
+      "watch_file": "watch_file",
+      "write_text": "write_text"
+    },
+    "semantic_filter": "model",
+    "warning": "Reasoning representation only. Renamed attributes/imports may not execute equivalently; string literals remain untrusted."
+  },
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "model_mode": "real_local_mlx_inference",
+  "status": "unverified_draft",
+  "prompt_hash": "e0db7f314672f49ec938cfb6b93c2677263da71367e2ec1aab98c892c965e5da",
+  "claim_decomposition": "mechanical_exact_prose_fields_no_semantic_replacement",
+  "source_evidence": [
+    {
+      "claim_id": "c1",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function `handle_unwatch_topic` implements the core behavior described in claim c1: it removes a specified topic from the watched topics list by updating a local JSON file. It validates input (checking for empty topic), checks existence of the topic, handles errors gracefully with logging, and returns a success or error message in JSON format. The operation is idempotent in practice because it only removes a topic if it exists, and subsequent calls with the same topic will result in the same outcome, consistent with idempotency principles.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c2",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function `handle_unwatch_topic` removes a specified topic from the list of watched topics stored in a persistent JSON file by modifying the `topics` list in the loaded payload and then saving it via `_save_watches`. This directly supports the functionality described in claim c2.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c3",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function checks if the `topic` argument is provided using `arguments.get('topic') or ''`, and if it is empty, returns an error message indicating that the topic is required. This matches the requirement in claim c3 to validate that a topic is provided and return an error if none is given.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c4",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "If the topic does not exist in the watched list, the function compares the remaining topics after filtering and checks if the length of the remaining list equals the original list. If so, it returns an error indicating the watch was not found. This behavior is explicitly implemented in the condition `if len(remaining) == len(topics):`, which corresponds to claim c4.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c5",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "On successful removal, the function returns a success message with the removed topic and confirmation via `json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic})`. This directly satisfies the requirement in claim c5 for a success response with the removed topic.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c6",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The function includes a try-except block that catches any exceptions during execution and logs them via `logger.error`, then returns a generic error message. This ensures error handling and logging as required in claim c6.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c7",
+      "references": [
+        {
+          "function": "tools.alerts:_load_watches",
+          "quote": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 160,
+          "line_end": 170
+        }
+      ],
+      "rationale": "The `_load_watches` function attempts to parse the JSON file and, if it fails, logs a warning and returns an empty list (`{'topics': []}`). This behavior ensures the file is properly formatted and resets on invalid content, which aligns with claim c7's requirement to validate and reset on invalid JSON.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    },
+    {
+      "claim_id": "c8",
+      "references": [
+        {
+          "function": "tools.alerts:handle_unwatch_topic",
+          "quote": "async def handle_unwatch_topic(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Delete a watched topic by exact topic string.\"\"\"\n    try:\n        topic = (arguments.get('topic') or '').strip()\n        if not topic:\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]\n        payload = _load_watches()\n        topics = payload.get('topics', [])\n        remaining = [item for item in topics if item.get('topic') != topic]\n        if len(remaining) == len(topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]\n        payload['topics'] = remaining\n        _save_watches(payload)\n        return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]\n    except Exception as exc:\n        logger.error('unwatch_topic error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+          "path": "tools/alerts.py",
+          "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+          "line_start": 457,
+          "line_end": 505
+        }
+      ],
+      "rationale": "The input schema for `topic` is validated in `handle_unwatch_topic` through the check `(arguments.get('topic') or '').strip()`, and the function ensures the topic is a non-empty string. The requirement for a non-empty string is enforced by rejecting empty or null inputs and returning an error, which matches the description in claim c8.",
+      "confidence": "model_attributed_source_and_finite_tests_required"
+    }
+  ],
+  "implementation_interface": {
+    "type": "object",
+    "properties": {
+      "arguments": {}
+    },
+    "required": [
+      "arguments"
+    ],
+    "has_variadic": false,
+    "positional_only": [],
+    "certification": "static_signature_only; types/constraints/return behavior not proven"
+  },
+  "implementation_context": {
+    "records": [
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return json.loads(watch_file.read_text(encoding='utf-8'))",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_load_watches",
+        "expression": "return {'topics': []}",
+        "path": "tools/alerts.py",
+        "function_line_start": 160,
+        "function_line_end": 170,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_external_side_effect",
+        "function": "tools.alerts:_save_watches",
+        "expression": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')",
+        "path": "tools/alerts.py",
+        "function_line_start": 173,
+        "function_line_end": 175,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:_watch_file_path",
+        "expression": "return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME",
+        "path": "tools/alerts.py",
+        "function_line_start": 155,
+        "function_line_end": 157,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "possible_mutation",
+        "function": "tools.alerts:handle_unwatch_topic",
+        "expression": "payload['topics'] = remaining",
+        "path": "tools/alerts.py",
+        "function_line_start": 457,
+        "function_line_end": 505,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_unwatch_topic",
+        "expression": "return [types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))]",
+        "path": "tools/alerts.py",
+        "function_line_start": 457,
+        "function_line_end": 505,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_unwatch_topic",
+        "expression": "return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))]",
+        "path": "tools/alerts.py",
+        "function_line_start": 457,
+        "function_line_end": 505,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_unwatch_topic",
+        "expression": "return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))]",
+        "path": "tools/alerts.py",
+        "function_line_start": 457,
+        "function_line_end": 505,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      },
+      {
+        "kind": "return_expression",
+        "function": "tools.alerts:handle_unwatch_topic",
+        "expression": "return [types.TextContent(type='text', text=f'Error: {str(exc)}')]",
+        "path": "tools/alerts.py",
+        "function_line_start": 457,
+        "function_line_end": 505,
+        "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8"
+      }
+    ],
+    "dependencies": [
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "_watch_file_path",
+        "expression": "_watch_file_path()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.exists",
+        "expression": "watch_file.exists()"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "json.loads",
+        "expression": "json.loads(watch_file.read_text(encoding='utf-8'))"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "watch_file.read_text",
+        "expression": "watch_file.read_text(encoding='utf-8')"
+      },
+      {
+        "function": "tools.alerts:_load_watches",
+        "call": "logger.warning",
+        "expression": "logger.warning('Invalid watched topics file, resetting: %s', watch_file)"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "_watch_file_path().write_text",
+        "expression": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "json.dumps",
+        "expression": "json.dumps(payload, indent=2)"
+      },
+      {
+        "function": "tools.alerts:_save_watches",
+        "call": "_watch_file_path",
+        "expression": "_watch_file_path()"
+      },
+      {
+        "function": "tools.alerts:_watch_file_path",
+        "call": "Path",
+        "expression": "Path(settings.STORAGE_PATH)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "(arguments.get('topic') or '').strip",
+        "expression": "(arguments.get('topic') or '').strip()"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "_load_watches",
+        "expression": "_load_watches()"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "payload.get",
+        "expression": "payload.get('topics', [])"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "_save_watches",
+        "expression": "_save_watches(payload)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "len",
+        "expression": "len(remaining)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "len",
+        "expression": "len(topics)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2))"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "logger.error",
+        "expression": "logger.error('unwatch_topic error: %s', exc)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': 'topic is required'}))"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'}))"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "types.TextContent",
+        "expression": "types.TextContent(type='text', text=f'Error: {str(exc)}')"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "arguments.get",
+        "expression": "arguments.get('topic')"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "item.get",
+        "expression": "item.get('topic')"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "json.dumps",
+        "expression": "json.dumps({'status': 'success', 'message': 'Topic watch removed', 'topic': topic}, indent=2)"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "json.dumps",
+        "expression": "json.dumps({'status': 'error', 'message': 'topic is required'})"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "json.dumps",
+        "expression": "json.dumps({'status': 'error', 'message': f'Watch not found: {topic}'})"
+      },
+      {
+        "function": "tools.alerts:handle_unwatch_topic",
+        "call": "str",
+        "expression": "str(exc)"
+      }
+    ],
+    "source_identity": "01803b4d6bf8968de715215e4fd22ad58ecd9113443d269bfec8d74b7daa4bf0",
+    "scope": "static syntax indications only; names may be aliased; no absence or entailment guarantee"
+  },
+  "semantic_consistency": "signature_and_exact_source_quotes_checked; entailment_model_assessed"
+}

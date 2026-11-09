@@ -1,0 +1,352 @@
+{
+  "tool": "blur",
+  "entry": "tools.blur:register_tool.blur",
+  "entry_method": "registration_pattern",
+  "source": "# module: tools.blur\nimport os\nfrom typing import Annotated, Any, Dict, List, Optional\nimport cv2\nimport numpy as np\nfrom fastmcp import FastMCP\nfrom pydantic import Field\nfrom imagesorcery_mcp.config import get_config\nfrom imagesorcery_mcp.logging_config import logger",
+  "initial_functions": [
+    "tools.blur:register_tool.blur"
+  ],
+  "functions": [
+    "tools.blur:register_tool.blur"
+  ],
+  "edges": [],
+  "unresolved_calls": [
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Blur tool requested for image: {input_path} with {len(areas)} areas, invert_areas={invert_areas}')",
+      "line": 59,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "len(areas)",
+      "line": 59,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "os.path.exists(input_path)",
+      "line": 62,
+      "expression": "os.path.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.error(f'Input file not found: {input_path}')",
+      "line": 63,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "FileNotFoundError(f'Input file not found: {input_path}. Please provide a full path to the file.')",
+      "line": 64,
+      "expression": "FileNotFoundError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "os.path.splitext(input_path)",
+      "line": 68,
+      "expression": "os.path.splitext",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Output path not provided, generated: {output_path}')",
+      "line": 70,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Reading image: {input_path}')",
+      "line": 73,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.imread(input_path)",
+      "line": 74,
+      "expression": "cv2.imread",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.error(f'Failed to read image: {input_path}')",
+      "line": 76,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "ValueError(f'Failed to read image: {input_path}')",
+      "line": 77,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Image read successfully. Shape: {img.shape}')",
+      "line": 78,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "np.zeros(img.shape[:2], dtype=np.uint8)",
+      "line": 81,
+      "expression": "np.zeros",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "np.array(area['polygon'], dtype=np.int32)",
+      "line": 86,
+      "expression": "np.array",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.fillPoly(mask, [polygon_points], 255)",
+      "line": 87,
+      "expression": "cv2.fillPoly",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)",
+      "line": 90,
+      "expression": "cv2.rectangle",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.warning(\"Skipping area due to missing 'polygon' or 'x1,y1,x2,y2' keys.\")",
+      "line": 92,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.bitwise_not(mask)",
+      "line": 97,
+      "expression": "cv2.bitwise_not",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info('Inverting blur areas: blurring everything EXCEPT the specified regions.')",
+      "line": 98,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info('Applying blur to specified areas.')",
+      "line": 100,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "get_config()",
+      "line": 104,
+      "expression": "get_config",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "areas[0].get('blur_strength', config.blur.strength)",
+      "line": 105,
+      "expression": "areas[0].get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.warning(f'Adjusted global blur_strength to odd number: {global_blur_strength}')",
+      "line": 108,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.GaussianBlur(img, (global_blur_strength, global_blur_strength), 0)",
+      "line": 110,
+      "expression": "cv2.GaussianBlur",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "np.where(mask[:, :, None] == 255, full_blurred_img, img)",
+      "line": 114,
+      "expression": "np.where",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "os.path.dirname(output_path)",
+      "line": 117,
+      "expression": "os.path.dirname",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "os.path.exists(output_dir)",
+      "line": 118,
+      "expression": "os.path.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Output directory does not exist, creating: {output_dir}')",
+      "line": 119,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "os.makedirs(output_dir)",
+      "line": 120,
+      "expression": "os.makedirs",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Output directory created: {output_dir}')",
+      "line": 121,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Saving blurred image to: {output_path}')",
+      "line": 124,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "cv2.imwrite(output_path, result_img)",
+      "line": 125,
+      "expression": "cv2.imwrite",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.blur:register_tool.blur",
+      "callee": null,
+      "callsite": "logger.info(f'Blurred image saved successfully to: {output_path}')",
+      "line": 126,
+      "expression": "logger.info",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "f2346882b00b1f6c9b161c29669dcd0cbf943be403d17c56262e296c28016028",
+    "__main__.py": "e99e0665bebcfc2c2b42f556266d1a4e6db490e9fa16b8cac554669b1bfc13ae",
+    "config.py": "dd6e9e52ec0ca9f683f16d6bc049d48667ba9fce7292d1eef9c78249dfd30d0a",
+    "logging_config.py": "7152beae769bc828492583c44e40781e11d1e7a8bcb5f9d7be2d13c092108fc4",
+    "middlewares/path_access.py": "79876f38d833c0e01664599770b73cb050bf7c7a4724908eca1649ec0d79e663",
+    "middlewares/telemetry.py": "97f8eca36f32fd862143488a56e20e84d4d05651c4aa92b35059a6c0d8876fc0",
+    "middlewares/validation.py": "8da4519add13f8c484c9c986a5e2a6df759bd83293f6589af3d88f50cf071568",
+    "prompts/__init__.py": "35ab310dd7bf7c37a373a22d72be26797f77ab77d8ec07ca29b2849c165df6a2",
+    "prompts/remove_background.py": "01e3ebece6ccf6423b558015495a28473a72300fe4e06b1e0c2b599d4a4b528e",
+    "resources/__init__.py": "f9ae8afdef2f03ca4388e60dabf45fa85b7e91ef44d891fc294d83c177690673",
+    "resources/models.py": "8cf865f8c38e8cd56bca3c6e36721c098f74c15887a8bd1b2f7d8059751f6da5",
+    "scripts/__init__.py": "186664519a36a573ce53d919102631ac7ebb089ebc23eb9b03d60973e0cf0093",
+    "scripts/clear_telemetry_keys.py": "3dfd47b43334636f1e2a8b6dcffdc83e4f77322e2fe6d1d33d8e7a228ba177b8",
+    "scripts/create_model_descriptions.py": "03016601585a4048f376f5961c1c52a5c8e67fd4828dece434dc4e5ec467515b",
+    "scripts/download_clip.py": "7b27c56e1ed0423097aabe481bc5f77f552396eb30f0576f78c4b6a8fbbb235b",
+    "scripts/download_models.py": "5b29ce1da29d196fac258cc162f6e676ff8c8d609817aa675d65958f935b4716",
+    "scripts/populate_telemetry_keys.py": "e5e13a4cd7ed955c0189508053001d823e9393eddfc8ed4ce6fee9e16e2fc388",
+    "scripts/post_install.py": "502c27ba4782d3ebea9eaed386dec9910d1cfcc1e995a8c3d1d7828fd99c4105",
+    "server.py": "387dea4f3202049ff22407c803f1166e24b42cbd901d0d16658841f5ad2a0888",
+    "telemetry_amplitude.py": "17ca181e813a7e8bee36e4ca688dae89a0b47ac1db27624a0a7a9901b9926219",
+    "telemetry_keys.py": "799ede0e2985989551cb1ef030a5fb35a2d04285b1b194ca6381de63efec70f6",
+    "telemetry_posthog.py": "1f8e7e0bcd682f461b65cfbec1ea838b3ce0f3423cf6f63e38ac3a92729f836c",
+    "tools/__init__.py": "8d11806a00d1863561d7bdd54ae14bafd698daffbc7be8486631c8597f1050c4",
+    "tools/blur.py": "dcd210697f444a5d812648c2230e8fc1548f04e25b4a4d2e082e40f79ff23048",
+    "tools/change_color.py": "ad5993832d8a65ba83aeac6db2792ebf039bf1798ba3fc373a8ea4ac19264c68",
+    "tools/config.py": "037bfb410de9faee422e2a28a0eb70a6637b590ba405c0242c4750545acede87",
+    "tools/crop.py": "19b3440faf319abb9fab28c721d9c00b848156eaa2655474cb0f2e7a4297782c",
+    "tools/detect.py": "51d17a283858366822528c7e70228620f23da5581cf6d0b3df97fe573279fb22",
+    "tools/draw_arrows.py": "c43716588abcc54e51261a5decc5981bc4cec4943515a44e6415d151e9e01680",
+    "tools/draw_circle.py": "dddba210a5e394d9f78604e2cb30542fa0c0d11cdb3c3a8cff7bfbd19a255fd4",
+    "tools/draw_lines.py": "a7d7dcaa0d6d5ea5822cbd31502757dcce66891f72d624f8e4c0a07386a9c83d",
+    "tools/draw_rectangle.py": "4b247f9b7362fe07c26cd30f0e4d05f8b678c030638fb7cf9dd2e6afcf0ca030",
+    "tools/draw_text.py": "693e07cf50e898f7205732a99801ebb1edb59f831da74395aa6ff1638bb3cedf",
+    "tools/fill.py": "28471d60581f5431ea0d01f92457a40925c859decde18aca80c481cfd076090a",
+    "tools/find.py": "ab92ce7ad187075d600a16dc8da6c2a6a3617b3594a984403efcda97ebc201f5",
+    "tools/metainfo.py": "21dca9d23348adadb7213c0079f503ccc9d9a8d0179d03c7bfe8b30c26461a9e",
+    "tools/ocr.py": "3f4d8a596b8ff4cacfb51cd0be3fa1c278e01af4ddf74971f09b8de884f3490e",
+    "tools/overlay.py": "bf59b6930d3311fd3608b13e207312e96fe26defabb8167c580429052d38d9da",
+    "tools/resize.py": "fd45bcb677fb564685450ca4c657bc97d55c4b40b4826d755ea004de301289de",
+    "tools/rotate.py": "d50d9a476dcb1b4c526f5db37b451d24b2b7f9e40de6b1f39bb3ac66b158284b"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "__main__.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "tools.blur:register_tool.blur": {
+      "path": "tools/blur.py",
+      "line_start": 16,
+      "line_end": 128,
+      "file_sha256": "dcd210697f444a5d812648c2230e8fc1548f04e25b4a4d2e082e40f79ff23048",
+      "source": "@mcp.tool()\ndef blur(input_path: Annotated[str, Field(description='Full path to the input image (must be a full path)')], areas: Annotated[List[Dict[str, Any]], Field(description=\"List of areas to blur. Each area should have: a rectangle ({'x1', 'y1', 'x2', 'y2'}) or a polygon ({'polygon': [[x,y],...]}). Optionally, include 'blur_strength' (int, odd number, default 15) for each area.\")], invert_areas: Annotated[bool, Field(description='If True, blurs everything EXCEPT the specified areas. Useful for background blurring.')]=False, output_path: Annotated[Optional[str], Field(description=\"Full path to save the output image (must be a full path). If not provided, will use input filename with '_blurred' suffix.\")]=None) -> str:\n    \"\"\"\n        Blur specified rectangular or polygonal areas of an image using OpenCV.\n        \n        This tool allows blurring multiple rectangular or polygonal areas of an image with customizable\n        blur strength. Each area can be a rectangle defined by a bounding box \n        [x1, y1, x2, y2] or a polygon defined by a list of points.\n        \n        The blur_strength parameter controls the intensity of the blur effect. Higher values\n        result in stronger blur. It must be an odd number (default is 15).\n        \n        If `invert_areas` is True, the tool will blur everything EXCEPT the specified areas.\n        Returns:\n            Path to the image with blurred areas\n        \"\"\"\n    logger.info(f'Blur tool requested for image: {input_path} with {len(areas)} areas, invert_areas={invert_areas}')\n    if not os.path.exists(input_path):\n        logger.error(f'Input file not found: {input_path}')\n        raise FileNotFoundError(f'Input file not found: {input_path}. Please provide a full path to the file.')\n    if not output_path:\n        file_name, file_ext = os.path.splitext(input_path)\n        output_path = f'{file_name}_blurred{file_ext}'\n        logger.info(f'Output path not provided, generated: {output_path}')\n    logger.info(f'Reading image: {input_path}')\n    img = cv2.imread(input_path)\n    if img is None:\n        logger.error(f'Failed to read image: {input_path}')\n        raise ValueError(f'Failed to read image: {input_path}')\n    logger.info(f'Image read successfully. Shape: {img.shape}')\n    mask = np.zeros(img.shape[:2], dtype=np.uint8)\n    for area in areas:\n        if 'polygon' in area:\n            polygon_points = np.array(area['polygon'], dtype=np.int32)\n            cv2.fillPoly(mask, [polygon_points], 255)\n        elif 'x1' in area and 'y1' in area and ('x2' in area) and ('y2' in area):\n            x1, y1, x2, y2 = (area['x1'], area['y1'], area['x2'], area['y2'])\n            cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)\n        else:\n            logger.warning(\"Skipping area due to missing 'polygon' or 'x1,y1,x2,y2' keys.\")\n            continue\n    if invert_areas:\n        mask = cv2.bitwise_not(mask)\n        logger.info('Inverting blur areas: blurring everything EXCEPT the specified regions.')\n    else:\n        logger.info('Applying blur to specified areas.')\n    config = get_config()\n    global_blur_strength = areas[0].get('blur_strength', config.blur.strength) if areas else config.blur.strength\n    if global_blur_strength % 2 == 0:\n        global_blur_strength += 1\n        logger.warning(f'Adjusted global blur_strength to odd number: {global_blur_strength}')\n    full_blurred_img = cv2.GaussianBlur(img, (global_blur_strength, global_blur_strength), 0)\n    result_img = np.where(mask[:, :, None] == 255, full_blurred_img, img)\n    output_dir = os.path.dirname(output_path)\n    if output_dir and (not os.path.exists(output_dir)):\n        logger.info(f'Output directory does not exist, creating: {output_dir}')\n        os.makedirs(output_dir)\n        logger.info(f'Output directory created: {output_dir}')\n    logger.info(f'Saving blurred image to: {output_path}')\n    cv2.imwrite(output_path, result_img)\n    logger.info(f'Blurred image saved successfully to: {output_path}')\n    return output_path"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "tools.blur",
+      "referenced_names": [],
+      "omitted": [],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}

@@ -1,0 +1,2196 @@
+{
+  "tool": "check_alerts",
+  "entry": "tools.alerts:handle_check_alerts",
+  "entry_method": "dispatch_callee_pattern",
+  "source": "# module: arxiv_api\nimport asyncio\nimport logging\nimport os\nfrom pathlib import Path\nimport random\nimport tempfile\nimport threading\nimport time\nfrom typing import Awaitable, Callable, Protocol, TypeVar\nimport httpx\nlogger = logging.getLogger('arxiv-mcp-server')\nT = TypeVar('T')\n\ndef _parse_retry_after_seconds(retry_after: str | None) -> float | None:\n    \"\"\"Parse Retry-After header into seconds.\n\n    Supports both delay-seconds (integer) and HTTP-date formats.\n    Returns None if unparseable or not provided.\n    \"\"\"\n    if not retry_after:\n        return None\n    try:\n        return float(retry_after)\n    except ValueError:\n        pass\n    try:\n        from email.utils import parsedate_to_datetime\n        import datetime\n        retry_dt = parsedate_to_datetime(retry_after)\n        now = datetime.datetime.now(datetime.timezone.utc)\n        delta = (retry_dt - now).total_seconds()\n        return max(0.0, delta)\n    except Exception:\n        logger.warning(f'Could not parse Retry-After header: {retry_after}')\n        return None\n\ndef _compute_backoff_seconds(attempt: int, retry_after: str | None, initial_backoff: float, max_backoff: float) -> float:\n    \"\"\"Exponential backoff with jitter, with Retry-After as floor.\n\n    Args:\n        attempt: Zero-based retry attempt number.\n        retry_after: Optional Retry-After header value (int or HTTP-date).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n\n    Returns:\n        Computed backoff delay in seconds with jitter (0.5-1.5x) applied.\n        Retry-After (if provided) is used as a strict floor before and after jitter,\n        and is NOT capped to max_backoff.\n    \"\"\"\n    delay = min(initial_backoff * 2 ** attempt, max_backoff)\n    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n    if parsed_retry_after is not None:\n        delay = max(delay, parsed_retry_after)\n    jittered = delay * (0.5 + random.random())\n    if parsed_retry_after is not None:\n        jittered = max(jittered, parsed_retry_after)\n    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n        return jittered\n    return min(jittered, max_backoff)\n\nasync def retry_with_backoff(operation: Callable[[], Awaitable[T]], *, max_retries: int=3, initial_backoff: float=2.0, max_backoff: float=60.0, max_total_time: float | None=None, operation_name: str='operation') -> T:\n    \"\"\"Execute an async operation with exponential backoff on retryable errors.\n\n    Retries on:\n    - httpx.TimeoutException\n    - httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError\n    - httpx.HTTPStatusError with status 429, 503, 406\n\n    Note: HTTP 406 uses minimal retries (ARXIV_HTTP_406_MAX_RETRIES = 1)\n    because arXiv's 406 is IP-level burst throttling and retrying inside\n    the window extends the block (#277).\n\n    Args:\n        operation: Async callable to execute.\n        max_retries: Maximum number of retry attempts (for 429/503).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n        max_total_time: Optional maximum total time in seconds (raises on exceed).\n        operation_name: Name for logging.\n\n    Returns:\n        Result of the operation.\n\n    Raises:\n        Original exception after exhausting retries, wrapped with context.\n    \"\"\"\n    from .config import Settings\n    settings = Settings()\n    start_time = time.monotonic()\n    last_exception: Exception | None = None\n    retry_after: str | None = None\n    for attempt in range(max_retries + 1):\n        if max_total_time is not None:\n            elapsed = time.monotonic() - start_time\n            if elapsed >= max_total_time:\n                attempts_word = 'attempt' if attempt == 0 else 'attempts'\n                logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)\n                if last_exception:\n                    raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.') from last_exception\n                raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')\n        try:\n            if max_total_time is not None:\n                remaining = max_total_time - (time.monotonic() - start_time)\n                if remaining <= 0:\n                    raise asyncio.TimeoutError('Budget exhausted before attempt')\n                logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)\n                return await asyncio.wait_for(operation(), timeout=remaining)\n            return await operation()\n        except asyncio.TimeoutError as e:\n            if max_total_time is not None:\n                elapsed = time.monotonic() - start_time\n                logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)\n                if last_exception and isinstance(last_exception, httpx.HTTPStatusError):\n                    status_code = last_exception.response.status_code\n                    if status_code in (429, 503, 406):\n                        retry_after = 60.0 if status_code != 406 else 600.0\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after) from e\n                raise ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n            raise\n        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining:\n                        logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)\n                        raise ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)\n                raise ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.') from e\n        except httpx.TimeoutException as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining or remaining <= 0.1:\n                        logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)\n                        raise ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)\n                raise ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n        except httpx.HTTPStatusError as e:\n            if e.response is not None and e.response.status_code in (429, 503, 406):\n                last_exception = e\n                max_retries_for_status = settings.ARXIV_HTTP_406_MAX_RETRIES if e.response.status_code == 406 else max_retries\n                retry_after = e.response.headers.get('Retry-After')\n                if attempt < max_retries_for_status:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n                        if parsed_retry_after is None:\n                            parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                        logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                    wait = _compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)\n                    if max_total_time is not None:\n                        remaining = max_total_time - (time.monotonic() - start_time)\n                        if wait >= remaining:\n                            if parsed_retry_after is None:\n                                parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                            if parsed_retry_after is None:\n                                parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                            logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)\n                            raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                        wait = min(wait, remaining * 0.9)\n                    logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)\n                    await asyncio.sleep(wait)\n                else:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is None:\n                        parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                    logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)\n                    raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n            else:\n                raise\n        except (ArxivTimeoutError, ArxivConnectionError, ArxivRateLimitError):\n            raise\n        except Exception:\n            raise\n    if last_exception:\n        raise last_exception\n    raise RuntimeError(f'{operation_name} failed after exhausting retries')\n\n# module: tools.alerts\nfrom __future__ import annotations\nimport json\nimport logging\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom dateutil import parser\nfrom ..config import Settings\nfrom .search import ArxivRateLimitError, _rate_limited_response, _raw_arxiv_search\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nWATCH_FILE_NAME = 'watched_topics.json'\n\ndef _watch_file_path() -> Path:\n    \"\"\"Get watched topics file path.\"\"\"\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME\n\ndef _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}\n\ndef _save_watches(payload: Dict[str, Any]) -> None:\n    \"\"\"Persist watches to disk.\"\"\"\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')\n\ndef _now_iso() -> str:\n    \"\"\"UTC timestamp in ISO format.\"\"\"\n    return datetime.now(timezone.utc).isoformat()\n\ndef _filter_by_topic(topics: List[Dict[str, Any]], topic_name: Optional[str]) -> List[Dict[str, Any]]:\n    \"\"\"Filter watched topics by exact topic name if provided.\"\"\"\n    if not topic_name:\n        return topics\n    return [topic for topic in topics if topic.get('topic') == topic_name]\n\ndef _is_new_paper(published_value: str, last_checked: Optional[str]) -> bool:\n    \"\"\"Check if paper is newer than the last check timestamp.\"\"\"\n    if not last_checked:\n        return True\n    try:\n        return parser.parse(published_value) > parser.parse(last_checked)\n    except (ValueError, TypeError):\n        return True\n\ndef _newest_published(papers: List[Dict[str, Any]]) -> Optional[str]:\n    \"\"\"Return the published timestamp of the newest paper in the list.\"\"\"\n    newest_value: Optional[str] = None\n    newest_dt: Optional[datetime] = None\n    for paper in papers:\n        published = paper.get('published') or ''\n        try:\n            published_dt = parser.parse(published)\n        except (ValueError, TypeError):\n            continue\n        if newest_dt is None or published_dt > newest_dt:\n            newest_dt = published_dt\n            newest_value = published\n    return newest_value\n\ndef _page_is_truncated(returned: int, max_results: int, total_results: Optional[int], new_count: Optional[int]=None, start: int=0) -> bool:\n    \"\"\"True when max_results or OpenSearch total indicates more papers remain.\n\n    When OpenSearch reports a total, trust start+returned vs total. Otherwise a\n    full page (returned/new_count == max_results) is treated as truncated so we\n    never jump the watermark to wall-clock now and skip the rest of the window.\n    \"\"\"\n    start = max(0, int(start or 0))\n    if total_results is not None:\n        return total_results > start + returned\n    if returned >= max_results > 0:\n        return True\n    if new_count is not None and new_count >= max_results > 0:\n        return True\n    return False\n\ndef _clear_drain_cursor(topic: Dict[str, Any]) -> None:\n    \"\"\"Reset pagination fields used while draining a truncated watch window.\"\"\"\n    topic.pop('drain_from', None)\n    topic.pop('check_start', None)\n\nasync def handle_check_alerts(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Check all watched topics (or one topic) for newly published papers.\"\"\"\n    try:\n        selected_topic = (arguments.get('topic') or '').strip() or None\n        payload = _load_watches()\n        all_topics = payload.get('topics', [])\n        topics = _filter_by_topic(all_topics, selected_topic)\n        if selected_topic is not None and (not topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {selected_topic}'}))]\n        now_iso = _now_iso()\n        alerts: List[Dict[str, Any]] = []\n        for topic in topics:\n            topic_query = topic.get('topic', '')\n            if not topic_query:\n                continue\n            last_checked = topic.get('last_checked')\n            max_results = min(int(topic.get('max_results', 10)), settings.MAX_RESULTS)\n            drain_from = topic.get('drain_from')\n            if drain_from is None:\n                drain_from = last_checked\n            check_start = max(0, int(topic.get('check_start') or 0))\n            search_results, total_results = await _raw_arxiv_search(query=topic_query, max_results=max_results, sort_by='date', sort_order='ascending', date_from=drain_from, categories=topic.get('categories') or None, start=check_start)\n            new_papers = [paper for paper in search_results if _is_new_paper(paper.get('published', ''), last_checked)]\n            has_more = _page_is_truncated(len(search_results), max_results, total_results, new_count=len(new_papers), start=check_start)\n            if has_more:\n                if search_results:\n                    topic['drain_from'] = drain_from\n                    topic['check_start'] = check_start + len(search_results)\n                    if new_papers:\n                        topic['last_checked'] = _newest_published(new_papers)\n                else:\n                    has_more = False\n                    topic['last_checked'] = now_iso\n                    _clear_drain_cursor(topic)\n            else:\n                topic['last_checked'] = now_iso\n                _clear_drain_cursor(topic)\n            topic['updated_at'] = now_iso\n            alerts.append({'topic': topic_query, 'last_checked': last_checked, 'new_paper_count': len(new_papers), 'new_papers': new_papers, 'has_more': has_more})\n        payload['topics'] = all_topics\n        _save_watches(payload)\n        result = {'status': 'success', 'checked_topics': len(topics), 'alerts': alerts}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except ArxivRateLimitError as exc:\n        logger.warning('check_alerts rate limited after retries: %s', exc)\n        return _rate_limited_response(str(exc), retry_after_seconds=exc.retry_after_seconds, status_code=exc.status_code)\n    except Exception as exc:\n        logger.error('check_alerts error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]\n\n# module: tools.search\nimport json\nimport logging\nimport httpx\nimport asyncio\nimport xml.etree.ElementTree as ET\nfrom urllib.parse import quote\nfrom typing import Dict, Any, List, Optional\nfrom datetime import datetime, timezone\nfrom dateutil import parser\nimport mcp.types as types\nfrom mcp.types import ToolAnnotations\nfrom ..config import Settings\nfrom ..arxiv_api import ARXIV_RATE_LIMITER, ArxivRateLimitError, retry_with_backoff\nfrom .content import CONTENT_WARNING\nlogger = logging.getLogger('arxiv-mcp-server')\nsettings = Settings()\nDEFAULT_MAX_RESULTS = 5\nARXIV_HEADERS = {'User-Agent': f'{settings.APP_NAME}/{settings.APP_VERSION} (https://github.com/blazickjp/arxiv-mcp-server; research tool)'}\n_DEFAULT_RETRY_AFTER_SECONDS = 60.0\nRATE_LIMIT_MESSAGE = 'arXiv is rate limiting this IP (HTTP 429). Please wait before retrying.'\n\ndef _status_response(status: str, message: str, **extra: Any) -> List[types.TextContent]:\n    \"\"\"Return a structured {status, message} tool payload.\"\"\"\n    payload: Dict[str, Any] = {'status': status, 'message': message}\n    payload.update(extra)\n    return [types.TextContent(type='text', text=json.dumps(payload, indent=2))]\n\ndef _rate_limited_response(message: str | None=None, *, retry_after_seconds: float | None=None, status_code: int=429) -> List[types.TextContent]:\n    \"\"\"Soft rate-limit result so callers can continue without a bare Error: stall.\"\"\"\n    extra: Dict[str, Any] = {'http_status': status_code}\n    if retry_after_seconds is None:\n        retry_after_seconds = _DEFAULT_RETRY_AFTER_SECONDS\n    extra['retry_after_seconds'] = retry_after_seconds\n    return _status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)\n\nasync def _rate_limited_get(client: httpx.AsyncClient, url: str) -> httpx.Response:\n    \"\"\"Make an HTTP request through the process-wide arXiv request gate with retry.\n\n    Retries HTTP 429/503/406 and timeouts/connection errors with exponential backoff.\n    Uses the unified retry_with_backoff infrastructure from arxiv_api.\n    Rate limiter lock is acquired per attempt, not held through sleeps.\n    \"\"\"\n\n    async def single_request() -> httpx.Response:\n        \"\"\"Single request wrapped with rate limiting.\"\"\"\n\n        async def request() -> httpx.Response:\n            response = await client.get(url, headers=ARXIV_HEADERS)\n            response.raise_for_status()\n            return response\n        return await ARXIV_RATE_LIMITER.run_async(request)\n    return await retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')\nARXIV_API_URL = 'https://export.arxiv.org/api/query'\nARXIV_NS = {'atom': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom', 'opensearch': 'http://a9.com/-/spec/opensearch/1.1/'}\n_USER_QUERY_FIELD_PREFIXES = ('ti:', 'au:', 'abs:', 'cat:', 'co:', 'jr:', 'rn:', 'all:')\n\ndef _user_query_has_field_prefix(query: str) -> bool:\n    \"\"\"Return True if the user already targeted an arXiv search field.\"\"\"\n    lowered = query.lower()\n    return any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))\n\ndef _scope_user_query(query: str) -> str:\n    \"\"\"Group a user query and keep unprefixed terms in title/abstract.\n\n    Bare tokens are mapped by arXiv to ``all:``, which includes authors. A\n    short ``OR`` term such as ``MoE`` then matches author-name fragments\n    (for example ``Moe Jafari`` or ``Mo Zhou``). Under date sort that\n    collapses to \"newest papers in these categories.\"\n    \"\"\"\n    query = query.strip()\n    if not query:\n        return query\n    if _user_query_has_field_prefix(query):\n        return f'({query})'\n    return f'(ti:({query}) OR abs:({query}))'\n\ndef _format_submitted_date_filter(date_from: Optional[str], date_to: Optional[str]) -> str:\n    \"\"\"Build an arXiv submittedDate range using spaces around TO.\"\"\"\n    try:\n        if date_from:\n            start_date = parser.parse(date_from).strftime('%Y%m%d0000')\n        else:\n            start_date = '199107010000'\n        if date_to:\n            end_date = parser.parse(date_to).strftime('%Y%m%d2359')\n        else:\n            end_date = datetime.now().strftime('%Y%m%d2359')\n    except (ValueError, TypeError) as e:\n        logger.error(f'Error parsing dates: {e}')\n        raise ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')\n    return f'submittedDate:[{start_date} TO {end_date}]'\n\ndef build_arxiv_search_query(query: str, date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None) -> str:\n    \"\"\"Return the unencoded arXiv search_query string.\"\"\"\n    query_parts: list[str] = []\n    if query.strip():\n        query_parts.append(_scope_user_query(query))\n    if categories:\n        category_filter = ' OR '.join((f'cat:{cat}' for cat in categories))\n        query_parts.append(f'({category_filter})')\n    if date_from or date_to:\n        date_filter = _format_submitted_date_filter(date_from, date_to)\n        query_parts.append(date_filter)\n        logger.debug(f'Added date filter: {date_filter}')\n    if not query_parts:\n        raise ValueError('No search criteria provided')\n    return ' AND '.join(query_parts)\n\ndef build_arxiv_search_url(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> str:\n    \"\"\"Build a raw arXiv API URL with a percent-encoded search_query.\"\"\"\n    final_query = build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)\n    logger.debug(f'Raw API query: {final_query}')\n    sort_map = {'relevance': 'relevance', 'date': 'submittedDate'}\n    order = sort_order if sort_order in ('ascending', 'descending') else 'descending'\n    encoded_query = quote(final_query, safe='')\n    start = max(0, int(start))\n    base_params = f\"start={start}&max_results={max_results}&sortBy={sort_map.get(sort_by, 'relevance')}&sortOrder={order}\"\n    return f'{ARXIV_API_URL}?search_query={encoded_query}&{base_params}'\n\nasync def _raw_arxiv_search(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> tuple[List[Dict[str, Any]], Optional[int]]:\n    \"\"\"\n    Perform arXiv search using raw HTTP requests.\n\n    This bypasses the arxiv Python package to avoid URL encoding issues\n    with date filters. The arxiv package encodes '+' as '%2B' which breaks\n    the submittedDate:[YYYYMMDD TO YYYYMMDD] syntax.\n\n    Returns (papers, total_results) where total_results is the OpenSearch\n    corpus hit count from the Atom feed, not the page size.\n    \"\"\"\n    url = build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)\n    logger.debug(f'Raw API URL: {url}')\n    timeout = httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)\n    async with httpx.AsyncClient(timeout=timeout) as client:\n        response = await _rate_limited_get(client, url)\n    papers = _parse_arxiv_atom_response(response.text)\n    return (papers, _parse_opensearch_total_results(response.text))\n\ndef _parse_opensearch_total_results(xml_text: str) -> Optional[int]:\n    \"\"\"Return arXiv OpenSearch totalResults, or None if the feed omits it.\"\"\"\n    try:\n        root = ET.fromstring(xml_text)\n    except ET.ParseError:\n        return None\n    elem = root.find('opensearch:totalResults', ARXIV_NS)\n    if elem is None:\n        for child in list(root):\n            tag = child.tag.rsplit('}', 1)[-1]\n            if tag == 'totalResults':\n                elem = child\n                break\n    if elem is None or elem.text is None:\n        return None\n    try:\n        return int(elem.text.strip())\n    except ValueError:\n        return None\n\ndef _parse_arxiv_atom_response(xml_text: str) -> List[Dict[str, Any]]:\n    \"\"\"Parse arXiv Atom XML response into paper dictionaries.\"\"\"\n    results = []\n    try:\n        root = ET.fromstring(xml_text)\n        for entry in root.findall('atom:entry', ARXIV_NS):\n            id_elem = entry.find('atom:id', ARXIV_NS)\n            if id_elem is None or id_elem.text is None:\n                continue\n            paper_id = id_elem.text.split('/abs/')[-1]\n            short_id = paper_id.split('v')[0] if 'v' in paper_id else paper_id\n            title_elem = entry.find('atom:title', ARXIV_NS)\n            title = title_elem.text.strip().replace('\\n', ' ') if title_elem is not None and title_elem.text else ''\n            authors = []\n            for author in entry.findall('atom:author', ARXIV_NS):\n                name_elem = author.find('atom:name', ARXIV_NS)\n                if name_elem is not None and name_elem.text:\n                    authors.append(name_elem.text)\n            summary_elem = entry.find('atom:summary', ARXIV_NS)\n            abstract = summary_elem.text.strip().replace('\\n', ' ') if summary_elem is not None and summary_elem.text else ''\n            categories = []\n            for cat in entry.findall('arxiv:primary_category', ARXIV_NS):\n                term = cat.get('term')\n                if term:\n                    categories.append(term)\n            for cat in entry.findall('atom:category', ARXIV_NS):\n                term = cat.get('term')\n                if term and term not in categories:\n                    categories.append(term)\n            published_elem = entry.find('atom:published', ARXIV_NS)\n            published = published_elem.text if published_elem is not None and published_elem.text else ''\n            pdf_url = None\n            for link in entry.findall('atom:link', ARXIV_NS):\n                if link.get('title') == 'pdf':\n                    pdf_url = link.get('href')\n                    break\n            if not pdf_url:\n                pdf_url = f'http://arxiv.org/pdf/{paper_id}'\n            results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})\n    except ET.ParseError as e:\n        logger.error(f'Failed to parse arXiv XML response: {e}')\n        raise ValueError(f'Failed to parse arXiv API response: {e}')\n    return results",
+  "initial_functions": [
+    "arxiv_api:_compute_backoff_seconds",
+    "arxiv_api:_parse_retry_after_seconds",
+    "arxiv_api:retry_with_backoff",
+    "tools.alerts:_clear_drain_cursor",
+    "tools.alerts:_filter_by_topic",
+    "tools.alerts:_is_new_paper",
+    "tools.alerts:_load_watches",
+    "tools.alerts:_newest_published",
+    "tools.alerts:_now_iso",
+    "tools.alerts:_page_is_truncated",
+    "tools.alerts:_save_watches",
+    "tools.alerts:_watch_file_path",
+    "tools.alerts:handle_check_alerts",
+    "tools.search:_format_submitted_date_filter",
+    "tools.search:_parse_arxiv_atom_response",
+    "tools.search:_parse_opensearch_total_results",
+    "tools.search:_rate_limited_get",
+    "tools.search:_rate_limited_response",
+    "tools.search:_raw_arxiv_search",
+    "tools.search:_scope_user_query",
+    "tools.search:_status_response",
+    "tools.search:_user_query_has_field_prefix",
+    "tools.search:build_arxiv_search_query",
+    "tools.search:build_arxiv_search_url"
+  ],
+  "functions": [
+    "arxiv_api:_compute_backoff_seconds",
+    "arxiv_api:_parse_retry_after_seconds",
+    "arxiv_api:retry_with_backoff",
+    "tools.alerts:_clear_drain_cursor",
+    "tools.alerts:_filter_by_topic",
+    "tools.alerts:_is_new_paper",
+    "tools.alerts:_load_watches",
+    "tools.alerts:_newest_published",
+    "tools.alerts:_now_iso",
+    "tools.alerts:_page_is_truncated",
+    "tools.alerts:_save_watches",
+    "tools.alerts:_watch_file_path",
+    "tools.alerts:handle_check_alerts",
+    "tools.search:_format_submitted_date_filter",
+    "tools.search:_parse_arxiv_atom_response",
+    "tools.search:_parse_opensearch_total_results",
+    "tools.search:_rate_limited_get",
+    "tools.search:_rate_limited_response",
+    "tools.search:_raw_arxiv_search",
+    "tools.search:_scope_user_query",
+    "tools.search:_status_response",
+    "tools.search:_user_query_has_field_prefix",
+    "tools.search:build_arxiv_search_query",
+    "tools.search:build_arxiv_search_url"
+  ],
+  "edges": [
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_load_watches",
+      "callsite": "_load_watches()",
+      "line": 327
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": "tools.alerts:_watch_file_path",
+      "callsite": "_watch_file_path()",
+      "line": 162
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_filter_by_topic",
+      "callsite": "_filter_by_topic(all_topics, selected_topic)",
+      "line": 329
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_now_iso",
+      "callsite": "_now_iso()",
+      "line": 345
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.search:_raw_arxiv_search",
+      "callsite": "_raw_arxiv_search(query=topic_query, max_results=max_results, sort_by='date', sort_order='ascending', date_from=drain_from, categories=topic.get('categories') or None, start=check_start)",
+      "line": 365
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": "tools.search:build_arxiv_search_url",
+      "callsite": "build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)",
+      "line": 289
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": "tools.search:build_arxiv_search_query",
+      "callsite": "build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)",
+      "line": 245
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": "tools.search:_scope_user_query",
+      "callsite": "_scope_user_query(query)",
+      "line": 217
+    },
+    {
+      "caller": "tools.search:_scope_user_query",
+      "callee": "tools.search:_user_query_has_field_prefix",
+      "callsite": "_user_query_has_field_prefix(query)",
+      "line": 178
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": "tools.search:_format_submitted_date_filter",
+      "callsite": "_format_submitted_date_filter(date_from, date_to)",
+      "line": 224
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": "tools.search:_rate_limited_get",
+      "callsite": "_rate_limited_get(client, url)",
+      "line": 309
+    },
+    {
+      "caller": "tools.search:_rate_limited_get",
+      "callee": "arxiv_api:retry_with_backoff",
+      "callsite": "retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')",
+      "line": 103
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_compute_backoff_seconds",
+      "callsite": "_compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)",
+      "line": 317
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": "arxiv_api:_parse_retry_after_seconds",
+      "callsite": "_parse_retry_after_seconds(retry_after)",
+      "line": 190
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_compute_backoff_seconds",
+      "callsite": "_compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)",
+      "line": 357
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_parse_retry_after_seconds",
+      "callsite": "_parse_retry_after_seconds(retry_after)",
+      "line": 404
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_compute_backoff_seconds",
+      "callsite": "_compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)",
+      "line": 428
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_parse_retry_after_seconds",
+      "callsite": "_parse_retry_after_seconds(retry_after)",
+      "line": 437
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": "arxiv_api:_parse_retry_after_seconds",
+      "callsite": "_parse_retry_after_seconds(retry_after)",
+      "line": 468
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": "tools.search:_parse_arxiv_atom_response",
+      "callsite": "_parse_arxiv_atom_response(response.text)",
+      "line": 311
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": "tools.search:_parse_opensearch_total_results",
+      "callsite": "_parse_opensearch_total_results(response.text)",
+      "line": 312
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_is_new_paper",
+      "callsite": "_is_new_paper(paper.get('published', ''), last_checked)",
+      "line": 378
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_page_is_truncated",
+      "callsite": "_page_is_truncated(len(search_results), max_results, total_results, new_count=len(new_papers), start=check_start)",
+      "line": 381
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_newest_published",
+      "callsite": "_newest_published(new_papers)",
+      "line": 397
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_clear_drain_cursor",
+      "callsite": "_clear_drain_cursor(topic)",
+      "line": 402
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_clear_drain_cursor",
+      "callsite": "_clear_drain_cursor(topic)",
+      "line": 405
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.alerts:_save_watches",
+      "callsite": "_save_watches(payload)",
+      "line": 420
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": "tools.alerts:_watch_file_path",
+      "callsite": "_watch_file_path()",
+      "line": 175
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": "tools.search:_rate_limited_response",
+      "callsite": "_rate_limited_response(str(exc), retry_after_seconds=exc.retry_after_seconds, status_code=exc.status_code)",
+      "line": 431
+    },
+    {
+      "caller": "tools.search:_rate_limited_response",
+      "callee": "tools.search:_status_response",
+      "callsite": "_status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)",
+      "line": 76
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "(arguments.get('topic') or '').strip()",
+      "line": 326,
+      "expression": "(arguments.get('topic') or '').strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "arguments.get('topic')",
+      "line": 326,
+      "expression": "arguments.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_watch_file_path",
+      "callee": null,
+      "callsite": "Path(settings.STORAGE_PATH)",
+      "line": 157,
+      "expression": "Path",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "watch_file.exists()",
+      "line": 163,
+      "expression": "watch_file.exists",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "json.loads(watch_file.read_text(encoding='utf-8'))",
+      "line": 167,
+      "expression": "json.loads",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "watch_file.read_text(encoding='utf-8')",
+      "line": 167,
+      "expression": "watch_file.read_text",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_load_watches",
+      "callee": null,
+      "callsite": "logger.warning('Invalid watched topics file, resetting: %s', watch_file)",
+      "line": 169,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "payload.get('topics', [])",
+      "line": 328,
+      "expression": "payload.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_filter_by_topic",
+      "callee": null,
+      "callsite": "topic.get('topic')",
+      "line": 189,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {selected_topic}'}))",
+      "line": 334,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "json.dumps({'status': 'error', 'message': f'Watch not found: {selected_topic}'})",
+      "line": 336,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_now_iso",
+      "callee": null,
+      "callsite": "datetime.now(timezone.utc).isoformat()",
+      "line": 180,
+      "expression": "datetime.now(timezone.utc).isoformat",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_now_iso",
+      "callee": null,
+      "callsite": "datetime.now(timezone.utc)",
+      "line": 180,
+      "expression": "datetime.now",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('topic', '')",
+      "line": 349,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('last_checked')",
+      "line": 353,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "min(int(topic.get('max_results', 10)), settings.MAX_RESULTS)",
+      "line": 354,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "int(topic.get('max_results', 10))",
+      "line": 354,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('max_results', 10)",
+      "line": 354,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('drain_from')",
+      "line": 359,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "max(0, int(topic.get('check_start') or 0))",
+      "line": 362,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "int(topic.get('check_start') or 0)",
+      "line": 362,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('check_start')",
+      "line": 362,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "query.strip()",
+      "line": 216,
+      "expression": "query.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "query_parts.append(_scope_user_query(query))",
+      "line": 217,
+      "expression": "query_parts.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_scope_user_query",
+      "callee": null,
+      "callsite": "query.strip()",
+      "line": 175,
+      "expression": "query.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_user_query_has_field_prefix",
+      "callee": null,
+      "callsite": "query.lower()",
+      "line": 163,
+      "expression": "query.lower",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_user_query_has_field_prefix",
+      "callee": null,
+      "callsite": "any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))",
+      "line": 164,
+      "expression": "any",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "' OR '.join((f'cat:{cat}' for cat in categories))",
+      "line": 220,
+      "expression": "' OR '.join",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "query_parts.append(f'({category_filter})')",
+      "line": 221,
+      "expression": "query_parts.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "parser.parse(date_from).strftime('%Y%m%d0000')",
+      "line": 189,
+      "expression": "parser.parse(date_from).strftime",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "parser.parse(date_from)",
+      "line": 189,
+      "expression": "parser.parse",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "parser.parse(date_to).strftime('%Y%m%d2359')",
+      "line": 194,
+      "expression": "parser.parse(date_to).strftime",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "parser.parse(date_to)",
+      "line": 194,
+      "expression": "parser.parse",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "datetime.now().strftime('%Y%m%d2359')",
+      "line": 196,
+      "expression": "datetime.now().strftime",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "datetime.now()",
+      "line": 196,
+      "expression": "datetime.now",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "logger.error(f'Error parsing dates: {e}')",
+      "line": 198,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_format_submitted_date_filter",
+      "callee": null,
+      "callsite": "ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')",
+      "line": 199,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "query_parts.append(date_filter)",
+      "line": 225,
+      "expression": "query_parts.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "logger.debug(f'Added date filter: {date_filter}')",
+      "line": 226,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "ValueError('No search criteria provided')",
+      "line": 229,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_query",
+      "callee": null,
+      "callsite": "' AND '.join(query_parts)",
+      "line": 231,
+      "expression": "' AND '.join",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": null,
+      "callsite": "logger.debug(f'Raw API query: {final_query}')",
+      "line": 251,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": null,
+      "callsite": "quote(final_query, safe='')",
+      "line": 258,
+      "expression": "quote",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": null,
+      "callsite": "max(0, int(start))",
+      "line": 259,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": null,
+      "callsite": "int(start)",
+      "line": 259,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:build_arxiv_search_url",
+      "callee": null,
+      "callsite": "sort_map.get(sort_by, 'relevance')",
+      "line": 263,
+      "expression": "sort_map.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "logger.debug(f'Raw API URL: {url}')",
+      "line": 299,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)",
+      "line": 302,
+      "expression": "httpx.Timeout",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "float(settings.ARXIV_CONNECT_TIMEOUT)",
+      "line": 303,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "float(settings.get_request_timeout())",
+      "line": 304,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "settings.get_request_timeout()",
+      "line": 304,
+      "expression": "settings.get_request_timeout",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_raw_arxiv_search",
+      "callee": null,
+      "callsite": "httpx.AsyncClient(timeout=timeout)",
+      "line": 308,
+      "expression": "httpx.AsyncClient",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "Settings()",
+      "line": 243,
+      "expression": "Settings",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 244,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "range(max_retries + 1)",
+      "line": 248,
+      "expression": "range",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 250,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)",
+      "line": 253,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+      "line": 261,
+      "expression": "ArxivTimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+      "line": 265,
+      "expression": "ArxivTimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 273,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "asyncio.TimeoutError('Budget exhausted before attempt')",
+      "line": 275,
+      "expression": "asyncio.TimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)",
+      "line": 276,
+      "expression": "logger.debug",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "asyncio.wait_for(operation(), timeout=remaining)",
+      "line": 282,
+      "expression": "asyncio.wait_for",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "operation()",
+      "line": 282,
+      "expression": "operation",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "operation()",
+      "line": 284,
+      "expression": "operation",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 288,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)",
+      "line": 289,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "isinstance(last_exception, httpx.HTTPStatusError)",
+      "line": 296,
+      "expression": "isinstance",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after)",
+      "line": 301,
+      "expression": "ArxivRateLimitError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "int(retry_after)",
+      "line": 303,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.')",
+      "line": 308,
+      "expression": "ArxivTimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "int(elapsed)",
+      "line": 309,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": null,
+      "callsite": "min(initial_backoff * 2 ** attempt, max_backoff)",
+      "line": 187,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "float(retry_after)",
+      "line": 149,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "parsedate_to_datetime(retry_after)",
+      "line": 158,
+      "expression": "parsedate_to_datetime",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "datetime.datetime.now(datetime.timezone.utc)",
+      "line": 159,
+      "expression": "datetime.datetime.now",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "(retry_dt - now).total_seconds()",
+      "line": 160,
+      "expression": "(retry_dt - now).total_seconds",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "max(0.0, delta)",
+      "line": 161,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_parse_retry_after_seconds",
+      "callee": null,
+      "callsite": "logger.warning(f'Could not parse Retry-After header: {retry_after}')",
+      "line": 163,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": null,
+      "callsite": "max(delay, parsed_retry_after)",
+      "line": 192,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": null,
+      "callsite": "random.random()",
+      "line": 195,
+      "expression": "random.random",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": null,
+      "callsite": "max(jittered, parsed_retry_after)",
+      "line": 199,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:_compute_backoff_seconds",
+      "callee": null,
+      "callsite": "min(jittered, max_backoff)",
+      "line": 204,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 322,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)",
+      "line": 325,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.')",
+      "line": 331,
+      "expression": "ArxivConnectionError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "min(wait, remaining * 0.9)",
+      "line": 335,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)",
+      "line": 336,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "asyncio.sleep(wait)",
+      "line": 343,
+      "expression": "asyncio.sleep",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)",
+      "line": 345,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.')",
+      "line": 350,
+      "expression": "ArxivConnectionError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 362,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)",
+      "line": 364,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.')",
+      "line": 370,
+      "expression": "ArxivTimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "min(wait, remaining * 0.9)",
+      "line": 374,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)",
+      "line": 375,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "asyncio.sleep(wait)",
+      "line": 382,
+      "expression": "asyncio.sleep",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)",
+      "line": 384,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.')",
+      "line": 387,
+      "expression": "ArxivTimeoutError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "e.response.headers.get('Retry-After')",
+      "line": 401,
+      "expression": "e.response.headers.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)",
+      "line": 414,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+      "line": 421,
+      "expression": "ArxivRateLimitError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "int(parsed_retry_after)",
+      "line": 423,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "time.monotonic()",
+      "line": 433,
+      "expression": "time.monotonic",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)",
+      "line": 444,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+      "line": 451,
+      "expression": "ArxivRateLimitError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "int(parsed_retry_after)",
+      "line": 453,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "min(wait, remaining * 0.9)",
+      "line": 457,
+      "expression": "min",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)",
+      "line": 458,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "asyncio.sleep(wait)",
+      "line": 466,
+      "expression": "asyncio.sleep",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)",
+      "line": 474,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after)",
+      "line": 480,
+      "expression": "ArxivRateLimitError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "int(parsed_retry_after)",
+      "line": 482,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "arxiv_api:retry_with_backoff",
+      "callee": null,
+      "callsite": "RuntimeError(f'{operation_name} failed after exhausting retries')",
+      "line": 496,
+      "expression": "RuntimeError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_rate_limited_get",
+      "callee": null,
+      "callsite": "float(settings.ARXIV_MAX_TOTAL_TIME)",
+      "line": 108,
+      "expression": "float",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "ET.fromstring(xml_text)",
+      "line": 446,
+      "expression": "ET.fromstring",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "root.findall('atom:entry', ARXIV_NS)",
+      "line": 448,
+      "expression": "root.findall",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.find('atom:id', ARXIV_NS)",
+      "line": 450,
+      "expression": "entry.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "id_elem.text.split('/abs/')",
+      "line": 455,
+      "expression": "id_elem.text.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "paper_id.split('v')",
+      "line": 457,
+      "expression": "paper_id.split",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.find('atom:title', ARXIV_NS)",
+      "line": 460,
+      "expression": "entry.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "title_elem.text.strip().replace('\\n', ' ')",
+      "line": 462,
+      "expression": "title_elem.text.strip().replace",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "title_elem.text.strip()",
+      "line": 462,
+      "expression": "title_elem.text.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.findall('atom:author', ARXIV_NS)",
+      "line": 469,
+      "expression": "entry.findall",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "author.find('atom:name', ARXIV_NS)",
+      "line": 470,
+      "expression": "author.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "authors.append(name_elem.text)",
+      "line": 472,
+      "expression": "authors.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.find('atom:summary', ARXIV_NS)",
+      "line": 475,
+      "expression": "entry.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "summary_elem.text.strip().replace('\\n', ' ')",
+      "line": 477,
+      "expression": "summary_elem.text.strip().replace",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "summary_elem.text.strip()",
+      "line": 477,
+      "expression": "summary_elem.text.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.findall('arxiv:primary_category', ARXIV_NS)",
+      "line": 484,
+      "expression": "entry.findall",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "cat.get('term')",
+      "line": 485,
+      "expression": "cat.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "categories.append(term)",
+      "line": 487,
+      "expression": "categories.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.findall('atom:category', ARXIV_NS)",
+      "line": 488,
+      "expression": "entry.findall",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "cat.get('term')",
+      "line": 489,
+      "expression": "cat.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "categories.append(term)",
+      "line": 491,
+      "expression": "categories.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.find('atom:published', ARXIV_NS)",
+      "line": 494,
+      "expression": "entry.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "entry.findall('atom:link', ARXIV_NS)",
+      "line": 503,
+      "expression": "entry.findall",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "link.get('title')",
+      "line": 504,
+      "expression": "link.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "link.get('href')",
+      "line": 505,
+      "expression": "link.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})",
+      "line": 510,
+      "expression": "results.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "logger.error(f'Failed to parse arXiv XML response: {e}')",
+      "line": 525,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_arxiv_atom_response",
+      "callee": null,
+      "callsite": "ValueError(f'Failed to parse arXiv API response: {e}')",
+      "line": 526,
+      "expression": "ValueError",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "ET.fromstring(xml_text)",
+      "line": 318,
+      "expression": "ET.fromstring",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "root.find('opensearch:totalResults', ARXIV_NS)",
+      "line": 322,
+      "expression": "root.find",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "list(root)",
+      "line": 325,
+      "expression": "list",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "child.tag.rsplit('}', 1)",
+      "line": 326,
+      "expression": "child.tag.rsplit",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "int(elem.text.strip())",
+      "line": 333,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_parse_opensearch_total_results",
+      "callee": null,
+      "callsite": "elem.text.strip()",
+      "line": 333,
+      "expression": "elem.text.strip",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "topic.get('categories')",
+      "line": 371,
+      "expression": "topic.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_is_new_paper",
+      "callee": null,
+      "callsite": "parser.parse(published_value)",
+      "line": 198,
+      "expression": "parser.parse",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_is_new_paper",
+      "callee": null,
+      "callsite": "parser.parse(last_checked)",
+      "line": 198,
+      "expression": "parser.parse",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "paper.get('published', '')",
+      "line": 378,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_page_is_truncated",
+      "callee": null,
+      "callsite": "max(0, int(start or 0))",
+      "line": 232,
+      "expression": "max",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_page_is_truncated",
+      "callee": null,
+      "callsite": "int(start or 0)",
+      "line": 232,
+      "expression": "int",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "len(search_results)",
+      "line": 382,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "len(new_papers)",
+      "line": 385,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "len(search_results)",
+      "line": 395,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_newest_published",
+      "callee": null,
+      "callsite": "paper.get('published')",
+      "line": 208,
+      "expression": "paper.get",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_newest_published",
+      "callee": null,
+      "callsite": "parser.parse(published)",
+      "line": 210,
+      "expression": "parser.parse",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_clear_drain_cursor",
+      "callee": null,
+      "callsite": "topic.pop('drain_from', None)",
+      "line": 244,
+      "expression": "topic.pop",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_clear_drain_cursor",
+      "callee": null,
+      "callsite": "topic.pop('check_start', None)",
+      "line": 245,
+      "expression": "topic.pop",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "alerts.append({'topic': topic_query, 'last_checked': last_checked, 'new_paper_count': len(new_papers), 'new_papers': new_papers, 'has_more': has_more})",
+      "line": 409,
+      "expression": "alerts.append",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "len(new_papers)",
+      "line": 413,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": null,
+      "callsite": "_watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')",
+      "line": 175,
+      "expression": "_watch_file_path().write_text",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:_save_watches",
+      "callee": null,
+      "callsite": "json.dumps(payload, indent=2)",
+      "line": 175,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "len(topics)",
+      "line": 424,
+      "expression": "len",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps(result, indent=2))",
+      "line": 427,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "json.dumps(result, indent=2)",
+      "line": 427,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "logger.warning('check_alerts rate limited after retries: %s', exc)",
+      "line": 430,
+      "expression": "logger.warning",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_status_response",
+      "callee": null,
+      "callsite": "payload.update(extra)",
+      "line": 56,
+      "expression": "payload.update",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_status_response",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=json.dumps(payload, indent=2))",
+      "line": 57,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.search:_status_response",
+      "callee": null,
+      "callsite": "json.dumps(payload, indent=2)",
+      "line": 57,
+      "expression": "json.dumps",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 432,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "logger.error('check_alerts error: %s', exc)",
+      "line": 437,
+      "expression": "logger.error",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "types.TextContent(type='text', text=f'Error: {str(exc)}')",
+      "line": 438,
+      "expression": "types.TextContent",
+      "kind": "external_or_unresolved"
+    },
+    {
+      "caller": "tools.alerts:handle_check_alerts",
+      "callee": null,
+      "callsite": "str(exc)",
+      "line": 438,
+      "expression": "str",
+      "kind": "external_or_unresolved"
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "ca9817eb6135f895a0449eff78af00a4902ebe0f7f98c2275cc626bde9eb803d",
+    "__main__.py": "8817be1bd4860c58edd6fbf1b7bee85f34a6bf650ab333c5c490ecd793c7114f",
+    "arxiv_api.py": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+    "config.py": "cae51c120a58a1843d76aa0d4f4ddcd3e027110c027e1b2add44ffec7119b0fe",
+    "prompts/__init__.py": "a17bb606cb104b4b7975ce13dcb3dc45337e2caceb0caa76fad0e9b47d06ff5f",
+    "prompts/compare_papers_prompt.py": "41455a124dfbf32c88cfae0cab4b797c265f58c8ac7e0a95be527820d85eaf3b",
+    "prompts/deep_research_analysis_prompt.py": "292d3040286b157235c38286df2d873953e4f5332ac3b4737456a496d6ca8d5b",
+    "prompts/handlers.py": "d0f3e9342417743e2f14d4b8c0bb0e3b60114e3004ddb018b4fef756917b774e",
+    "prompts/literature_review_prompt.py": "164d753a9d1b47c784e3cefdb93b7ba7a7e382a0a3b961c2eafc0e6425574c5d",
+    "prompts/prompt_manager.py": "805de0f3b8b79e7b7186561fb786cf619b271c8c42cadeda8c84bea62b770bdc",
+    "prompts/prompts.py": "831c2806bd185f9f5c50cc356d9537d7beb63402a023d8a90ae03160cc6918b3",
+    "prompts/summarize_paper_prompt.py": "f17d13ca77944a368b6953a9515aba1165f461db0f6d127a089610974ebc2d17",
+    "resources/__init__.py": "d10b1397c7e164ec634eb0560d0e43973959dec4dfcf9766e95facbd49f79dbe",
+    "resources/papers.py": "13e460380e84e4f3a52e030ecae1581ba4aa933e9432543dfe2b9c287c07cda2",
+    "server.py": "aaa8d509065564d785541b4e79c9d81ad7cc2a17c51064280b8eb078160e1d90",
+    "tools/__init__.py": "5a8872d8919ba7905aee22f921f0361c5ede985665877aacc4cea85829ea598e",
+    "tools/alerts.py": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+    "tools/arxiv_ids.py": "72117414d4186d292a87b013d3c8349c94091fc25700be353074dfa70b867d1b",
+    "tools/citation_graph.py": "1109b2503509d219b7050fdef3818be034c38a40afa47aadf1c0f9648c5c5aa6",
+    "tools/content.py": "5844b96c38816916140ee439ff8f19b566518ba3b77360f1d1fbe67898f1a434",
+    "tools/download.py": "aeee7a3d0eca9076d7b11aa1699257d498d9cddef24245cd526e6121fb414e47",
+    "tools/export_citations.py": "19265a8653d624765f87e99dab10b481990644a47c58d07da3a06b71e59ac91f",
+    "tools/get_abstract.py": "ec9a85a440aa2d22f119bfdb2c328d1a5f7c267e96c6eed0b9a984e76358d228",
+    "tools/latex.py": "3859621266def0bef2a3825dc980a8e09885fbff288c6c2a1deb46f3e73b7a22",
+    "tools/latex_archive.py": "e0e3a82773c5a1438fc589eb184dc03b12f7ebe66129743c2e051839b4b3a48f",
+    "tools/latex_flatten.py": "80f78ea196905be1fd5727615d95f0c1fe69e91866455e0d9a5f8759770a4610",
+    "tools/list_papers.py": "726dff69a69e256f5da48a19952d4e2199da557fc6411966d2525ba779045a68",
+    "tools/paper_outline.py": "abc28899f52658e7423f8bbb9fe524242b1c948dbbe7461674aab9b26169d2ee",
+    "tools/read_paper.py": "f825783a60664c6c8a248874c0f067e054aa0bdcdd402173e074af3067fb1f3e",
+    "tools/search.py": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+    "tools/semantic_search.py": "7d19df120839799ab89ecd548b648894da93587ed6050eb0806785fa750250db"
+  },
+  "revisions": [],
+  "converged": true,
+  "mode": "static_only_no_debloating",
+  "warnings": [
+    "External and unresolved calls are not expanded",
+    "Module-level context is conservatively retained",
+    "Python AST subset; no soundness/equivalence guarantee",
+    "__main__.py: relative import beyond package",
+    "resources/papers.py: relative import beyond package",
+    "server.py: relative import beyond package",
+    "tools/alerts.py: relative import beyond package",
+    "tools/citation_graph.py: relative import beyond package",
+    "tools/download.py: relative import beyond package",
+    "tools/export_citations.py: relative import beyond package",
+    "tools/get_abstract.py: relative import beyond package",
+    "tools/latex.py: relative import beyond package",
+    "tools/latex_archive.py: relative import beyond package",
+    "tools/list_papers.py: relative import beyond package",
+    "tools/paper_outline.py: relative import beyond package",
+    "tools/read_paper.py: relative import beyond package",
+    "tools/search.py: relative import beyond package",
+    "tools/semantic_search.py: relative import beyond package",
+    "Only statically named self/cls methods and lexical nested calls are resolved; object instances, closures and reflection remain partial",
+    "Unreferenced module initialization is excluded from reasoning context; this is not an executable module or a proof of initialization equivalence"
+  ],
+  "evidence_spans": {
+    "arxiv_api:_compute_backoff_seconds": {
+      "path": "arxiv_api.py",
+      "line_start": 167,
+      "line_end": 204,
+      "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+      "source": "def _compute_backoff_seconds(attempt: int, retry_after: str | None, initial_backoff: float, max_backoff: float) -> float:\n    \"\"\"Exponential backoff with jitter, with Retry-After as floor.\n\n    Args:\n        attempt: Zero-based retry attempt number.\n        retry_after: Optional Retry-After header value (int or HTTP-date).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n\n    Returns:\n        Computed backoff delay in seconds with jitter (0.5-1.5x) applied.\n        Retry-After (if provided) is used as a strict floor before and after jitter,\n        and is NOT capped to max_backoff.\n    \"\"\"\n    delay = min(initial_backoff * 2 ** attempt, max_backoff)\n    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n    if parsed_retry_after is not None:\n        delay = max(delay, parsed_retry_after)\n    jittered = delay * (0.5 + random.random())\n    if parsed_retry_after is not None:\n        jittered = max(jittered, parsed_retry_after)\n    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n        return jittered\n    return min(jittered, max_backoff)"
+    },
+    "arxiv_api:_parse_retry_after_seconds": {
+      "path": "arxiv_api.py",
+      "line_start": 139,
+      "line_end": 164,
+      "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+      "source": "def _parse_retry_after_seconds(retry_after: str | None) -> float | None:\n    \"\"\"Parse Retry-After header into seconds.\n\n    Supports both delay-seconds (integer) and HTTP-date formats.\n    Returns None if unparseable or not provided.\n    \"\"\"\n    if not retry_after:\n        return None\n    try:\n        return float(retry_after)\n    except ValueError:\n        pass\n    try:\n        from email.utils import parsedate_to_datetime\n        import datetime\n        retry_dt = parsedate_to_datetime(retry_after)\n        now = datetime.datetime.now(datetime.timezone.utc)\n        delta = (retry_dt - now).total_seconds()\n        return max(0.0, delta)\n    except Exception:\n        logger.warning(f'Could not parse Retry-After header: {retry_after}')\n        return None"
+    },
+    "arxiv_api:retry_with_backoff": {
+      "path": "arxiv_api.py",
+      "line_start": 207,
+      "line_end": 496,
+      "file_sha256": "6c3c6c8931939cbe02ead3dc31f99e7b19e6f3a947fc0d8992ee1d645beddd9e",
+      "source": "async def retry_with_backoff(operation: Callable[[], Awaitable[T]], *, max_retries: int=3, initial_backoff: float=2.0, max_backoff: float=60.0, max_total_time: float | None=None, operation_name: str='operation') -> T:\n    \"\"\"Execute an async operation with exponential backoff on retryable errors.\n\n    Retries on:\n    - httpx.TimeoutException\n    - httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError\n    - httpx.HTTPStatusError with status 429, 503, 406\n\n    Note: HTTP 406 uses minimal retries (ARXIV_HTTP_406_MAX_RETRIES = 1)\n    because arXiv's 406 is IP-level burst throttling and retrying inside\n    the window extends the block (#277).\n\n    Args:\n        operation: Async callable to execute.\n        max_retries: Maximum number of retry attempts (for 429/503).\n        initial_backoff: Initial backoff delay in seconds.\n        max_backoff: Maximum backoff delay in seconds.\n        max_total_time: Optional maximum total time in seconds (raises on exceed).\n        operation_name: Name for logging.\n\n    Returns:\n        Result of the operation.\n\n    Raises:\n        Original exception after exhausting retries, wrapped with context.\n    \"\"\"\n    from .config import Settings\n    settings = Settings()\n    start_time = time.monotonic()\n    last_exception: Exception | None = None\n    retry_after: str | None = None\n    for attempt in range(max_retries + 1):\n        if max_total_time is not None:\n            elapsed = time.monotonic() - start_time\n            if elapsed >= max_total_time:\n                attempts_word = 'attempt' if attempt == 0 else 'attempts'\n                logger.error('%s exceeded max total time %.1fs after %d %s', operation_name, max_total_time, attempt, attempts_word)\n                if last_exception:\n                    raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.') from last_exception\n                raise ArxivTimeoutError(f'{operation_name} timed out after {max_total_time:.0f}s. The arXiv API may be slow or overloaded. Please retry shortly.')\n        try:\n            if max_total_time is not None:\n                remaining = max_total_time - (time.monotonic() - start_time)\n                if remaining <= 0:\n                    raise asyncio.TimeoutError('Budget exhausted before attempt')\n                logger.debug('%s attempt %d with %.1fs budget', operation_name, attempt + 1, remaining)\n                return await asyncio.wait_for(operation(), timeout=remaining)\n            return await operation()\n        except asyncio.TimeoutError as e:\n            if max_total_time is not None:\n                elapsed = time.monotonic() - start_time\n                logger.error('%s timed out after %.1fs (budget: %.1fs)', operation_name, elapsed, max_total_time)\n                if last_exception and isinstance(last_exception, httpx.HTTPStatusError):\n                    status_code = last_exception.response.status_code\n                    if status_code in (429, 503, 406):\n                        retry_after = 60.0 if status_code != 406 else 600.0\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {status_code}). Please wait {int(retry_after)} seconds before retrying.', status_code=status_code, retry_after_seconds=retry_after) from e\n                raise ArxivTimeoutError(f'arXiv request timed out after {int(elapsed)}s. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n            raise\n        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining:\n                        logger.warning('%s insufficient budget for retry (%.1fs < %.1fs wait)', operation_name, remaining, wait)\n                        raise ArxivConnectionError(f'Could not connect to arXiv after {attempt + 1} attempts. Please check your network connection and retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s connection error; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s connection failed after %d attempts', operation_name, max_retries + 1)\n                raise ArxivConnectionError(f'Could not connect to arXiv after {max_retries + 1} attempts. Please check your network connection and retry shortly.') from e\n        except httpx.TimeoutException as e:\n            last_exception = e\n            if attempt < max_retries:\n                wait = _compute_backoff_seconds(attempt, None, initial_backoff, max_backoff)\n                if max_total_time is not None:\n                    remaining = max_total_time - (time.monotonic() - start_time)\n                    if wait >= remaining or remaining <= 0.1:\n                        logger.warning('%s insufficient budget for retry (%.1fs remaining, %.1fs wait needed)', operation_name, remaining, wait)\n                        raise ArxivTimeoutError(f'arXiv request timed out after {attempt + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n                    wait = min(wait, remaining * 0.9)\n                logger.warning('%s timed out; retrying in %.1fs (attempt %d/%d)', operation_name, wait, attempt + 1, max_retries + 1)\n                await asyncio.sleep(wait)\n            else:\n                logger.error('%s timed out after %d attempts', operation_name, max_retries + 1)\n                raise ArxivTimeoutError(f'arXiv request timed out after {max_retries + 1} attempts. The arXiv API may be slow or overloaded. Please retry shortly.') from e\n        except httpx.HTTPStatusError as e:\n            if e.response is not None and e.response.status_code in (429, 503, 406):\n                last_exception = e\n                max_retries_for_status = settings.ARXIV_HTTP_406_MAX_RETRIES if e.response.status_code == 406 else max_retries\n                retry_after = e.response.headers.get('Retry-After')\n                if attempt < max_retries_for_status:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is not None and parsed_retry_after > max_backoff:\n                        if parsed_retry_after is None:\n                            parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                        logger.warning('%s HTTP %d: Retry-After (%.1fs) exceeds max_backoff (%.1fs), returning immediately', operation_name, e.response.status_code, parsed_retry_after, max_backoff)\n                        raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                    wait = _compute_backoff_seconds(attempt, retry_after, initial_backoff, max_backoff)\n                    if max_total_time is not None:\n                        remaining = max_total_time - (time.monotonic() - start_time)\n                        if wait >= remaining:\n                            if parsed_retry_after is None:\n                                parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                            if parsed_retry_after is None:\n                                parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                            logger.warning('%s HTTP %d: wait time (%.1fs) exceeds budget (%.1fs), returning immediately', operation_name, e.response.status_code, wait, remaining)\n                            raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n                        wait = min(wait, remaining * 0.9)\n                    logger.warning('%s HTTP %d; retrying in %.1fs (attempt %d/%d)', operation_name, e.response.status_code, wait, attempt + 1, max_retries_for_status + 1)\n                    await asyncio.sleep(wait)\n                else:\n                    parsed_retry_after = _parse_retry_after_seconds(retry_after)\n                    if parsed_retry_after is None:\n                        parsed_retry_after = 600.0 if e.response.status_code == 406 else 60.0\n                    logger.error('%s HTTP %d after %d attempts', operation_name, e.response.status_code, max_retries_for_status + 1)\n                    raise ArxivRateLimitError(f'arXiv is rate limiting this IP (HTTP {e.response.status_code}). Please wait {int(parsed_retry_after)} seconds before retrying.', status_code=e.response.status_code, retry_after_seconds=parsed_retry_after) from e\n            else:\n                raise\n        except (ArxivTimeoutError, ArxivConnectionError, ArxivRateLimitError):\n            raise\n        except Exception:\n            raise\n    if last_exception:\n        raise last_exception\n    raise RuntimeError(f'{operation_name} failed after exhausting retries')"
+    },
+    "tools.alerts:_clear_drain_cursor": {
+      "path": "tools/alerts.py",
+      "line_start": 242,
+      "line_end": 245,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _clear_drain_cursor(topic: Dict[str, Any]) -> None:\n    \"\"\"Reset pagination fields used while draining a truncated watch window.\"\"\"\n    topic.pop('drain_from', None)\n    topic.pop('check_start', None)"
+    },
+    "tools.alerts:_filter_by_topic": {
+      "path": "tools/alerts.py",
+      "line_start": 183,
+      "line_end": 189,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _filter_by_topic(topics: List[Dict[str, Any]], topic_name: Optional[str]) -> List[Dict[str, Any]]:\n    \"\"\"Filter watched topics by exact topic name if provided.\"\"\"\n    if not topic_name:\n        return topics\n    return [topic for topic in topics if topic.get('topic') == topic_name]"
+    },
+    "tools.alerts:_is_new_paper": {
+      "path": "tools/alerts.py",
+      "line_start": 192,
+      "line_end": 200,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _is_new_paper(published_value: str, last_checked: Optional[str]) -> bool:\n    \"\"\"Check if paper is newer than the last check timestamp.\"\"\"\n    if not last_checked:\n        return True\n    try:\n        return parser.parse(published_value) > parser.parse(last_checked)\n    except (ValueError, TypeError):\n        return True"
+    },
+    "tools.alerts:_load_watches": {
+      "path": "tools/alerts.py",
+      "line_start": 160,
+      "line_end": 170,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _load_watches() -> Dict[str, Any]:\n    \"\"\"Load watch storage from disk.\"\"\"\n    watch_file = _watch_file_path()\n    if not watch_file.exists():\n        return {'topics': []}\n    try:\n        return json.loads(watch_file.read_text(encoding='utf-8'))\n    except json.JSONDecodeError:\n        logger.warning('Invalid watched topics file, resetting: %s', watch_file)\n        return {'topics': []}"
+    },
+    "tools.alerts:_newest_published": {
+      "path": "tools/alerts.py",
+      "line_start": 203,
+      "line_end": 216,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _newest_published(papers: List[Dict[str, Any]]) -> Optional[str]:\n    \"\"\"Return the published timestamp of the newest paper in the list.\"\"\"\n    newest_value: Optional[str] = None\n    newest_dt: Optional[datetime] = None\n    for paper in papers:\n        published = paper.get('published') or ''\n        try:\n            published_dt = parser.parse(published)\n        except (ValueError, TypeError):\n            continue\n        if newest_dt is None or published_dt > newest_dt:\n            newest_dt = published_dt\n            newest_value = published\n    return newest_value"
+    },
+    "tools.alerts:_now_iso": {
+      "path": "tools/alerts.py",
+      "line_start": 178,
+      "line_end": 180,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _now_iso() -> str:\n    \"\"\"UTC timestamp in ISO format.\"\"\"\n    return datetime.now(timezone.utc).isoformat()"
+    },
+    "tools.alerts:_page_is_truncated": {
+      "path": "tools/alerts.py",
+      "line_start": 219,
+      "line_end": 239,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _page_is_truncated(returned: int, max_results: int, total_results: Optional[int], new_count: Optional[int]=None, start: int=0) -> bool:\n    \"\"\"True when max_results or OpenSearch total indicates more papers remain.\n\n    When OpenSearch reports a total, trust start+returned vs total. Otherwise a\n    full page (returned/new_count == max_results) is treated as truncated so we\n    never jump the watermark to wall-clock now and skip the rest of the window.\n    \"\"\"\n    start = max(0, int(start or 0))\n    if total_results is not None:\n        return total_results > start + returned\n    if returned >= max_results > 0:\n        return True\n    if new_count is not None and new_count >= max_results > 0:\n        return True\n    return False"
+    },
+    "tools.alerts:_save_watches": {
+      "path": "tools/alerts.py",
+      "line_start": 173,
+      "line_end": 175,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _save_watches(payload: Dict[str, Any]) -> None:\n    \"\"\"Persist watches to disk.\"\"\"\n    _watch_file_path().write_text(json.dumps(payload, indent=2), encoding='utf-8')"
+    },
+    "tools.alerts:_watch_file_path": {
+      "path": "tools/alerts.py",
+      "line_start": 155,
+      "line_end": 157,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "def _watch_file_path() -> Path:\n    \"\"\"Get watched topics file path.\"\"\"\n    return Path(settings.STORAGE_PATH) / WATCH_FILE_NAME"
+    },
+    "tools.alerts:handle_check_alerts": {
+      "path": "tools/alerts.py",
+      "line_start": 323,
+      "line_end": 438,
+      "file_sha256": "65c8e8f5ca726edda36cf990ebd09f07faee196d3ccf04d59b5adec7554810d8",
+      "source": "async def handle_check_alerts(arguments: Dict[str, Any]) -> List[types.TextContent]:\n    \"\"\"Check all watched topics (or one topic) for newly published papers.\"\"\"\n    try:\n        selected_topic = (arguments.get('topic') or '').strip() or None\n        payload = _load_watches()\n        all_topics = payload.get('topics', [])\n        topics = _filter_by_topic(all_topics, selected_topic)\n        if selected_topic is not None and (not topics):\n            return [types.TextContent(type='text', text=json.dumps({'status': 'error', 'message': f'Watch not found: {selected_topic}'}))]\n        now_iso = _now_iso()\n        alerts: List[Dict[str, Any]] = []\n        for topic in topics:\n            topic_query = topic.get('topic', '')\n            if not topic_query:\n                continue\n            last_checked = topic.get('last_checked')\n            max_results = min(int(topic.get('max_results', 10)), settings.MAX_RESULTS)\n            drain_from = topic.get('drain_from')\n            if drain_from is None:\n                drain_from = last_checked\n            check_start = max(0, int(topic.get('check_start') or 0))\n            search_results, total_results = await _raw_arxiv_search(query=topic_query, max_results=max_results, sort_by='date', sort_order='ascending', date_from=drain_from, categories=topic.get('categories') or None, start=check_start)\n            new_papers = [paper for paper in search_results if _is_new_paper(paper.get('published', ''), last_checked)]\n            has_more = _page_is_truncated(len(search_results), max_results, total_results, new_count=len(new_papers), start=check_start)\n            if has_more:\n                if search_results:\n                    topic['drain_from'] = drain_from\n                    topic['check_start'] = check_start + len(search_results)\n                    if new_papers:\n                        topic['last_checked'] = _newest_published(new_papers)\n                else:\n                    has_more = False\n                    topic['last_checked'] = now_iso\n                    _clear_drain_cursor(topic)\n            else:\n                topic['last_checked'] = now_iso\n                _clear_drain_cursor(topic)\n            topic['updated_at'] = now_iso\n            alerts.append({'topic': topic_query, 'last_checked': last_checked, 'new_paper_count': len(new_papers), 'new_papers': new_papers, 'has_more': has_more})\n        payload['topics'] = all_topics\n        _save_watches(payload)\n        result = {'status': 'success', 'checked_topics': len(topics), 'alerts': alerts}\n        return [types.TextContent(type='text', text=json.dumps(result, indent=2))]\n    except ArxivRateLimitError as exc:\n        logger.warning('check_alerts rate limited after retries: %s', exc)\n        return _rate_limited_response(str(exc), retry_after_seconds=exc.retry_after_seconds, status_code=exc.status_code)\n    except Exception as exc:\n        logger.error('check_alerts error: %s', exc)\n        return [types.TextContent(type='text', text=f'Error: {str(exc)}')]"
+    },
+    "tools.search:_format_submitted_date_filter": {
+      "path": "tools/search.py",
+      "line_start": 183,
+      "line_end": 204,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _format_submitted_date_filter(date_from: Optional[str], date_to: Optional[str]) -> str:\n    \"\"\"Build an arXiv submittedDate range using spaces around TO.\"\"\"\n    try:\n        if date_from:\n            start_date = parser.parse(date_from).strftime('%Y%m%d0000')\n        else:\n            start_date = '199107010000'\n        if date_to:\n            end_date = parser.parse(date_to).strftime('%Y%m%d2359')\n        else:\n            end_date = datetime.now().strftime('%Y%m%d2359')\n    except (ValueError, TypeError) as e:\n        logger.error(f'Error parsing dates: {e}')\n        raise ValueError(f'Invalid date format. Use YYYY-MM-DD format: {e}')\n    return f'submittedDate:[{start_date} TO {end_date}]'"
+    },
+    "tools.search:_parse_arxiv_atom_response": {
+      "path": "tools/search.py",
+      "line_start": 441,
+      "line_end": 528,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _parse_arxiv_atom_response(xml_text: str) -> List[Dict[str, Any]]:\n    \"\"\"Parse arXiv Atom XML response into paper dictionaries.\"\"\"\n    results = []\n    try:\n        root = ET.fromstring(xml_text)\n        for entry in root.findall('atom:entry', ARXIV_NS):\n            id_elem = entry.find('atom:id', ARXIV_NS)\n            if id_elem is None or id_elem.text is None:\n                continue\n            paper_id = id_elem.text.split('/abs/')[-1]\n            short_id = paper_id.split('v')[0] if 'v' in paper_id else paper_id\n            title_elem = entry.find('atom:title', ARXIV_NS)\n            title = title_elem.text.strip().replace('\\n', ' ') if title_elem is not None and title_elem.text else ''\n            authors = []\n            for author in entry.findall('atom:author', ARXIV_NS):\n                name_elem = author.find('atom:name', ARXIV_NS)\n                if name_elem is not None and name_elem.text:\n                    authors.append(name_elem.text)\n            summary_elem = entry.find('atom:summary', ARXIV_NS)\n            abstract = summary_elem.text.strip().replace('\\n', ' ') if summary_elem is not None and summary_elem.text else ''\n            categories = []\n            for cat in entry.findall('arxiv:primary_category', ARXIV_NS):\n                term = cat.get('term')\n                if term:\n                    categories.append(term)\n            for cat in entry.findall('atom:category', ARXIV_NS):\n                term = cat.get('term')\n                if term and term not in categories:\n                    categories.append(term)\n            published_elem = entry.find('atom:published', ARXIV_NS)\n            published = published_elem.text if published_elem is not None and published_elem.text else ''\n            pdf_url = None\n            for link in entry.findall('atom:link', ARXIV_NS):\n                if link.get('title') == 'pdf':\n                    pdf_url = link.get('href')\n                    break\n            if not pdf_url:\n                pdf_url = f'http://arxiv.org/pdf/{paper_id}'\n            results.append({'id': short_id, 'versioned_id': paper_id, 'title': title, 'authors': authors, 'abstract': abstract, 'categories': categories, 'published': published, 'url': pdf_url, 'resource_uri': f'arxiv://{short_id}'})\n    except ET.ParseError as e:\n        logger.error(f'Failed to parse arXiv XML response: {e}')\n        raise ValueError(f'Failed to parse arXiv API response: {e}')\n    return results"
+    },
+    "tools.search:_parse_opensearch_total_results": {
+      "path": "tools/search.py",
+      "line_start": 315,
+      "line_end": 335,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _parse_opensearch_total_results(xml_text: str) -> Optional[int]:\n    \"\"\"Return arXiv OpenSearch totalResults, or None if the feed omits it.\"\"\"\n    try:\n        root = ET.fromstring(xml_text)\n    except ET.ParseError:\n        return None\n    elem = root.find('opensearch:totalResults', ARXIV_NS)\n    if elem is None:\n        for child in list(root):\n            tag = child.tag.rsplit('}', 1)[-1]\n            if tag == 'totalResults':\n                elem = child\n                break\n    if elem is None or elem.text is None:\n        return None\n    try:\n        return int(elem.text.strip())\n    except ValueError:\n        return None"
+    },
+    "tools.search:_rate_limited_get": {
+      "path": "tools/search.py",
+      "line_start": 83,
+      "line_end": 110,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "async def _rate_limited_get(client: httpx.AsyncClient, url: str) -> httpx.Response:\n    \"\"\"Make an HTTP request through the process-wide arXiv request gate with retry.\n\n    Retries HTTP 429/503/406 and timeouts/connection errors with exponential backoff.\n    Uses the unified retry_with_backoff infrastructure from arxiv_api.\n    Rate limiter lock is acquired per attempt, not held through sleeps.\n    \"\"\"\n\n    async def single_request() -> httpx.Response:\n        \"\"\"Single request wrapped with rate limiting.\"\"\"\n\n        async def request() -> httpx.Response:\n            response = await client.get(url, headers=ARXIV_HEADERS)\n            response.raise_for_status()\n            return response\n        return await ARXIV_RATE_LIMITER.run_async(request)\n    return await retry_with_backoff(single_request, max_retries=settings.ARXIV_MAX_RETRIES, initial_backoff=settings.ARXIV_INITIAL_BACKOFF, max_backoff=settings.ARXIV_MAX_BACKOFF, max_total_time=float(settings.ARXIV_MAX_TOTAL_TIME), operation_name='arXiv API request')"
+    },
+    "tools.search:_rate_limited_response": {
+      "path": "tools/search.py",
+      "line_start": 65,
+      "line_end": 80,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _rate_limited_response(message: str | None=None, *, retry_after_seconds: float | None=None, status_code: int=429) -> List[types.TextContent]:\n    \"\"\"Soft rate-limit result so callers can continue without a bare Error: stall.\"\"\"\n    extra: Dict[str, Any] = {'http_status': status_code}\n    if retry_after_seconds is None:\n        retry_after_seconds = _DEFAULT_RETRY_AFTER_SECONDS\n    extra['retry_after_seconds'] = retry_after_seconds\n    return _status_response('rate_limited', message or RATE_LIMIT_MESSAGE, **extra)"
+    },
+    "tools.search:_raw_arxiv_search": {
+      "path": "tools/search.py",
+      "line_start": 269,
+      "line_end": 312,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "async def _raw_arxiv_search(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> tuple[List[Dict[str, Any]], Optional[int]]:\n    \"\"\"\n    Perform arXiv search using raw HTTP requests.\n\n    This bypasses the arxiv Python package to avoid URL encoding issues\n    with date filters. The arxiv package encodes '+' as '%2B' which breaks\n    the submittedDate:[YYYYMMDD TO YYYYMMDD] syntax.\n\n    Returns (papers, total_results) where total_results is the OpenSearch\n    corpus hit count from the Atom feed, not the page size.\n    \"\"\"\n    url = build_arxiv_search_url(query, max_results=max_results, sort_by=sort_by, date_from=date_from, date_to=date_to, categories=categories, start=start, sort_order=sort_order)\n    logger.debug(f'Raw API URL: {url}')\n    timeout = httpx.Timeout(connect=float(settings.ARXIV_CONNECT_TIMEOUT), read=float(settings.get_request_timeout()), write=30.0, pool=30.0)\n    async with httpx.AsyncClient(timeout=timeout) as client:\n        response = await _rate_limited_get(client, url)\n    papers = _parse_arxiv_atom_response(response.text)\n    return (papers, _parse_opensearch_total_results(response.text))"
+    },
+    "tools.search:_scope_user_query": {
+      "path": "tools/search.py",
+      "line_start": 167,
+      "line_end": 180,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _scope_user_query(query: str) -> str:\n    \"\"\"Group a user query and keep unprefixed terms in title/abstract.\n\n    Bare tokens are mapped by arXiv to ``all:``, which includes authors. A\n    short ``OR`` term such as ``MoE`` then matches author-name fragments\n    (for example ``Moe Jafari`` or ``Mo Zhou``). Under date sort that\n    collapses to \"newest papers in these categories.\"\n    \"\"\"\n    query = query.strip()\n    if not query:\n        return query\n    if _user_query_has_field_prefix(query):\n        return f'({query})'\n    return f'(ti:({query}) OR abs:({query}))'"
+    },
+    "tools.search:_status_response": {
+      "path": "tools/search.py",
+      "line_start": 51,
+      "line_end": 57,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _status_response(status: str, message: str, **extra: Any) -> List[types.TextContent]:\n    \"\"\"Return a structured {status, message} tool payload.\"\"\"\n    payload: Dict[str, Any] = {'status': status, 'message': message}\n    payload.update(extra)\n    return [types.TextContent(type='text', text=json.dumps(payload, indent=2))]"
+    },
+    "tools.search:_user_query_has_field_prefix": {
+      "path": "tools/search.py",
+      "line_start": 161,
+      "line_end": 164,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def _user_query_has_field_prefix(query: str) -> bool:\n    \"\"\"Return True if the user already targeted an arXiv search field.\"\"\"\n    lowered = query.lower()\n    return any((prefix in lowered for prefix in _USER_QUERY_FIELD_PREFIXES))"
+    },
+    "tools.search:build_arxiv_search_query": {
+      "path": "tools/search.py",
+      "line_start": 207,
+      "line_end": 231,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def build_arxiv_search_query(query: str, date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None) -> str:\n    \"\"\"Return the unencoded arXiv search_query string.\"\"\"\n    query_parts: list[str] = []\n    if query.strip():\n        query_parts.append(_scope_user_query(query))\n    if categories:\n        category_filter = ' OR '.join((f'cat:{cat}' for cat in categories))\n        query_parts.append(f'({category_filter})')\n    if date_from or date_to:\n        date_filter = _format_submitted_date_filter(date_from, date_to)\n        query_parts.append(date_filter)\n        logger.debug(f'Added date filter: {date_filter}')\n    if not query_parts:\n        raise ValueError('No search criteria provided')\n    return ' AND '.join(query_parts)"
+    },
+    "tools.search:build_arxiv_search_url": {
+      "path": "tools/search.py",
+      "line_start": 234,
+      "line_end": 266,
+      "file_sha256": "21f4a480be7087b4d6f7bc64401adc2e65a6aad659ba39a744d2edede8d8c2c0",
+      "source": "def build_arxiv_search_url(query: str, max_results: int=DEFAULT_MAX_RESULTS, sort_by: str='relevance', date_from: Optional[str]=None, date_to: Optional[str]=None, categories: Optional[List[str]]=None, start: int=0, sort_order: str='descending') -> str:\n    \"\"\"Build a raw arXiv API URL with a percent-encoded search_query.\"\"\"\n    final_query = build_arxiv_search_query(query, date_from=date_from, date_to=date_to, categories=categories)\n    logger.debug(f'Raw API query: {final_query}')\n    sort_map = {'relevance': 'relevance', 'date': 'submittedDate'}\n    order = sort_order if sort_order in ('ascending', 'descending') else 'descending'\n    encoded_query = quote(final_query, safe='')\n    start = max(0, int(start))\n    base_params = f\"start={start}&max_results={max_results}&sortBy={sort_map.get(sort_by, 'relevance')}&sortOrder={order}\"\n    return f'{ARXIV_API_URL}?search_query={encoded_query}&{base_params}'"
+    }
+  },
+  "resolver": "python_ast_conservative_v2",
+  "resolution_confidence": "partial",
+  "transformation_validation": "no_executable_transformation",
+  "context_selection": [
+    {
+      "module": "arxiv_api",
+      "referenced_names": [
+        "ArxivConnectionError",
+        "ArxivRateLimitError",
+        "ArxivTimeoutError",
+        "Awaitable",
+        "Callable",
+        "Exception",
+        "RuntimeError",
+        "Settings",
+        "T",
+        "TypeVar",
+        "ValueError",
+        "_compute_backoff_seconds",
+        "_parse_retry_after_seconds",
+        "asyncio",
+        "attempt",
+        "attempts_word",
+        "datetime",
+        "delay",
+        "delta",
+        "e",
+        "elapsed",
+        "float",
+        "httpx",
+        "initial_backoff",
+        "int",
+        "isinstance",
+        "jittered",
+        "last_exception",
+        "logger",
+        "logging",
+        "max",
+        "max_backoff",
+        "max_retries",
+        "max_retries_for_status",
+        "max_total_time",
+        "min",
+        "now",
+        "operation",
+        "operation_name",
+        "parsed_retry_after",
+        "parsedate_to_datetime",
+        "random",
+        "range",
+        "remaining",
+        "retry_after",
+        "retry_dt",
+        "settings",
+        "start_time",
+        "status_code",
+        "str",
+        "time",
+        "wait"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 103,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    },
+    {
+      "module": "tools.alerts",
+      "referenced_names": [
+        "Any",
+        "ArxivRateLimitError",
+        "Dict",
+        "Exception",
+        "List",
+        "Optional",
+        "Path",
+        "Settings",
+        "TypeError",
+        "ValueError",
+        "WATCH_FILE_NAME",
+        "_clear_drain_cursor",
+        "_filter_by_topic",
+        "_is_new_paper",
+        "_load_watches",
+        "_newest_published",
+        "_now_iso",
+        "_page_is_truncated",
+        "_rate_limited_response",
+        "_raw_arxiv_search",
+        "_save_watches",
+        "_watch_file_path",
+        "alerts",
+        "all_topics",
+        "arguments",
+        "bool",
+        "check_start",
+        "datetime",
+        "drain_from",
+        "exc",
+        "has_more",
+        "int",
+        "json",
+        "last_checked",
+        "len",
+        "logger",
+        "logging",
+        "max",
+        "max_results",
+        "min",
+        "new_count",
+        "new_papers",
+        "newest_dt",
+        "newest_value",
+        "now_iso",
+        "paper",
+        "papers",
+        "parser",
+        "payload",
+        "published",
+        "published_dt",
+        "published_value",
+        "result",
+        "returned",
+        "search_results",
+        "selected_topic",
+        "settings",
+        "start",
+        "str",
+        "timezone",
+        "topic",
+        "topic_name",
+        "topic_query",
+        "topics",
+        "total_results",
+        "types",
+        "watch_file"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 28,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 77,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 111,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 127,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    },
+    {
+      "module": "tools.search",
+      "referenced_names": [
+        "ARXIV_API_URL",
+        "ARXIV_HEADERS",
+        "ARXIV_NS",
+        "ARXIV_RATE_LIMITER",
+        "Any",
+        "DEFAULT_MAX_RESULTS",
+        "Dict",
+        "ET",
+        "List",
+        "Optional",
+        "RATE_LIMIT_MESSAGE",
+        "Settings",
+        "TypeError",
+        "ValueError",
+        "_DEFAULT_RETRY_AFTER_SECONDS",
+        "_USER_QUERY_FIELD_PREFIXES",
+        "_format_submitted_date_filter",
+        "_parse_arxiv_atom_response",
+        "_parse_opensearch_total_results",
+        "_rate_limited_get",
+        "_scope_user_query",
+        "_status_response",
+        "_user_query_has_field_prefix",
+        "abstract",
+        "any",
+        "author",
+        "authors",
+        "base_params",
+        "bool",
+        "build_arxiv_search_query",
+        "build_arxiv_search_url",
+        "cat",
+        "categories",
+        "category_filter",
+        "child",
+        "client",
+        "date_filter",
+        "date_from",
+        "date_to",
+        "datetime",
+        "e",
+        "elem",
+        "encoded_query",
+        "end_date",
+        "entry",
+        "extra",
+        "final_query",
+        "float",
+        "httpx",
+        "id_elem",
+        "int",
+        "json",
+        "link",
+        "list",
+        "logger",
+        "logging",
+        "lowered",
+        "max",
+        "max_results",
+        "message",
+        "name_elem",
+        "order",
+        "paper_id",
+        "papers",
+        "parser",
+        "payload",
+        "pdf_url",
+        "prefix",
+        "published",
+        "published_elem",
+        "query",
+        "query_parts",
+        "quote",
+        "request",
+        "response",
+        "results",
+        "retry_after_seconds",
+        "retry_with_backoff",
+        "root",
+        "settings",
+        "short_id",
+        "single_request",
+        "sort_by",
+        "sort_map",
+        "sort_order",
+        "start",
+        "start_date",
+        "status",
+        "status_code",
+        "str",
+        "summary_elem",
+        "tag",
+        "term",
+        "timeout",
+        "title",
+        "title_elem",
+        "tuple",
+        "types",
+        "url",
+        "xml_text"
+      ],
+      "omitted": [
+        {
+          "kind": "Assign",
+          "line": 27,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 28,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 29,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 30,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 31,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 42,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 44,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 125,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        },
+        {
+          "kind": "Assign",
+          "line": 531,
+          "reason": "unreferenced_module_initialization_not_tool_call_path"
+        }
+      ],
+      "scope": "reasoning context only; module-initialization equivalence is not certified"
+    }
+  ]
+}
