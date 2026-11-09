@@ -1,0 +1,19 @@
+{
+  "compiled_cells": 10,
+  "executed_cells": 10,
+  "actual_colab_session": false,
+  "actual_T4_inference": false,
+  "actual_external_MCP_execution": false,
+  "model_inference": false,
+  "validation_kind": "software_fixture_or_missing_model_only",
+  "task_records": 24,
+  "zip_valid": true,
+  "model_mode": "synthetic_replay_software_validation_only",
+  "remote_bootstrap": true,
+  "source_revision": "ac2a36ca274757aacaeb1801fab4128918a99d70",
+  "success_rates": [
+    100.0,
+    100.0,
+    100.0
+  ]
+}

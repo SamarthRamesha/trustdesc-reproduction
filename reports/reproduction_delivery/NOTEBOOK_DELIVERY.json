@@ -1,0 +1,10 @@
+{
+  "notebook": "TRUSTDESC_REPRODUCTION.ipynb",
+  "sha256": "4580351c1403d4c958055e517f7b03b8b5ab714b2cf68cf98066ff5f8d9e3019",
+  "source_revision": "ac2a36ca274757aacaeb1801fab4128918a99d70",
+  "cells": 22,
+  "manual_uploads_required": false,
+  "api_keys_required": false,
+  "actual_T4_tested": false,
+  "phase2_scientific_complete": false
+}
