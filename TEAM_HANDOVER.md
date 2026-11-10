@@ -201,6 +201,22 @@ Figures: `reports/figures/FIGURE_INDEX.md` (8 figures, 300 DPI PNG + PDF, source
 `figure_data/`). Analysis: `reports/STATISTICAL_ANALYSIS.md`,
 `reports/EXPERIMENTAL_FINDINGS.md`.
 
+### New experiments (2026-11-10)
+
+Run after the checkpoint and reported separately, never merged with the pilot:
+
+- **Matched-task comparison** — six authored tasks, one execution each, the same observation
+  judged against all three descriptions. Three tasks are invalid (the sandbox creates a fresh
+  temporary directory per execution, so setup state cannot persist) and are excluded. On the
+  three valid tasks all conditions are 3/3 consistent: no separation.
+- **Synthetic poisoning detection** — 12 authored cases in four categories, run through the
+  implemented path. TP 5, FN 1, TN 3, FP 0 over 9 eligible cases; the 3 injection cases are
+  `unsupported` because the pipeline has no injection detector. The single false negative is
+  a negation-phrasing judge defect with its recorded reason quoted in the report.
+
+Details and reproduction commands: `reports/NEW_EXPERIMENT_RESULTS.md`. Scripts:
+`scripts/run_new_experiments.py`, `scripts/analyze_new_experiments.py`.
+
 ---
 
 ## E. Repository map
