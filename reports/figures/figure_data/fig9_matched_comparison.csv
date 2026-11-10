@@ -1,0 +1,4 @@
+task_id,original,full,lite
+T1-watch-create,consistent,consistent,consistent
+T3-list-empty,consistent,consistent,consistent
+T6-unwatch-missing,consistent,consistent,consistent

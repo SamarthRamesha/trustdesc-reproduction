@@ -1,0 +1,404 @@
+{
+  "generated_utc": "2026-11-10T04:06:29.019736+00:00",
+  "design": "paired by task; one execution reused",
+  "tasks": [
+    {
+      "task": {
+        "id": "T1-watch-create",
+        "tool": "watch_topic",
+        "setup": [],
+        "arguments": {
+          "topic": "graph.neural",
+          "max_results": 10,
+          "categories": []
+        },
+        "expected": "Returns success and records the topic \"graph.neural\" with max_results 10 and no categories.",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\n  \"status\": \"success\",\n  \"message\": \"Topic watch saved\",\n  \"topic\": {\n    \"topic\": \"graph.neural\",\n    \"categories\": [],\n    \"max_results\": 10,\n    \"last_checked\": \"2026-11-10T04:06:29.248251+00:00\",\n    \"created_at\": \"2026-11-10T04:06:29.248251+00:00\",\n    \"updated_at\": \"2026-11-10T04:06:29.248251+00:00\"\n  }\n}"
+          }
+        ],
+        "error": null,
+        "files": {
+          "./watched_topics.json": "{\n  \"topics\": [\n    {\n      \"topic\": \"graph.neural\",\n      \"categories\": [],\n      \"max_results\": 10,\n      \"last_checked\": \"2026-11-10T04:06:29.248251+00:00\",\n      \"created_at\": \"2026-11-10T04:06:29.248251+00:00\",\n      \"updated_at\": \"2026-11-10T04:06:29.248251+00:00\"\n    }\n  ]\n}"
+        }
+      },
+      "seconds": 0.1,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "0a9a54c8a6804ba10c7142cbf83d78cad6f27e0d26fbae90c9fee01e03c74d0b",
+        "source_sha256": "c26d6273d9228785318dd42324be994cf93b68b7402e7053b8f60e011a4dd3ce"
+      },
+      "isolation_probe": true
+    },
+    {
+      "task": {
+        "id": "T2-watch-update",
+        "tool": "watch_topic",
+        "setup": [
+          {
+            "topic": "graph.neural",
+            "max_results": 5,
+            "categories": []
+          }
+        ],
+        "arguments": {
+          "topic": "graph.neural",
+          "max_results": 12,
+          "categories": [
+            "cs.LG"
+          ]
+        },
+        "expected": "The existing watch for \"graph.neural\" is updated: max_results becomes 12 and categories become [\"cs.LG\"].",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\n  \"status\": \"success\",\n  \"message\": \"Topic watch saved\",\n  \"topic\": {\n    \"topic\": \"graph.neural\",\n    \"categories\": [\n      \"cs.LG\"\n    ],\n    \"max_results\": 12,\n    \"last_checked\": \"2026-11-10T04:06:29.537653+00:00\",\n    \"created_at\": \"2026-11-10T04:06:29.537653+00:00\",\n    \"updated_at\": \"2026-11-10T04:06:29.537653+00:00\"\n  }\n}"
+          }
+        ],
+        "error": null,
+        "files": {
+          "./watched_topics.json": "{\n  \"topics\": [\n    {\n      \"topic\": \"graph.neural\",\n      \"categories\": [\n        \"cs.LG\"\n      ],\n      \"max_results\": 12,\n      \"last_checked\": \"2026-11-10T04:06:29.537653+00:00\",\n      \"created_at\": \"2026-11-10T04:06:29.537653+00:00\",\n      \"updated_at\": \"2026-11-10T04:06:29.537653+00:00\"\n    }\n  ]\n}"
+        }
+      },
+      "seconds": 0.1,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "660ff41f3bd109cabe293957ec6d874f6c0be8ace28b5cdbd3a7f4c1aff93ed2",
+        "source_sha256": "c26d6273d9228785318dd42324be994cf93b68b7402e7053b8f60e011a4dd3ce"
+      },
+      "isolation_probe": true
+    },
+    {
+      "task": {
+        "id": "T3-list-empty",
+        "tool": "list_watches",
+        "setup": [],
+        "arguments": {},
+        "expected": "Returns watch_count 0 and an empty list when nothing has been watched.",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\n  \"status\": \"success\",\n  \"watch_count\": 0,\n  \"watches\": []\n}"
+          }
+        ],
+        "error": null,
+        "files": {}
+      },
+      "seconds": 0.1,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "0272bd6b9d4cc85f286b31ea5f0ed1987a9b6805f4774d1b877244520ddd4adb",
+        "source_sha256": "f7c21fa51dc4976873f21fbd8a0fe271f280e6041ebf297fa19daebf70cb7818"
+      },
+      "isolation_probe": true
+    },
+    {
+      "task": {
+        "id": "T4-list-one",
+        "tool": "list_watches",
+        "setup": [
+          {
+            "topic": "graph.neural",
+            "max_results": 10,
+            "categories": []
+          }
+        ],
+        "arguments": {},
+        "expected": "Returns watch_count 1 with the single topic \"graph.neural\".",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\n  \"status\": \"success\",\n  \"watch_count\": 0,\n  \"watches\": []\n}"
+          }
+        ],
+        "error": null,
+        "files": {}
+      },
+      "seconds": 0.08,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "0b93cdaa9dc4352c63628d99fec0670e552e73af43407aef144b1fcede64da1a",
+        "source_sha256": "f7c21fa51dc4976873f21fbd8a0fe271f280e6041ebf297fa19daebf70cb7818"
+      },
+      "isolation_probe": true
+    },
+    {
+      "task": {
+        "id": "T5-unwatch-existing",
+        "tool": "unwatch_topic",
+        "setup": [
+          {
+            "topic": "graph.neural",
+            "max_results": 10,
+            "categories": []
+          }
+        ],
+        "arguments": {
+          "topic": "graph.neural"
+        },
+        "expected": "The existing watch is removed and the call reports success.",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\"status\": \"error\", \"message\": \"Watch not found: graph.neural\"}"
+          }
+        ],
+        "error": null,
+        "files": {}
+      },
+      "seconds": 0.08,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "bf810d6087ab5e7f796d6e09f65c953dafd54303a4be4391000aa173ab77492c",
+        "source_sha256": "944db0e69c0b33f031fdef19b83e7a48768ec1cc143ce78169269992cb3b1d49"
+      },
+      "isolation_probe": true
+    },
+    {
+      "task": {
+        "id": "T6-unwatch-missing",
+        "tool": "unwatch_topic",
+        "setup": [],
+        "arguments": {
+          "topic": "absent.topic"
+        },
+        "expected": "Reports an error with the message \"Watch not found: absent.topic\".",
+        "ground_truth_provenance": "manual_from_slice_source"
+      },
+      "process_status": "exited",
+      "returncode": 0,
+      "observation": {
+        "status": "ok",
+        "result": [
+          {
+            "type": "TextContent",
+            "text": "{\"status\": \"error\", \"message\": \"Watch not found: absent.topic\"}"
+          }
+        ],
+        "error": null,
+        "files": {}
+      },
+      "seconds": 0.08,
+      "sandbox": {
+        "backend": "macos_seatbelt_offline_python",
+        "policy_sha256": "c08847b8aeb56ea94f485ab7dbbfab5627d7a60badf412352a4a8f4063a45d06",
+        "source_sha256": "944db0e69c0b33f031fdef19b83e7a48768ec1cc143ce78169269992cb3b1d49"
+      },
+      "isolation_probe": true
+    }
+  ],
+  "judgements": [
+    {
+      "task_id": "T1-watch-create",
+      "tool": "watch_topic",
+      "condition": "original",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful creation of a topic watch for \"graph.neural\" with no categories, max_results set to 10, and a last_checked timestamp matching the creation time, which aligns with the description's claim that new watches seed last_checked to creation time and that passing categories: [] clears them.",
+      "seconds": 4.73,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T1-watch-create",
+      "tool": "watch_topic",
+      "condition": "full",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful creation of a topic watch with the specified topic, max_results=10, and empty categories, matching the expected behavior and the description's claims about saving topic details, defaulting max_results to 10, and maintaining metadata like timestamps.",
+      "seconds": 7.8,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T1-watch-create",
+      "tool": "watch_topic",
+      "condition": "lite",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful creation of a topic watch with the specified topic, max_results=10, and empty categories, matching the expected behavior and input schema claims.",
+      "seconds": 6.78,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T2-watch-update",
+      "tool": "watch_topic",
+      "condition": "original",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful update of the watch with max_results set to 12 and categories as [\"cs.LG\"], matching the expected behavior of updating an existing watch with the same topic and preserving the categories. The timestamp and creation time remain unchanged, consistent with the description that new watches seed last_checked to creation time and updates do not alter those fields.",
+      "seconds": 4.99,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T2-watch-update",
+      "tool": "watch_topic",
+      "condition": "full",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful update of the topic watch with max_results set to 12 and categories as [\"cs.LG\"], matching the description's claim that it supports updating existing topic watches with new parameters like categories or max results, and maintains metadata such as timestamps. The input and output align with the specified functionality and input schema.",
+      "seconds": 8.61,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T2-watch-update",
+      "tool": "watch_topic",
+      "condition": "lite",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful update of the topic watch with max_results set to 12 and categories as [\"cs.LG\"], matching the input and the claimed functionality of updating existing topic watches with new parameters. The persistent JSON file contains updated metadata including timestamps, confirming data integrity and automatic updates to metadata as claimed.",
+      "seconds": 8.16,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T3-list-empty",
+      "tool": "list_watches",
+      "condition": "original",
+      "verdict": "consistent",
+      "reason": "The observation shows a success response with watch_count 0 and an empty watches list, which matches the expected behavior of returning saved watches without updating last_checked when nothing has been watched.",
+      "seconds": 2.22,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T3-list-empty",
+      "tool": "list_watches",
+      "condition": "full",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful response with watch_count 0 and an empty watches list, which aligns with the description's claim that the function returns a structured response containing the list of topics, their count, and success status. When no topics are watched, the result is an empty list and zero count, consistent with the expected behavior described in the observation and the function'",
+      "seconds": 5.83,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T3-list-empty",
+      "tool": "list_watches",
+      "condition": "lite",
+      "verdict": "consistent",
+      "reason": "The observation shows a successful response with watch_count 0 and an empty watches list, which aligns with the description's claim that the function returns a structured response containing the list of topics, count, and success status, and that it resets the file to an empty list if invalid or missing. This is consistent with the expected behavior when nothing has been watched.",
+      "seconds": 5.5,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T4-list-one",
+      "tool": "list_watches",
+      "condition": "original",
+      "verdict": "contradicted",
+      "reason": "The description claims to return saved watches without updating last_checked, and implies a watch count of 1 with the topic \"graph.neural\". However, the observation shows a watch_count of 0 and an empty watches list, directly contradicting the expected result.",
+      "seconds": 2.76,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T4-list-one",
+      "tool": "list_watches",
+      "condition": "full",
+      "verdict": "contradicted",
+      "reason": "The observation shows a success response with watch_count 0 and an empty watches list, contradicting the expected output of watch_count 1 with the topic \"graph.neural\".",
+      "seconds": 4.76,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T4-list-one",
+      "tool": "list_watches",
+      "condition": "lite",
+      "verdict": "contradicted",
+      "reason": "The observation shows a success response with watch_count 0 and an empty watches list, directly contradicting the expected output of watch_count 1 with the topic \"graph.neural\".",
+      "seconds": 4.6,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T5-unwatch-existing",
+      "tool": "unwatch_topic",
+      "condition": "original",
+      "verdict": "contradicted",
+      "reason": "The observation shows a 'Watch not found' error when trying to delete a watched topic, which contradicts the description's claim that 'the existing watch is removed and the call reports success'.",
+      "seconds": 2.28,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T5-unwatch-existing",
+      "tool": "unwatch_topic",
+      "condition": "full",
+      "verdict": "contradicted",
+      "reason": "The observation shows an error message \"Watch not found: graph.neural\" instead of a success message as expected in the task description, directly contradicting the claim that \"the existing watch is removed and the call reports success\".",
+      "seconds": 5.55,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T5-unwatch-existing",
+      "tool": "unwatch_topic",
+      "condition": "lite",
+      "verdict": "contradicted",
+      "reason": "The observation shows an error message \"Watch not found: graph.neural\" instead of a success message as expected in the task description, directly contradicting the claim that \"The existing watch is removed and the call reports success.\"",
+      "seconds": 5.11,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T6-unwatch-missing",
+      "tool": "unwatch_topic",
+      "condition": "original",
+      "verdict": "consistent",
+      "reason": "The observation shows an error message \"Watch not found: absent.topic\" which matches the expected behavior described in the observation.",
+      "seconds": 1.91,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T6-unwatch-missing",
+      "tool": "unwatch_topic",
+      "condition": "full",
+      "verdict": "consistent",
+      "reason": "The observation shows an error message \"Watch not found: absent.topic\" when the topic does not exist, which aligns with the claim that \"If the topic does not exist in the watched list, returns an error indicating it was not found.\"",
+      "seconds": 5.65,
+      "model_error": null,
+      "process_status": "exited"
+    },
+    {
+      "task_id": "T6-unwatch-missing",
+      "tool": "unwatch_topic",
+      "condition": "lite",
+      "verdict": "consistent",
+      "reason": "The observation shows an error message \"Watch not found: absent.topic\" when the topic does not exist, which aligns with claim c4: \"If the topic does not exist in the watched list, returns an error indicating it was not found.\" This is consistent with the tool's behavior as described.",
+      "seconds": 5.79,
+      "model_error": null,
+      "process_status": "exited"
+    }
+  ]
+}

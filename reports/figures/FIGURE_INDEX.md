@@ -21,6 +21,16 @@ Each figure exists as 300 DPI PNG and vector PDF.
 | 7 | Component completion | `fig7_project_progress.png` / `.pdf` | benchmark + descgen + dynver records; `figure_data/fig7_project_progress.csv` | Measured completion per component with explicit denominators |
 | 8 | Research summary | `fig8_research_summary.png` / `.pdf` | results + `FINAL_EXPERIMENT_RESULTS.json`; `figure_data/fig8_research_summary.csv` | Supported-rate by condition beside the reproduction ledger |
 
+## New experiments (2026-11-10)
+
+| # | Figure | File | Source data | What it shows |
+|---|---|---|---|---|
+| 9 | Matched-task comparison | `fig9_matched_comparison.png` / `.pdf` | `reports/new_experiments/matched_comparison.json`; `figure_data/fig9_matched_comparison.csv` | 3 valid tasks x 3 descriptions: 3/3/3 consistent, no separation |
+| 10 | Poisoning detection | `fig10_poisoning_detection.png` / `.pdf` | `reports/new_experiments/poisoning_detection.json`; `figure_data/fig10_poisoning_detection.csv` | TP 5, FN 1, TN 3, FP 0 over 9 eligible cases; 3 injection cases unsupported |
+
+Figures 9 and 10 are produced by `scripts/analyze_new_experiments.py`, not by the main
+figure script, because they depend on the new experiment files.
+
 ## Why these eight and not more
 
 Figures 3 and 4 both show the verdict split, but they answer different questions:

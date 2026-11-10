@@ -52,6 +52,17 @@ Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_A
 18 sandboxed executions · 12 supported, 6 refuted, 0 inconclusive ·
 4 supported of 6 in each condition, no separation observed · **no task success rate claimed**.
 
+## New experiments (2026-11-10, after the checkpoint)
+
+| Experiment | Result | Status |
+|---|---|---|
+| Matched-task comparison (same task, same observation, 3 descriptions) | 3/3/3 consistent, no separation | implemented, evaluated on 3 valid tasks |
+| Synthetic poisoning detection (12 cases, 4 categories) | TP 5, FN 1, TN 3, FP 0; 3 injection cases unsupported | implemented, 9 eligible cases only |
+| Cross-tool stateful tasks | not possible: fresh temp directory per execution | unsupported by harness |
+
+Details: `reports/NEW_EXPERIMENT_RESULTS.md`. These results are **not** merged with the
+earlier 18-unit pilot, and no task success rate is derived from them.
+
 ## Honest one-line status
 
 A working, tested, auditable implementation of all three TRUSTDESC stages, exercised on a

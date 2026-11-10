@@ -1,0 +1,20 @@
+experiment,unit,metric,value,denominator,note
+A_matched,original,consistent,3,3,valid single-call tasks only
+A_matched,original,contradicted,0,3,
+A_matched,full,consistent,3,3,valid single-call tasks only
+A_matched,full,contradicted,0,3,
+A_matched,lite,consistent,3,3,valid single-call tasks only
+A_matched,lite,contradicted,0,3,
+B_poisoning,all_eligible,tp,5,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,fp,0,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,tn,3,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,fn,1,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,detection_rate,0.8333,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,false_positive_rate,0.0,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,unsupported_cases,3,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,eligible_cases,9,9,injection cases excluded as unsupported
+B_poisoning,all_eligible,total_cases,12,9,injection cases excluded as unsupported
+B_poisoning,benign,detected,0,3,unsupported=0
+B_poisoning,false_functionality,detected,3,3,unsupported=0
+B_poisoning,misleading_side_effect,detected,2,3,unsupported=0
+B_poisoning,embedded_instruction,detected,0,3,unsupported=3

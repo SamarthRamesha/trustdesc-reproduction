@@ -1,0 +1,5 @@
+category,flagged,not_flagged,unsupported
+benign,0,3,0
+false_functionality,3,0,0
+misleading_side_effect,2,1,0
+embedded_instruction,0,0,3
