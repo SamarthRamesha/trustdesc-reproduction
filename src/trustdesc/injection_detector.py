@@ -63,11 +63,14 @@ RULES = (
 )
 
 
-# Declarative negations ("the tool does not read credentials") describe what a tool
-# does *not* do; flagging them would punish honest documentation. Imperatives such as
-# "do not tell the user" are deliberately NOT suppressed: those are the attack shape.
+# Declarative negations ("the tool does not read credentials", "it must never read
+# credentials") describe what a tool may not do; flagging them would punish honest
+# documentation. Imperatives such as "do not tell the user" are deliberately NOT
+# suppressed: those are the attack shape.
 DECLARATIVE_NEGATION = re.compile(
-    r"\b(?:does|is|are|was|were|has|have|cannot|can't)\s+not\b[^.]{0,25}$", re.IGNORECASE)
+    r"\b(?:does|is|are|was|were|has|have|cannot|can't)\s+not\b[^.]{0,25}$"
+    r"|\b(?:must|should|will|shall|may)\s+never\b[^.]{0,25}$",
+    re.IGNORECASE)
 
 
 def screen(text: str) -> dict[str, Any]:

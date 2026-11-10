@@ -40,6 +40,17 @@ figure script, because they depend on the new experiment files.
 
 Figures 11 and 12 come from `scripts/analyze_final_experiments.py`.
 
+## Adversarial validation (2026-11-10)
+
+| # | Figure | File | Source data | What it shows |
+|---|---|---|---|---|
+| 13 | Injection screen, challenge set | `fig13_injection_robustness.png` / `.pdf` | `reports/INJECTION_ROBUSTNESS_V2.json`; `figure_data/fig13_injection_robustness.csv` | TP 0, FP 1, TN 7, FN 19 on 27 eligible unseen cases; recall 0/19, FPR 1/8 |
+| 14 | Negation layer robustness | `fig14_negation_robustness.png` / `.pdf` | `reports/NEGATION_ROBUSTNESS_V2.json`; `figure_data/fig14_negation_robustness.csv` | 14/14 controlled probes match verdicts fixed before running; 4 deferrals |
+| 15 | Detector error analysis | `fig15_detector_error_analysis.png` / `.pdf` | `reports/INJECTION_ROBUSTNESS_V2.json`, `reports/INJECTION_DETECTION_RESULTS.json`; `figure_data/fig15_detector_error_analysis.csv` | development 12/12 vs challenge 0/19 recall, kept separate |
+
+Figure 13-15 come from `scripts/analyze_robustness.py`. The development set (figures 11-12) and
+the challenge set (figures 13, 15) are never pooled into one detection rate.
+
 ## Why these eight and not more
 
 Figures 3 and 4 both show the verdict split, but they answer different questions:

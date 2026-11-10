@@ -58,6 +58,15 @@ ABSENCE_FILE = re.compile(
 
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
+# Claims with an exception or condition cannot be adjudicated against a flat file
+# listing: "no files except the configuration file" needs set reasoning the rule does
+# not have, and "never creates files unless requested" depends on a request we cannot
+# observe. These defer to the model instead of risking a wrong refutation.
+UNCHECKABLE_SCOPE = re.compile(
+    r"\b(?:except|other\s+than|apart\s+from|unless|only\s+if|when\s+explicitly)\b",
+    re.IGNORECASE,
+)
+
 
 def negation_cues(text: str) -> list[str]:
     """Return the negation cue names present in ``text``, in order of appearance."""
@@ -113,6 +122,12 @@ def adjudicate_claim(claim: str,
     if files is None:
         return _result('inconclusive', 'missing_file_evidence', polarity(claim),
                        'observation has no file snapshot')
+
+    if UNCHECKABLE_SCOPE.search(claim):
+        # Return None: the rule cannot parse set complement or a condition, and
+        # replacing the model's verdict with a deterministic "inconclusive" would
+        # discard evidence it can read.
+        return None
 
     absence = ABSENCE_FILE.search(claim)
     if absence:

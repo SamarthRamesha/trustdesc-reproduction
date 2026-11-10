@@ -62,6 +62,8 @@ Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_A
 
 | Negation-aware claim layer | recorded S1 false negative corrected (5/6 -> 6/6 eligible, no new FP) | implemented, 15 tests; one recorded case exercised it |
 | Static injection screen | TP 12, FP 0, TN 8, FN 0 on 20 synthetic cases (3 ambiguous excluded) | experimental, not wired into the pipeline; not a defence |
+| Injection screen, independent challenge set | TP 0, FP 1, TN 7, FN 19 on 27 unseen cases (recall 0/19, FPR 1/8) | **fails on paraphrase-level injection**; keyword rules do not generalise |
+| Negation layer, controlled probes | 14/14 match verdicts fixed before running; two defects found and fixed | implemented, tested; file-existence claims only |
 
 Details: `reports/NEW_EXPERIMENT_RESULTS.md`, `reports/JUDGE_RELIABILITY.md`,
 `reports/INJECTION_DETECTION_EXPERIMENT.md`. These results are **not** merged with the

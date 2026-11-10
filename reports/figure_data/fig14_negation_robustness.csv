@@ -1,0 +1,15 @@
+case_id,expected,actual,handled,rule
+R1-positive-present,supported,supported,True,claimed_file_exists
+R2-positive-absent,refuted,refuted,True,claimed_file_missing
+R3-negative-with-file,refuted,refuted,True,absence_claim_but_files_exist
+R4-negative-no-files,supported,supported,True,absence_claim_and_no_files
+R5-double-negative,inconclusive,inconclusive,True,polarity_double_negated
+R6-multi-cue,inconclusive,inconclusive,True,polarity_ambiguous
+R7-named-path-unrelated,refuted,refuted,True,claimed_file_missing
+R8-no-snapshot,inconclusive,inconclusive,True,missing_file_evidence
+R9-failed-call,inconclusive,inconclusive,True,unusable_observation
+R10-non-file-claim,defer,defer,False,
+R11-except-config,defer,defer,False,
+R12-not-avoid,defer,defer,False,
+R13-never-unless,defer,defer,False,
+R14-negated-path-present,refuted,refuted,True,negated_claim_but_file_exists

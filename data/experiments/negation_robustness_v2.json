@@ -1,0 +1,164 @@
+{
+  "schema_version": 2,
+  "created": "2026-11-10",
+  "note": "Controlled probes for the deterministic negation layer. Expected verdicts were written before running it. 'defer' means the layer must return None and leave the decision to the model judge.",
+  "cases": [
+    {
+      "case_id": "R1-positive-present",
+      "claim": "The call writes ./watched_topics.json.",
+      "expected": "supported",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "file present"
+    },
+    {
+      "case_id": "R2-positive-absent",
+      "claim": "The call writes ./watched_topics.json.",
+      "expected": "refuted",
+      "observation": {
+        "status": "ok",
+        "files": {}
+      },
+      "rationale": "file absent"
+    },
+    {
+      "case_id": "R3-negative-with-file",
+      "claim": "No file is created by creating a watch.",
+      "expected": "refuted",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "negated claim, file exists"
+    },
+    {
+      "case_id": "R4-negative-no-files",
+      "claim": "No file is created by creating a watch.",
+      "expected": "supported",
+      "observation": {
+        "status": "ok",
+        "files": {}
+      },
+      "rationale": "negated claim, no files"
+    },
+    {
+      "case_id": "R5-double-negative",
+      "claim": "It is not true that no file is created by creating a watch.",
+      "expected": "inconclusive",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "double negation must not be guessed"
+    },
+    {
+      "case_id": "R6-multi-cue",
+      "claim": "It is not never the case that no file is created.",
+      "expected": "inconclusive",
+      "observation": {
+        "status": "ok",
+        "files": {}
+      },
+      "rationale": "three cues = ambiguous"
+    },
+    {
+      "case_id": "R7-named-path-unrelated",
+      "claim": "The call writes ./watched_topics.json.",
+      "expected": "refuted",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./other.json": "{}"
+        }
+      },
+      "rationale": "only an unrelated file exists"
+    },
+    {
+      "case_id": "R8-no-snapshot",
+      "claim": "The call writes ./watched_topics.json.",
+      "expected": "inconclusive",
+      "observation": {
+        "status": "ok"
+      },
+      "rationale": "snapshot missing"
+    },
+    {
+      "case_id": "R9-failed-call",
+      "claim": "The call writes ./watched_topics.json.",
+      "expected": "inconclusive",
+      "observation": {
+        "status": "error",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "failed execution cannot support"
+    },
+    {
+      "case_id": "R10-non-file-claim",
+      "claim": "Listing returns count 0.",
+      "expected": "defer",
+      "observation": {
+        "status": "ok",
+        "files": {}
+      },
+      "rationale": "must defer to the model judge"
+    },
+    {
+      "case_id": "R11-except-config",
+      "claim": "No files except the configuration file are created.",
+      "expected": "defer",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./config.json": "{}"
+        }
+      },
+      "rationale": "exception clause cannot be adjudicated by the current rule"
+    },
+    {
+      "case_id": "R12-not-avoid",
+      "claim": "The tool does not avoid creating files.",
+      "expected": "defer",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "negation of an avoidance predicate"
+    },
+    {
+      "case_id": "R13-never-unless",
+      "claim": "The tool never creates files unless explicitly requested.",
+      "expected": "defer",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "conditional claim; unconditional refutation would be unsound"
+    },
+    {
+      "case_id": "R14-negated-path-present",
+      "claim": "The tool does not write ./watched_topics.json.",
+      "expected": "refuted",
+      "observation": {
+        "status": "ok",
+        "files": {
+          "./watched_topics.json": "{}"
+        }
+      },
+      "rationale": "negated path claim contradicted"
+    }
+  ]
+}

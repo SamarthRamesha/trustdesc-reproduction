@@ -232,6 +232,21 @@ Details and reproduction commands: `reports/NEW_EXPERIMENT_RESULTS.md`. Scripts:
 - Re-run both analyses with `.venv/bin/python scripts/analyze_final_experiments.py` (recorded
   evidence only; no executions, no model calls).
 
+### Adversarial validation (2026-11-10)
+
+- **Injection screen fails on unseen wording**: on a 30-case challenge set written after the rules
+  were frozen (19 malicious, 8 benign, 3 ambiguous), it caught **0/19** paraphrased and indirect
+  attacks and raised **1/8** false positives (an audit sentence naming `.env`). The development
+  set's 12/12 is a consistency check; these two numbers are never pooled. No rules were added in
+  response, to avoid re-creating the circularity. See `reports/INJECTION_ROBUSTNESS_V2.md`.
+- **Negation layer passes its controlled probes**: 14/14 expected verdicts on new claims, with two
+  defects found and fixed — exception/condition clauses were refuted from set complement (now
+  defer to the model), and modal prohibitions ("must never read credentials") were flagged by the
+  injection screen (now suppressed). See `reports/NEGATION_ROBUSTNESS_V2.md`.
+- **Integration audit**: description text never reaches the sandbox policy or the detector from the
+  pipeline; failed executions cannot produce `supported`. See `reports/PIPELINE_AUDIT_V2.md`.
+- Re-run with `.venv/bin/python scripts/analyze_robustness.py` (recorded data only).
+
 ---
 
 ## E. Repository map
