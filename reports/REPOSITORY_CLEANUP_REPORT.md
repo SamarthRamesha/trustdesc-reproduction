@@ -114,9 +114,10 @@ phase3_handover.zip + .sha256   delivered archive and checksum
 - Archive: `phase3_handover.zip`, contains source, tests, data, reports, all 15 figures, the
   notebook and handover instructions.
 - Nested ZIPs: none. Virtual environments, caches and model weights: excluded.
-- Member count, uncompressed size, compressed size and SHA-256 are recorded in the archive
-  commit and in `phase3_handover.sha256`; integrity was verified with `unzip -t` and
-  `shasum -c` after the final build.
+- Members: **894 files** (893 validated payload files plus the archive directory entry),
+  uncompressed 12,897,935 bytes, compressed ~6.0 MB. SHA-256 is in
+  `phase3_handover.sha256`; `unzip -t` reported no errors, `shasum -c` passed and
+  `scripts/validate_package.py` validated 893 files bound to commit `96a868c`.
 
 ## 9. Commit and push
 
