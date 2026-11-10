@@ -20,6 +20,10 @@ def main():
     tracked=subprocess.run(['git','ls-files','-z'],cwd=ROOT,capture_output=True,check=True).stdout.decode().split('\0')
     files={}
     for name in sorted(x for x in tracked if x):
+        # Never package a previously built archive or its sidecar: the archive must not
+        # contain itself, and a stale checksum inside the next archive would be misleading.
+        if name.startswith(a.output.name) or Path(name).suffix == '.zip':
+            continue
         parts=Path(name).parts
         if any(x in {'.git','.venv','__pycache__'} for x in parts) or ('.env' in parts) or name.startswith(('data/raw/','data/processed/','data/interim/','experiments/runs/')):
             raise RuntimeError(f'Restricted file tracked: {name}')
