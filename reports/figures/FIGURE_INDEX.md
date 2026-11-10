@@ -31,6 +31,15 @@ Each figure exists as 300 DPI PNG and vector PDF.
 Figures 9 and 10 are produced by `scripts/analyze_new_experiments.py`, not by the main
 figure script, because they depend on the new experiment files.
 
+## Follow-up experiments (2026-11-10, negation and injection)
+
+| # | Figure | File | Source data | What it shows |
+|---|---|---|---|---|
+| 11 | Negation-aware re-judging | `fig11_judge_reliability.png` / `.pdf` | `reports/NEGATION_TEST_RESULTS.json`; `figure_data/fig11_judge_reliability.csv` | recorded model verdicts vs the deterministic layer (S1 supported -> refuted) and the layer's behaviour on 9 probe claims |
+| 12 | Static injection screening | `fig12_injection_detection.png` / `.pdf` | `reports/INJECTION_DETECTION_RESULTS.json`; `figure_data/fig12_injection_detection.csv` | TP 12, FP 0, TN 8, FN 0 on 20 synthetic cases; 3 ambiguous excluded |
+
+Figures 11 and 12 come from `scripts/analyze_final_experiments.py`.
+
 ## Why these eight and not more
 
 Figures 3 and 4 both show the verdict split, but they answer different questions:

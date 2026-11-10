@@ -217,6 +217,21 @@ Run after the checkpoint and reported separately, never merged with the pilot:
 Details and reproduction commands: `reports/NEW_EXPERIMENT_RESULTS.md`. Scripts:
 `scripts/run_new_experiments.py`, `scripts/analyze_new_experiments.py`.
 
+### Negation layer and injection screen (2026-11-10)
+
+- **Negation-aware claim layer** (`src/trustdesc/dynver/negation.py`): deterministic adjudication
+  of file-existence claims, in front of the model. On the recorded evidence it changes exactly one
+  verdict — the inverted S1 claim — moving eligible detection from 5/6 to 6/6 with no new false
+  positive. Double negatives, ambiguous wording and missing evidence return `inconclusive`. 15
+  tests. Report: `reports/JUDGE_RELIABILITY.md`.
+- **Static injection screen** (`src/trustdesc/injection_detector.py`): five explainable regex
+  rules over inert description text; **not wired into the pipeline** and not a defence. TP 12,
+  FP 0, TN 8, FN 0 on 20 self-authored synthetic cases; 3 ambiguous excluded; perfect score is a
+  design-consistency check, not a detection estimate. Report:
+  `reports/INJECTION_DETECTION_EXPERIMENT.md`.
+- Re-run both analyses with `.venv/bin/python scripts/analyze_final_experiments.py` (recorded
+  evidence only; no executions, no model calls).
+
 ---
 
 ## E. Repository map
