@@ -1,0 +1,7 @@
+outcome,count
+valid_description,10
+rejected_total,18
+schema/argument validation,1
+input over token cap,2
+identifier normalisation rejected,7
+generation deadline,8

@@ -1,0 +1,32 @@
+scope,metric,value,n,ci95_low,ci95_high,note
+DescGen,valid_description_yield,0.3571,28,0.2070582950773768,0.5416969348557219,Wilson interval
+DescGen,rejected_share::schema/argument validation,0.0556,18,0.0099,0.2576,share of rejected attempts
+DescGen,rejected_share::generation deadline,0.4444,18,0.2456,0.6628,share of rejected attempts
+DescGen,rejected_share::input over token cap,0.1111,18,0.031,0.328,share of rejected attempts
+DescGen,rejected_share::identifier normalisation rejected,0.3889,18,0.2031,0.6138,share of rejected attempts
+DescGen,valid_generation_seconds::n,10,10,,,
+DescGen,valid_generation_seconds::median,133.77,10,,,
+DescGen,valid_generation_seconds::mean,131.71,10,,,
+DescGen,valid_generation_seconds::stdev,46.96,10,,,
+DescGen,valid_generation_seconds::min,63.06,10,,,
+DescGen,valid_generation_seconds::max,188.1,10,,,
+DescGen,valid_generation_seconds::total,1317.15,10,,,
+DynVer,supported_rate,0.6667,18,0.43749467295945105,0.837212252491663,"Wilson interval; 18 units, not independent tasks"
+DynVer,supported_rate::original,0.6667,6,0.3,0.9032,Wilson interval
+DynVer,supported_rate::full,0.6667,6,0.3,0.9032,Wilson interval
+DynVer,supported_rate::lite,0.6667,6,0.3,0.9032,Wilson interval
+DynVer,supported::arxiv-mcp-server::list_watches,5,6,,,"refuted=1, inconclusive=0"
+DynVer,supported::arxiv-mcp-server::unwatch_topic,2,6,,,"refuted=4, inconclusive=0"
+DynVer,supported::arxiv-mcp-server::watch_topic,5,6,,,"refuted=1, inconclusive=0"
+Agreement,identical_verdict_cells::original_vs_full,0.6667,6,,,descriptive only; tasks differ across conditions
+Agreement,identical_verdict_cells::original_vs_lite,0.6667,6,,,descriptive only; tasks differ across conditions
+Agreement,identical_verdict_cells::full_vs_lite,0.6667,6,,,descriptive only; tasks differ across conditions
+DynVer,execution_seconds::n,18,18,,,
+DynVer,execution_seconds::median,11.23,18,,,
+DynVer,execution_seconds::mean,11.47,18,,,
+DynVer,execution_seconds::stdev,4.58,18,,,
+DynVer,execution_seconds::min,4.51,18,,,
+DynVer,execution_seconds::max,21.45,18,,,
+DynVer,execution_seconds::total,206.47,18,,,
+Corpus,tools_sliced,30,30,,,Python slots only
+Corpus,unsupported_slots,22,30,,,TypeScript/JavaScript

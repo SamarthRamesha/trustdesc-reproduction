@@ -1,0 +1,13 @@
+server,python_tools_sliced,paper_slots_not_sliced
+excel-mcp-server,5,0
+imagesorcery-mcp,5,0
+paper-search-mcp,5,0
+wikipedia-mcp,5,0
+yfinance-mcp,5,0
+arxiv-mcp-server,4,0
+mysql_mcp_server,1,0
+context7,0,2
+filesystem,0,5
+healthcare-mcp,0,5
+markdownify-mcp,0,5
+travel-planner-mcp,0,5

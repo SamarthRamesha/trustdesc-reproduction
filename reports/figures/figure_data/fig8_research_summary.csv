@@ -1,0 +1,11 @@
+item,status
+supported_rate_original,4/6
+supported_rate_full,4/6
+supported_rate_lite,4/6
+Three-stage pipeline implemented,yes
+Bounded execution in a real OS sandbox,yes
+"Recovered corpus (12 servers, 30 tools)",yes
+"Paper task files, labels, traces",not released
+Paper TSR / cost / selection,not reproduced
+Adaptive-attack results,not attempted
+JS/TS tool slots (22),not implemented

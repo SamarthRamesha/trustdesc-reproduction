@@ -1,0 +1,10 @@
+tool,"orig
+T1","orig
+T2","full
+T1","full
+T2","lite
+T1","lite
+T2"
+list_watches,supported,supported,supported,refuted,supported,supported
+unwatch_topic,refuted,refuted,refuted,supported,refuted,supported
+watch_topic,supported,supported,supported,supported,refuted,supported

@@ -1,0 +1,181 @@
+{
+  "generated_utc": "2026-11-10T03:22:36.234176+00:00",
+  "scope_note": "Descriptive statistics for an independently collected pilot corpus. The paper 208-task benchmark was not recovered; no metric here is the paper TSR.",
+  "descgen": {
+    "attempts": 28,
+    "valid": 10,
+    "rejected": 18,
+    "yield": 0.3571,
+    "yield_wilson_95": [
+      0.2071,
+      0.5417
+    ],
+    "failure_categories": {
+      "schema/argument validation": 1,
+      "generation deadline": 8,
+      "input over token cap": 2,
+      "identifier normalisation rejected": 7
+    },
+    "failure_shares": {
+      "schema/argument validation": 0.0556,
+      "generation deadline": 0.4444,
+      "input over token cap": 0.1111,
+      "identifier normalisation rejected": 0.3889
+    },
+    "valid_seconds": {
+      "n": 10,
+      "median": 133.77,
+      "mean": 131.71,
+      "stdev": 46.96,
+      "min": 63.06,
+      "max": 188.1,
+      "total": 1317.15
+    },
+    "failed_seconds": {
+      "n": 18,
+      "median": 137.63,
+      "mean": 114.51,
+      "stdev": 74.14,
+      "min": 0.11,
+      "max": 248.9,
+      "total": 2061.19
+    },
+    "model_seconds_total": 3378.3,
+    "claims_per_description": {
+      "6": 1,
+      "8": 5,
+      "9": 1,
+      "11": 3
+    },
+    "claims_total": 88
+  },
+  "corpus": {
+    "servers_recovered": 12,
+    "tools_selected": 30,
+    "tools_sliced": 30,
+    "unsupported_slots": 22
+  },
+  "dynver": {
+    "units": 18,
+    "tools": 3,
+    "tasks_per_condition": {
+      "original": [
+        0,
+        1
+      ],
+      "full": [
+        0,
+        1
+      ],
+      "lite": [
+        0,
+        1
+      ]
+    },
+    "verdicts": {
+      "supported": 12,
+      "refuted": 6
+    },
+    "supported_rate": 0.6667,
+    "supported_rate_wilson_95": [
+      0.4375,
+      0.8372
+    ],
+    "per_condition": {
+      "original": {
+        "units": 6,
+        "supported": 4,
+        "refuted": 2,
+        "inconclusive": 0,
+        "supported_rate": 0.6667,
+        "wilson_95": [
+          0.3,
+          0.9032
+        ]
+      },
+      "full": {
+        "units": 6,
+        "supported": 4,
+        "refuted": 2,
+        "inconclusive": 0,
+        "supported_rate": 0.6667,
+        "wilson_95": [
+          0.3,
+          0.9032
+        ]
+      },
+      "lite": {
+        "units": 6,
+        "supported": 4,
+        "refuted": 2,
+        "inconclusive": 0,
+        "supported_rate": 0.6667,
+        "wilson_95": [
+          0.3,
+          0.9032
+        ]
+      }
+    },
+    "per_tool": {
+      "arxiv-mcp-server::list_watches": {
+        "units": 6,
+        "supported": 5,
+        "refuted": 1,
+        "inconclusive": 0
+      },
+      "arxiv-mcp-server::unwatch_topic": {
+        "units": 6,
+        "supported": 2,
+        "refuted": 4,
+        "inconclusive": 0
+      },
+      "arxiv-mcp-server::watch_topic": {
+        "units": 6,
+        "supported": 5,
+        "refuted": 1,
+        "inconclusive": 0
+      }
+    },
+    "execution_seconds": {
+      "n": 18,
+      "median": 11.23,
+      "mean": 11.47,
+      "stdev": 4.58,
+      "min": 4.51,
+      "max": 21.45,
+      "total": 206.47
+    },
+    "process_status": {
+      "exited": 18
+    },
+    "observation_status": {
+      "ok": 18
+    },
+    "tasks_identical_across_conditions": false,
+    "cross_condition_cells": {
+      "original_vs_full": {
+        "cells": 6,
+        "identical_verdicts": 4,
+        "agreement": 0.6667
+      },
+      "original_vs_lite": {
+        "cells": 6,
+        "identical_verdicts": 4,
+        "agreement": 0.6667
+      },
+      "full_vs_lite": {
+        "cells": 6,
+        "identical_verdicts": 4,
+        "agreement": 0.6667
+      }
+    }
+  },
+  "inference": {
+    "paired_test_performed": false,
+    "paired_test_reason": "Each condition generated its own tasks; identical task indices are not the same task, so a paired test would be invalid.",
+    "equivalence_claim": false,
+    "equivalence_reason": "Identical counts are not evidence of equivalence. With n = 6 per condition, the confidence intervals are wide enough to contain materially different true rates.",
+    "significance_claimed": false
+  },
+  "power_note": "Detecting a 20 percentage-point difference at 80% power would need roughly 90 independent units per condition; the pilot has 6."
+}

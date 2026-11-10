@@ -1,0 +1,9 @@
+stage,label,count
+Benchmark,original paper task files unavailable,1
+Dependencies,servers with a missing runtime dependency,4
+DescGen,schema/argument validation,1
+DescGen,input over token cap,2
+DescGen,identifier normalisation rejected,7
+DescGen,generation deadline,8
+DynVer scope,servers with an adapter shim layer,1
+Language support,JS/TS tool slots unsupported,22
