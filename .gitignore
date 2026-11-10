@@ -35,3 +35,14 @@ htmlcov/
 trustdesc_automatic/
 model_cache/
 phase3_handover.zip*
+
+# Editor and OS clutter
+**/.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.bak
+*.orig
+*.tmp

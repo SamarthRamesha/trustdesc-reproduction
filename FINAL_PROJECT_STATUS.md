@@ -1,7 +1,9 @@
 # Final project status
 
-Checkpoint 2026-11-10. Base commit `08bd497` plus this checkpoint's commit (see `git log -1`).
-Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_AUDIT.md`.
+Checkpoint 2026-11-10. Baseline commit `cba9837` plus the repository cleanup commit (see
+`git log -1`). Every statement below is backed by a file listed in
+`reports/FINAL_DELIVERABLE_AUDIT.md`; the cleanup audit is
+`reports/REPOSITORY_CLEANUP_REPORT.md`.
 
 ## Implemented and tested
 
@@ -14,7 +16,7 @@ Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_A
 | Verdict gating: deterministic rules first, shim-dependent claims never `supported` | `verdict_for`, unit tests |
 | Experiment runner: resumable per unit, records policy hash, refuses without isolation | `scripts/run_dynver_recovered.py` |
 | Analysis and figures pipeline | `scripts/analyze_statistics.py`, `scripts/generate_figures.py` |
-| Automated tests | 165 passing, 8.0 s |
+| Automated tests | 207 passing, ~5 s |
 | Notebook | 12 cells; 5 of 6 code cells executed in a fresh kernel with zero errors |
 
 ## Implemented but only partially evaluated
@@ -33,7 +35,7 @@ Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_A
 | TypeScript / JavaScript slicing | 22 tool slots unrepresented |
 | Adapter shims beyond one server | cannot execute most sliced tools |
 | Shared task set across conditions | no valid paired comparison |
-| Attack / poisoning experiments | no security claim can be made |
+| Adversarial attack harness beyond authored probes | poisoning, injection and negation experiments exist, but no defence claim and no adaptive-attack evaluation |
 | Second judge model | single-judge verdicts |
 
 ## Not recoverable with currently available materials
@@ -66,8 +68,11 @@ Every statement below is backed by a file listed in `reports/FINAL_DELIVERABLE_A
 | Negation layer, controlled probes | 14/14 match verdicts fixed before running; two defects found and fixed | implemented, tested; file-existence claims only |
 
 Details: `reports/NEW_EXPERIMENT_RESULTS.md`, `reports/JUDGE_RELIABILITY.md`,
-`reports/INJECTION_DETECTION_EXPERIMENT.md`. These results are **not** merged with the
-earlier 18-unit pilot, and no task success rate is derived from them.
+`reports/INJECTION_DETECTION_EXPERIMENT.md`, `reports/INJECTION_ROBUSTNESS_V2.md`,
+`reports/NEGATION_ROBUSTNESS_V2.md`, `reports/PIPELINE_AUDIT_V2.md` and figures 9–15.
+These results are **not** merged with the earlier 18-unit pilot, and no task success rate is
+derived from them. The development injection set (12/12) and the independent challenge set
+(0/19) are separate datasets and are never pooled.
 
 ## Honest one-line status
 

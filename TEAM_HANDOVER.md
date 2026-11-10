@@ -3,8 +3,11 @@
 Written for someone who has never opened this repository. Read Sections A–F once, then
 go straight to your workstream in Section G.
 
-Last updated at commit `08bd497` (see `git log -1`). Figures: `reports/figures/`.
+Last updated at commit `cba9837` (see `git log -1`). Figures: `reports/figures/`.
 Numbers: `reports/STATISTICAL_RESULTS.json`. Honest limits: `reports/KNOWN_LIMITATIONS.md`.
+Cleanup and repository map: `reports/REPOSITORY_CLEANUP_REPORT.md`.
+Adversarial robustness: `reports/INJECTION_ROBUSTNESS_V2.md`, `reports/NEGATION_ROBUSTNESS_V2.md`.
+
 
 ---
 
@@ -35,7 +38,7 @@ own artifact is gone (HTTP 410, no archived copy, no author release).
 | DynVer | real sandboxed execution; 18 units across 3 tools and 3 conditions |
 | Result | 12 supported / 6 refuted claims; the three conditions did **not** separate |
 | Not done | 22 JS/TS slots, shims for 5 other servers, the paper's 208-task benchmark |
-| Tests | 165 automated tests passing |
+| Tests | 207 automated tests passing |
 
 **Positioning sentence, use it verbatim:**
 "We implemented a bounded reproduction of the three-stage TRUSTDESC framework, evaluated it
@@ -197,7 +200,7 @@ reporting `Watch not found` where even the developer's own description implies a
 deletion. That is a genuine description/behaviour gap of exactly the kind the method
 targets — but it rests on one tool.
 
-Figures: `reports/figures/FIGURE_INDEX.md` (8 figures, 300 DPI PNG + PDF, source CSVs in
+Figures: `reports/figures/FIGURE_INDEX.md` (15 figures, 300 DPI PNG + PDF, source CSVs in
 `figure_data/`). Analysis: `reports/STATISTICAL_ANALYSIS.md`,
 `reports/EXPERIMENTAL_FINDINGS.md`.
 
@@ -262,7 +265,7 @@ scripts/                  every runnable entry point
   report_recovered_experiments.py DescGen report
   report_dynver.py               DynVer report
   report_final.py                final results JSON/CSV
-  generate_figures.py            all 8 figures + figure_data
+  generate_figures.py            all 15 figures + figure_data
   analyze_statistics.py          STATISTICAL_RESULTS.json/csv
   package_project.py             build handover zip from a clean tree
   validate_package.py            verify member hashes
@@ -271,7 +274,7 @@ data/
   recovered_slices/        one JSON slice per tool
   manifests/               benchmark manifest + provenance
 reports/                   evidence, figures, analysis (committed)
-tests/                     unit + integration; 165 tests
+tests/                     unit + integration; 207 tests
 TRUSTDESC_REPRODUCTION.ipynb   notebook walkthrough
 ```
 

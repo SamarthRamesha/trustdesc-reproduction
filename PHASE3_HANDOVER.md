@@ -53,9 +53,9 @@ Use these figures everywhere; they are generated from recorded evidence by
 | Verdicts | 12 supported, 6 refuted, 0 inconclusive |
 | Per condition | 4 supported of 6 in each; no separation observed |
 | Task success rate | not computed — the paper benchmark was never released |
-| Automated tests | 165 passing |
+| Automated tests | 207 passing |
 
-Artefacts: `reports/figures/FIGURE_INDEX.md` (8 figures),
+Artefacts: `reports/figures/FIGURE_INDEX.md` (15 figures),
 `reports/STATISTICAL_ANALYSIS.md`, `reports/STATISTICAL_RESULTS.json`,
 `reports/EXPERIMENTAL_FINDINGS.md`, `reports/PROJECT_SUMMARY.md`, `TEAM_HANDOVER.md`.
 
