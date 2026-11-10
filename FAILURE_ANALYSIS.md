@@ -37,3 +37,12 @@ The dominant cause is model capability at the required structure, not an unreach
 1. Author release of the 52-tool list, 208 tasks, prompts and labels.
 2. A validated isolated runner for third-party MCP execution, enabling DynVer on real tools.
 3. TypeScript parsing, which would cover the remaining 22 tool slots.
+
+## Sandboxed verification failures
+
+| Symptom | Cause | Handling |
+|---|---|---|
+| `No module named dateutil` | sandbox ran with `-S`, hiding installed dependencies | added an explicit read-only dependency directory and recorded it in the policy hash |
+| `unexpected keyword argument` | recovered handlers take one `arguments` dict | harness detects the signature and passes the request dict |
+| `Watch not found` in unwatch tasks | each task starts from empty scratch state | recorded as `refuted`, not retried, because the observation is genuine |
+

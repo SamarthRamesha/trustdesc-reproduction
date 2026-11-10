@@ -62,3 +62,12 @@ python3 scripts/check_python_startup.py --context terminal --output startup-chec
 ```
 
 Tests are software validation, not experimental labels. Recorded real-model experiments and their limitations belong in the final completion report and preserved run manifests. Historical reports remain available under `reports/`; historical Colab instructions do not supersede the local notebook.
+
+### Sandboxed verification (DynVer)
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/run_dynver_recovered.py
+PYTHONPATH=src .venv/bin/python scripts/report_dynver.py
+```
+
+Runs real tool bodies inside the macOS Seatbelt boundary (network denied, scratch-only writes) and records every verdict in `reports/dynver_recovered/`. Resumable per task.

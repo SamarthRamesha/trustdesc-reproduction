@@ -18,6 +18,14 @@ Recovered real MCP source integrated; SliceMin and real-model DescGen executed; 
 
 `reports/recovered_descgen/` (DescGen pass) and `reports/pilot_3tools/pilot.json` (pilot).
 
+## Sandboxed DynVer (new)
+
+DynVer now executes real recovered tool bodies inside the macOS Seatbelt boundary.
+18 tasks ran across `watch_topic`, `list_watches`, `unwatch_topic` under three description
+conditions; each condition produced 4 supported / 2 refuted claims, so conditions did not
+separate on this task set. Evidence: `reports/dynver_recovered/results.json`,
+`reports/DYNVER_REPORT.md`. Remaining: adapter shims for the other servers.
+
 ## Known blockers
 
 Original tasks/labels/prompts unrecovered; TypeScript unsupported; third-party execution gated; 4B model limits structural yield.

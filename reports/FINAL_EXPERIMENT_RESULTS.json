@@ -43,11 +43,44 @@
         "lite"
       ],
       "dynver": {
-        "watch_topic": "plan_not_run_session_budget",
-        "yfinance_get_ticker_info": "plan_not_run_session_budget",
-        "set_note": "plan_not_run_session_budget"
+        "arxiv-mcp-server::watch_topic": "executed_in_sandbox",
+        "arxiv-mcp-server::list_watches": "executed_in_sandbox",
+        "arxiv-mcp-server::unwatch_topic": "executed_in_sandbox"
       },
       "task_success_rate": null
+    },
+    "dynver": {
+      "backend": "macOS Seatbelt (deny default, scratch-only writes, network denied)",
+      "isolation_probe_passed": true,
+      "tools": [
+        "arxiv-mcp-server::list_watches",
+        "arxiv-mcp-server::unwatch_topic",
+        "arxiv-mcp-server::watch_topic"
+      ],
+      "units_executed": 18,
+      "verdicts_by_condition": {
+        "original": {
+          "supported": 4,
+          "refuted": 2,
+          "inconclusive": 0
+        },
+        "full": {
+          "supported": 4,
+          "refuted": 2,
+          "inconclusive": 0
+        },
+        "lite": {
+          "supported": 4,
+          "refuted": 2,
+          "inconclusive": 0
+        }
+      },
+      "verdicts_overall": {
+        "supported": 12,
+        "refuted": 6
+      },
+      "task_success_rate": null,
+      "note": "description/behaviour agreement on adapter-shimmed recovered tools; not the paper TSR"
     }
   },
   "model": {
@@ -76,7 +109,9 @@
     "model_calls": "reports/recovered_descgen/model_calls.json",
     "pilot": "reports/pilot_3tools/pilot.json",
     "artifact_probe": "reports/original_dataset/artifact_probe.json",
-    "fixture_task_results": "TASK_RESULTS.csv"
+    "fixture_task_results": "TASK_RESULTS.csv",
+    "dynver": "reports/dynver_recovered/results.json",
+    "dynver_report": "reports/DYNVER_REPORT.md"
   },
   "per_server": {
     "excel-mcp-server": {

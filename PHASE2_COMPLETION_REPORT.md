@@ -10,6 +10,12 @@ Updated 2026-11-09T14:27:56.676171+00:00.
 - Bounded pilot carried 3 tools across original/full/lite conditions with real descriptions; DynVer execution is gated and recorded as blocked.
 - 161 software tests pass; all earlier evidence (fixtures, public example, startup investigation) is preserved.
 
+## New since the previous report
+
+DynVer is no longer blocked for `arxiv-mcp-server`: the tool bodies execute unmodified inside
+Seatbelt with recorded adapter shims, and 18 real tasks produced measured verdicts
+(`reports/DYNVER_REPORT.md`). 165 tests pass.
+
 ## What is not complete
 
 Q1 TSR, Q2 cost, Q3 quality selection, Q4 TPA blocking and Q5 adaptive attacks cannot be evaluated without author records. No value is fabricated for them.

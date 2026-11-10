@@ -22,13 +22,14 @@ from .runner import SandboxError
 from trustdesc.reproduction.startup import python_binary, launch_environment, startup_smoke
 
 
-def policy(scratch):
+def policy(scratch, extra_reads=()):
     scratch = Path(scratch).resolve()
     executable = python_binary()
     stdlib = Path(sysconfig.get_path('stdlib')).resolve()
-    # -I -S excludes cwd, user site, PYTHONPATH and site packages.
+    # -I -S excludes cwd, user site, PYTHONPATH and site packages unless the
+    # caller opts into a specific dependency directory via extra_reads.
     reads = [scratch, stdlib, Path(sys.base_prefix).resolve(), Path('/System/Library'),Path('/usr/lib'),
-             Path('/private/var/db/dyld')]
+             Path('/private/var/db/dyld')] + [Path(p).resolve() for p in extra_reads]
     q = lambda p: json.dumps(str(p))
     return '\n'.join(['(version 1)','(deny default)','(allow file-read-metadata)',
         '(allow sysctl-read)', '(allow mach-lookup (global-name "com.apple.system.logger"))',
@@ -59,7 +60,9 @@ except Exception as exc:
 
 
 class SeatbeltPython:
-    def __init__(self, workspace, *, timeout=8, memory_bytes=256*1024**2):
+    def __init__(self, workspace, *, timeout=8, memory_bytes=256*1024**2, extra_reads=(), isolated=True):
+        self.extra_reads = tuple(extra_reads)
+        self.isolated = isolated
         if platform.system()!='Darwin' or not shutil.which('sandbox-exec'):
             raise SandboxError('macOS Seatbelt unavailable; no host execution fallback')
         try:
@@ -72,17 +75,19 @@ class SeatbeltPython:
         self.probed=False
         self.startup_result=None
 
-    def _execute(self, source, function, arguments):
+    def _execute(self, source, function, arguments, wrapper=None, timeout=None):
+        wrapper = wrapper or WRAPPER
         with tempfile.TemporaryDirectory(prefix='seatbelt-',dir=self.workspace) as temp:
             root=Path(temp)
-            (root/'policy.sb').write_text(policy(root))
+            (root/'policy.sb').write_text(policy(root, self.extra_reads))
             (root/'tool.py').write_text(source)
-            (root/'wrapper.py').write_text(WRAPPER)
+            (root/'wrapper.py').write_text(wrapper)
             (root/'request.json').write_text(json.dumps({'function':function,'arguments':arguments},allow_nan=False))
             start=time.perf_counter()
+            flags=['-I'] + (['-S'] if self.isolated else [])
             with (root/'stdout').open('wb') as stdout,(root/'stderr').open('wb') as stderr:
                 proc=subprocess.Popen(['/usr/bin/sandbox-exec','-f',str(root/'policy.sb'),
-                                       str(python_binary()),'-I','-S',str(root/'wrapper.py')],
+                                       str(python_binary()),*flags,str(root/'wrapper.py')],
                                       cwd=root,env=launch_environment(),
                                       stdin=subprocess.DEVNULL,stdout=stdout,stderr=stderr,start_new_session=True)
                 status='exited'
@@ -90,7 +95,7 @@ class SeatbeltPython:
                 while proc.poll() is None:
                     try:peak=max(peak,self.psutil.Process(proc.pid).memory_info().rss)
                     except self.psutil.NoSuchProcess:pass
-                    if time.perf_counter()-start>self.timeout or peak>self.memory_bytes:
+                    if time.perf_counter()-start>(timeout or self.timeout) or peak>self.memory_bytes:
                         status='timeout' if peak<=self.memory_bytes else 'memory_limit'
                         os.killpg(proc.pid,signal.SIGKILL)
                         break
@@ -101,7 +106,7 @@ class SeatbeltPython:
             result={'backend':'macos_seatbelt_offline_python','process_status':status,'returncode':proc.returncode,
                     'stdout':raw,'stderr':error,'seconds':time.perf_counter()-start,'peak_rss_bytes':peak,
                     'source_sha256':hashlib.sha256(source.encode()).hexdigest(),
-                    'policy_sha256':hashlib.sha256(policy(root).encode()).hexdigest(),
+                    'policy_sha256':hashlib.sha256(policy(root, self.extra_reads).encode()).hexdigest(),
                     'scope':'offline Python source module; not full MCP transport; finite resource supervision'}
             try: result['observation']=json.loads(raw)
             except ValueError:result['observation']=None
@@ -149,7 +154,7 @@ class SeatbeltPython:
         Path(str(canary)+'.write').unlink(missing_ok=True)
         return result
 
-    def run_source(self, source, function, arguments):
+    def run_source(self, source, function, arguments, wrapper=None, timeout=None):
         if not self.probed:
             raise SandboxError('Isolation probes must pass before external source execution')
-        return self._execute(source,function,arguments)
+        return self._execute(source,function,arguments,wrapper=wrapper,timeout=timeout)

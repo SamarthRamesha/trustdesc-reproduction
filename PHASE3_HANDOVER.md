@@ -22,6 +22,8 @@ python3.11 -m venv .venv && .venv/bin/python -m pip install -r requirements-appl
 .venv/bin/python scripts/run_pilot_3tools.py --no-plan
 .venv/bin/python scripts/report_recovered_dataset.py
 .venv/bin/python scripts/report_recovered_experiments.py
+.venv/bin/python scripts/run_dynver_recovered.py
+.venv/bin/python scripts/report_dynver.py
 .venv/bin/python scripts/report_final.py
 ```
 
